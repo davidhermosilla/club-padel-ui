@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva de Pistas</title>
+    <style>
+        .calendar-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .schedule-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); /* 5 pistas + 1 columna para las horas */
+            gap: 10px;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 100px;
+        }
+
+        .pista-header, .time-slot {
+            background-color: #007BFF;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        
+        .time-slot-booked {
+            background-color: #ff3333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        
+
+        .pista-header {
+            background-color: #0056b3;
+            font-weight: bold;
+        }
+
+        .time-slot:hover {
+            background-color: #003f7f;
+            cursor: pointer;
+        }
+
+        .time-label {
+            background-color: #555;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <center><h1>Reserva de Pistas</h1></center>
+    <input type="hidden" id="user-info"/>
+    <!-- Contenedor del calendario -->
+    <div class="calendar-container">
+        <label for="reservation-date">Selecciona una fecha:</label>
+        <input type="date" id="reservation-date">
+    </div>
+
+<center>
+    <div class="schedule-container" id="schedule-container">
+        <!-- Encabezados de las pistas -->
+        <div class="time-label"></div>
+        <div class="pista-header">Pista MEDYCLINIC (Interior)</div>
+        <div class="pista-header">Pista URBIFERGA (Interior)</div>
+        <div class="pista-header">Pista 3 (Interior)</div>
+        <div class="pista-header">Pista 4 (Exterior)</div>
+        <div class="pista-header">Pista 5 (Exterior)</div>
+    </div>
+</center>
+    <script>
+        const scheduleContainer = document.getElementById('schedule-container');
+        const timeSlots = [
+            { time: '16:30 - 18:00', pistas: Array(5).fill('Disponible') },
+            { time: '18:00 - 19:30', pistas: Array(5).fill('Disponible') },
+            { time: '19:30 - 21:00', pistas: Array(5).fill('Disponible') },
+            { time: '21:00 - 22:30', pistas: Array(5).fill('Disponible') }
+        ];
+
+        const weekendSlots = [
+            { time: '09:00 - 10:30', pistas: Array(5).fill('Disponible') },
+            { time: '10:30 - 12:00', pistas: Array(5).fill('Disponible') },
+            { time: '12:00 - 13:30', pistas: Array(5).fill('Disponible') },
+            { time: '16:30 - 18:00', pistas: Array(5).fill('Disponible') },
+            { time: '18:00 - 19:30', pistas: Array(5).fill('Disponible') },
+            { time: '19:30 - 21:00', pistas: Array(5).fill('Disponible') },
+            { time: '21:00 - 22:30', pistas: Array(5).fill('Disponible') }
+        ];
+
+        const renderTimeSlots = (slots) => {
+            // Limpiar la cuadrícula, dejando sólo los encabezados
+            scheduleContainer.innerHTML = `
+                <div class="time-label"></div>
+                <div class="pista-header">Pista MEDYCLINIC (Interior)</div>
+                <div class="pista-header">Pista URBIFERGA (Interior)</div>
+                <div class="pista-header">Pista 3 (Interior)</div>
+                <div class="pista-header">Pista 4 (Exterior)</div>
+                <div class="pista-header">Pista 5 (Exterior)</div>                
+            `;
+
+            slots.forEach(slot => {
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = slot.time;
+                scheduleContainer.appendChild(timeLabel);
+
+                slot.pistas.forEach((_, index) => {
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    timeSlot.innerHTML = '<span>Disponible</span></br><span>Ningun ususario</span>';
+                    timeSlot.dataset.estado='Disponible';
+                    timeSlot.dataset.pista = `Pista ${index + 1}`;
+                    timeSlot.dataset.time = slot.time;
+                    timeSlot.addEventListener('click', () => {
+                        const date = document.getElementById('reservation-date').value;
+                        if (date) {
+                            if (timeSlot.dataset.estado=='Reservada') {
+                                alert(`Has seleccionado el horario: ${slot.time} para la ${timeSlot.dataset.pista} el día ${date}`);
+                                timeSlot.className = 'time-slot';
+                                timeSlot.textContent = 'Disponible';
+                                timeSlot.dataset.estado='Disponible';
+                            } else {
+                                alert(`Has seleccionado el horario: ${slot.time} para la ${timeSlot.dataset.pista} el día ${date}`);
+                                timeSlot.className = 'time-slot-booked';
+                                timeSlot.dataset.estado='Reservada'
+                                if (document.getElementById('user-info').value=='clubpadelandujar') {
+                                    timeSlot.textContent = document.getElementById('user-info').value;
+                                } else {
+                                    timeSlot.textContent = 'Reservada';
+                                }
+                            }
+                        } else {
+                            alert('Por favor, selecciona una fecha antes de reservar.');
+                        }
+                    });
+                    scheduleContainer.appendChild(timeSlot);
+                });
+            });
+        };
+
+        document.getElementById('reservation-date').addEventListener('change', (event) => {
+            const selectedDate = new Date(event.target.value);
+            const day = selectedDate.getDay();
+            if (day === 6 || day === 0) { // Sábado (6) o Domingo (0)
+                renderTimeSlots(weekendSlots);
+            } else {
+                renderTimeSlots(timeSlots);
+            }
+        });
+
+        //Autoselect today
+        const todayDate = new Date();
+        const todayDay = todayDate.getDay();
+        document.getElementById('reservation-date').valueAsDate = todayDate;
+        // Renderizar las horas por defecto
+        if (todayDay === 6 || todayDay === 0) { // Sábado (6) o Domingo (0)
+            renderTimeSlots(weekendSlots);
+        } else {
+            renderTimeSlots(timeSlots);
+        }
+    </script>
+</body>
+</html>

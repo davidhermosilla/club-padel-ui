@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Reserva de Pistas</title>
+    <style>
+        .calendar-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .schedule-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); /* 5 pistas + 1 columna para las horas */
+            gap: 10px;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 100px;
+        }
+
+        .pista-header, .time-slot {
+            background-color: #007BFF;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        
+        .time-slot-booked {
+            background-color: #ff3333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        
+
+        .pista-header {
+            background-color: #0056b3;
+            font-weight: bold;
+        }
+
+        .time-slot:hover {
+            background-color: #003f7f;
+            cursor: pointer;
+        }
+
+        .time-label {
+            background-color: #555;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <center><h1>Reserva de Pistas</h1></center>
+    <input type="hidden" id="user-info" value="clubpadelandujar"/>
+    <input type="hidden" id="role-info"/>
+    <!-- Contenedor del calendario -->
+    <div class="calendar-container">
+        <label for="reservation-date">Selecciona una fecha:</label>
+        <input type="date" id="reservation-date">
+    </div>
+
+<center>
+    <div class="schedule-container" id="schedule-container">
+        <!-- Encabezados de las pistas -->
+    </div>
+</center>
+    <script>
+        var api_url = "http://localhost:8080";
+        const scheduleContainer = document.getElementById('schedule-container');
+        const timeSlots = [
+            { time: '16:30 - 18:00', pistas: Array(5).fill('Disponible') },
+            { time: '18:00 - 19:30', pistas: Array(5).fill('Disponible') },
+            { time: '19:30 - 21:00', pistas: Array(5).fill('Disponible') },
+            { time: '21:00 - 22:30', pistas: Array(5).fill('Disponible') }
+        ];
+
+        const weekendSlots = [
+            { time: '09:00 - 10:30', pistas: Array(5).fill('Disponible') },
+            { time: '10:30 - 12:00', pistas: Array(5).fill('Disponible') },
+            { time: '12:00 - 13:30', pistas: Array(5).fill('Disponible') },
+            { time: '16:30 - 18:00', pistas: Array(5).fill('Disponible') },
+            { time: '18:00 - 19:30', pistas: Array(5).fill('Disponible') },
+            { time: '19:30 - 21:00', pistas: Array(5).fill('Disponible') },
+            { time: '21:00 - 22:30', pistas: Array(5).fill('Disponible') }
+        ];
+
+        const renderTimeSlots = (slots) => {
+            // Limpiar la cuadrícula, dejando sólo los encabezados
+            scheduleContainer.innerHTML=`<div class="time-label"></div>`;
+            var numPistas = cargarPistas();
+            slots.forEach(slot => {
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = slot.time;
+                scheduleContainer.appendChild(timeLabel);
+
+                slot.pistas.forEach((_, index) => {
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    timeSlot.innerHTML = '<span>Disponible</span></br><span>Ningun ususario</span>';
+                    timeSlot.dataset.estado='Disponible';
+                    timeSlot.dataset.pista = `Pista ${index + 1}`;
+                    timeSlot.dataset.time = slot.time;
+                    timeSlot.addEventListener('click', () => {
+                        const date = document.getElementById('reservation-date').value;
+                        if (date) {
+                            if (timeSlot.dataset.estado=='Reservada') {
+                                alert(`Has seleccionado el horario: ${slot.time} para la ${timeSlot.dataset.pista} el día ${date}`);
+                                timeSlot.className = 'time-slot';
+                                timeSlot.textContent = 'Disponible';
+                                timeSlot.dataset.estado='Disponible';
+                            } else {
+                                alert(`Has seleccionado el horario: ${slot.time} para la ${timeSlot.dataset.pista} el día ${date}`);
+                                timeSlot.className = 'time-slot-booked';
+                                timeSlot.dataset.estado='Reservada'
+                                if (document.getElementById('user-info').value=='clubpadelandujar') {
+                                    timeSlot.textContent = document.getElementById('user-info').value;
+                                } else {
+                                    timeSlot.textContent = 'Reservada';
+                                }
+                            }
+                        } else {
+                            alert('Por favor, selecciona una fecha antes de reservar.');
+                        }
+                    });
+                    scheduleContainer.appendChild(timeSlot);
+                });
+            });
+        };
+
+        document.getElementById('reservation-date').addEventListener('change', (event) => {
+            const selectedDate = new Date(event.target.value);
+            const day = selectedDate.getDay();
+            if (day === 6 || day === 0) { // Sábado (6) o Domingo (0)
+                renderTimeSlots(weekendSlots);
+            } else {
+                renderTimeSlots(timeSlots);
+            }
+        });
+
+        function cargarRolUsuario() {
+            var username = document.getElementById('user-info').value;
+            $.ajax({
+                url: api_url+'/club-padel-api/usuarios/buscar?username='+username,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    // Limpiar el input hidden de roleName
+                    $('#role-info').empty();
+                    document.getElementById('role-info').setAttribute('value', data.rolName);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al obtener datos de la API:', error);
+                }
+            });
+        };
+
+        function cargarPistas() {
+            var numPistas=0;
+            $.ajax({
+                url: api_url+'/club-padel-api/pistas',
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    var numColumns = data.length+1;
+                    scheduleContainer.style.gridTemplateColumns = 'repeat('+numColumns+', 1fr)';                    
+                    $.each(data, function(index, pista) {
+                        const header = document.createElement('div');
+                        header.className = 'pista-header';
+                        header.innerHTML = pista.nombre+'</br>'+pista.ubicacion;
+                        scheduleContainer.appendChild(header);
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al obtener datos de la API:', error);
+                }
+            });
+            return numPistas;
+        };
+
+        //Cargar el rol del usuario
+        cargarRolUsuario();
+        //Autoselect today
+        const todayDate = new Date();
+        const todayDay = todayDate.getDay();
+        document.getElementById('reservation-date').valueAsDate = todayDate;
+        // Renderizar las horas por defecto
+        if (todayDay === 6 || todayDay === 0) { // Sábado (6) o Domingo (0)
+            renderTimeSlots(weekendSlots);
+        } else {
+            renderTimeSlots(timeSlots);
+        }
+    </script>
+</body>
+</html>

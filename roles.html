@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+
+<div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-1 wp-block-columns-is-layout-flex">
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:80%">
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:80%">
+
+        <form id="form-nuevo-rol">
+            <center><h2>Gestión de Roles</h2></center>
+            <label>Nombre</label><input type="text" id="nombre" name="nombre" required>
+            <label>Dias Antelación</label><input type="text" id="diasAntelacion" name="diasAntelacion" required>
+            <button type="submit" name="wpforms[submit]" id="añadir-rol" class="wpforms" aria-live="assertive">Añadir Nuevo Rol</button>
+        </form>
+
+        <figure class="wp-block-table is-style-stripes">
+        <table id="tabla-roles" class="has-text-color has-link-color" style="color:#1e73be">
+          <thead>
+            <tr>
+              <th class="has-text-align-center" data-align="center">ID</th>
+              <th class="has-text-align-center" data-align="center">Nombre</th>
+              <th class="has-text-align-center" data-align="center">Días de Antelación</th>
+              <th class="has-text-align-center" data-align="center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+        <figcaption class="wp-element-caption">Tabla de roles</figcaption>
+        </figure>
+    </div>
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+</div>
+
+
+<script>
+var api_url = "http://localhost:8080";
+$(document).ready(function(){
+    // Función para manejar el envío del formulario
+    $('#form-nuevo-rol').submit(function(event) {
+        event.preventDefault(); // Evitar el envío del formulario por defecto
+
+        // Obtener el valor del campo nombre
+        var nombre = $('#nombre').val();
+        // Obtener el valor del campo nombre
+        var diasAntelacion = $('#diasAntelacion').val();
+        // Realizar la solicitud POST a la API
+        $.ajax({
+            url: api_url+'/club-padel-api/roles/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ "nombre": nombre , "diasAntelacion" : diasAntelacion }),
+            success: function(data) {
+                // Si la solicitud es exitosa, recargar la tabla de roles
+                cargarRoles();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al añadir un nuevo rol:', error);
+            }
+        });
+    });
+
+    // Función para cargar los roles y actualizar la tabla
+    function cargarRoles() {
+        $.ajax({
+            url: api_url+'/club-padel-api/roles',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                // Limpiar la tabla antes de agregar los nuevos datos
+                $('#tabla-roles tbody').empty();
+
+                // Iterar sobre los datos obtenidos y agregarlos a la tabla
+                $.each(data, function(index, role) {
+                    $('#tabla-roles tbody').append(`
+                        <tr class="has-text-align-center" data-align="center">
+                            <td>${role.id}</td>
+                            <td>${role.nombre}</td>
+                            <td>${role.diasAntelacion}</td>
+                            <td><button class="eliminar-rol" data-id="${role.id}">Eliminar</button></td>
+                        </tr>
+                    `);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al obtener datos de la API:', error);
+            }
+        });
+    }
+
+    // Evento para eliminar un rol al hacer clic en el botón "Eliminar"
+    $('#tabla-roles').on('click', '.eliminar-rol', function() {
+        var roleId = $(this).data('id');
+
+        // Realizar la solicitud DELETE a la API
+        $.ajax({
+            url: api_url+'/club-padel-api/roles/' + roleId,
+            type: 'DELETE',
+            success: function(data) {
+                // Si la solicitud es exitosa, recargar la tabla de roles
+                cargarRoles();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al eliminar el rol:', error);
+            }
+        });
+    });
+
+    // Cargar roles al cargar la página
+    cargarRoles();
+});
+</script>
+
+</body>
+</html>

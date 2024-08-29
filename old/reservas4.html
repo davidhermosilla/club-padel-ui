@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Reserva de Pistas</title>
+    <style>
+        .calendar-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .schedule-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); /* 5 pistas + 1 columna para las horas */
+            gap: 10px;
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 100px;
+        }
+
+        .pista-header, .time-slot {
+            background-color: #007BFF;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        
+        .time-slot-booked {
+            background-color: #ff3333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        
+
+        .pista-header {
+            background-color: #0056b3;
+            font-weight: bold;
+        }
+
+        .time-slot:hover {
+            background-color: #003f7f;
+            cursor: pointer;
+        }
+        
+        .time-slot-booked:hover {
+            background-color: #ba1717;
+            cursor: pointer;
+        }
+
+        .time-label {
+            background-color: #555;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <center><h1>Reserva de Pistas</h1></center>
+    <input type="hidden" id="user-info" value="juan"/>
+    <input type="hidden" id="role-info"/>
+    <!-- Contenedor del calendario -->
+    <div class="calendar-container">
+        <label for="reservation-date">Selecciona una fecha:</label>
+        <input type="date" id="reservation-date" placeholder="DD/MM/YYYY">
+    </div>
+
+<center>
+    <div class="schedule-container" id="schedule-container">
+        <!-- Encabezados de las pistas -->
+    </div>
+</center>
+    <script>
+        var api_url = "http://localhost:8080";
+        const scheduleContainer = document.getElementById('schedule-container');
+        const timeSlots = [
+            { time: '16:30 - 18:00'},
+            { time: '18:00 - 19:30'},
+            { time: '19:30 - 21:00'},
+            { time: '21:00 - 22:30'}
+        ];                         
+                                   
+        const weekendSlots = [     
+            { time: '09:00 - 10:30'},
+            { time: '10:30 - 12:00'},
+            { time: '12:00 - 13:30'},
+            { time: '16:30 - 18:00'},
+            { time: '18:00 - 19:30'},
+            { time: '19:30 - 21:00'},
+            { time: '21:00 - 22:30'}
+        ];
+        
+        let datosPista;
+        let datosReservas; 
+
+        function cargarRolUsuario() {
+            var username = document.getElementById('user-info').value;
+            $.ajax({
+                url: api_url+'/club-padel-api/usuarios/buscar?username='+username,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    // Limpiar el input hidden de roleName
+                    $('#role-info').empty();
+                    document.getElementById('role-info').setAttribute('value', data.rolName);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al obtener datos de la API:', error);
+                }
+            });
+        };
+
+
+        function obtenerReservas(todayDay) { 
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: api_url+'/club-padel-api/reservas/buscar?fecha='+todayDay,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        resolve(data);                    
+                    },
+                    error: function(xhr, status, error) {
+                        reject(error);
+                    }
+                });
+            });        
+        }
+        
+        function multiFilter(array, filters) {
+            let filterKeys = Object.keys(filters);
+            return array.filter((item) => filterKeys.every((key) => (filters[key].indexOf(item[key]) !== -1)));
+        }
+        
+        function cancelamosOreservamos(text) {            
+            if (confirm(text) == true) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        function procesarTablaReservas(datosPista,slots,dia,datosReservas) {
+            const divTime = document.createElement('div');
+            divTime.className='time-label';
+            scheduleContainer.innerHTML='';
+            scheduleContainer.appendChild(divTime);
+            var numColumns = datosPista.length+1;
+            scheduleContainer.style.gridTemplateColumns = 'repeat('+numColumns+', 1fr)';                    
+            $.each(datosPista, function(index, pista) {
+                const header = document.createElement('div');
+                header.className = 'pista-header';
+                header.innerHTML = pista.nombre+'</br>('+pista.ubicacion+')';
+                scheduleContainer.appendChild(header);
+            });
+            
+            slots.forEach(slot => {
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = slot.time;
+                scheduleContainer.appendChild(timeLabel);
+                
+                $.each(datosPista, function(index, pista) {
+                    const timeSlot = document.createElement('div');                            
+                    timeSlot.className = 'time-slot';
+                    
+                    let filters = {
+                        pistaId: [pista.id],
+                        slotTime: [slot.time]
+                    };
+
+                    var arrayFiltro = multiFilter(datosReservas,filters)
+                    
+                    
+                    timeSlot.dataset.pista = pista.id;
+                    timeSlot.dataset.time = slot.time;
+                    var username = document.getElementById('user-info').value;
+                    var rolename = document.getElementById('role-info').value;
+                    if (arrayFiltro.length > 0) {
+                        if (arrayFiltro[0].userName==username || rolename=='administrador') {
+                            timeSlot.innerHTML = '<span>Reservada</span></br><span>'+arrayFiltro[0].userName+'</span>';
+                        } else {
+                            timeSlot.innerHTML = '<span>Reservada</span></br><span></span>';
+                        }
+                        timeSlot.className = 'time-slot-booked';
+                        timeSlot.dataset.estado='Reservada';
+                    } else {
+                        timeSlot.innerHTML = '<span>Disponible</span></br><span></span>';
+                        timeSlot.dataset.estado='Disponible';
+                        timeSlot.className = 'time-slot';
+                    }
+                    
+                    
+                    timeSlot.addEventListener('click', () => {                        
+                        if (dia) {
+                            if (timeSlot.dataset.estado=='Reservada') {
+                                if (arrayFiltro[0].userName==username || rolename=='administrador') {
+                                    let text = "¿Desea realmente cancelar la pista?";
+                                    if (cancelamosOreservamos(text)) {
+                                        timeSlot.className = 'time-slot';
+                                        timeSlot.innerHTML = '<span>Disponible</span></br><span></span>';
+                                        timeSlot.dataset.estado='Disponible';
+                                    }
+                                }
+                            } else {
+                                let text = "¿Desea realmente reservar la pista?";
+                                if (cancelamosOreservamos(text)) {
+                                    timeSlot.className = 'time-slot-booked';
+                                    timeSlot.innerHTML = '<span>Reservada</span></br><span>'+username+'</span>'
+                                    timeSlot.dataset.estado='Reservada';
+                                }
+                            }                            
+                        } else {
+                            alert('Por favor, selecciona una fecha antes de reservar.');
+                        }
+                    });
+                    
+                    scheduleContainer.appendChild(timeSlot); 
+                });
+            });                         
+        };
+        
+        document.getElementById('reservation-date').addEventListener('change', (event) => {
+            const selectedDate = new Date(event.target.value);
+            const day = selectedDate.getDay();
+            const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(selectedDate.getDate()).padStart(2, '0');
+            const yyyy = selectedDate.getFullYear();
+
+            const selectedFormatedDate = `${dd}/${mm}/${yyyy}`;
+            obtenerReservas(selectedFormatedDate)
+            .then((data) => {
+                datosReservas = data;
+                console.log(datosReservas);
+            })
+            .catch((error) => {
+                console.error('Error obteniendo los datos:', error);
+            });
+        
+            if (day === 6 || day === 0) { // Sábado (6) o Domingo (0)
+                procesarTablaReservas(datosPista,weekendSlots,selectedFormatedDate,datosReservas);
+            } else {
+                procesarTablaReservas(datosPista,timeSlots,selectedFormatedDate,datosReservas);
+            }
+        });        
+        
+        //Cargar el rol del usuario
+        cargarRolUsuario();
+        //Autoselect today
+        const todayDate = new Date();
+        const todayDay = todayDate.getDay();
+        
+        const mm = String(todayDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(todayDate.getDate()).padStart(2, '0');
+        const yyyy = todayDate.getFullYear();
+
+        const currentDate = `${dd}/${mm}/${yyyy}`;
+
+        console.log(currentDate);
+        
+        
+        document.getElementById('reservation-date').valueAsDate = todayDate;  
+        //Cargar Reservas
+        
+        obtenerReservas(currentDate)
+        .then((data) => {
+            datosReservas = data;
+            console.log(datosReservas);
+        })
+        .catch((error) => {
+            console.error('Error obteniendo los datos:', error);
+        });
+        
+        $.ajax({
+            url: api_url+'/club-padel-api/pistas',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                datosPista=data;
+                // Renderizar las horas por defecto
+                if (todayDay === 6 || todayDay === 0) { // Sábado (6) o Domingo (0)
+                    procesarTablaReservas(datosPista,weekendSlots,currentDate,datosReservas);
+                } else {
+                    procesarTablaReservas(datosPista,timeSlots,currentDate,datosReservas);
+                } 
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al obtener datos de la API:', error);
+            }
+        });               
+    </script>
+</body>
+</html>
