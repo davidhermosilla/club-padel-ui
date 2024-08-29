@@ -93,7 +93,7 @@
                 </tbody>
             </table>
             <br/>
-            <label id="payment-total"></label>
+            <h3 id="payment-total"></h3>
             <br/>
             <div>
                 <button id='socio-propietario-btn' type="submit">Pista Socio P.</button>
@@ -241,7 +241,7 @@
                         paymentsTable.appendChild(row);
                     });
 
-                    document.getElementById('payment-total').append(total);
+                    document.getElementById('payment-total').append('Total de pagos: '+total+'€');
                     // Mostrar el contenedor de pagos
                     document.getElementById('payments-container').style.display = 'block';
                     
