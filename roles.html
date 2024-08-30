@@ -54,7 +54,7 @@ $(document).ready(function(){
         var diasAntelacion = $('#diasAntelacion').val();
         // Realizar la solicitud POST a la API
         $.ajax({
-            url: api_url+'/club-padel-api/roles/',
+            url: api_url+'/club-padel-api/roles',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ "nombre": nombre , "diasAntelacion" : diasAntelacion }),
