@@ -222,10 +222,7 @@
                             <td>${pago.cantidad}</td>
                             <td>${pago.metodoPago}</td>
                             <td>${pago.detalle || ''}</td>
-                            <td>
-                                <button class="edit-payment" data-id="${pago.id}">Editar</button>
-                                <button class="delete-payment" data-id="${pago.id}">Eliminar</button>
-                            </td>
+                            <td><button class="delete-payment" data-id="${pago.id}">Eliminar</button></td>
                         `;
                         // Convierte `pago.cantidad` a número utilizando `parseFloat`
                         const cantidadNumerica = parseFloat(pago.cantidad);
@@ -265,23 +262,6 @@
                 },
                 error: function(xhr, status, error) {
                     console.error('Error al añadir el pago:', error);
-                }
-            });
-        }
-
-        function actualizarPago(reservaId, pagoId, pago) {
-            var pistaId=document.getElementById('pistaIdPago').value;
-            var slotTime=document.getElementById('slotTimePago').value;
-            $.ajax({
-                url: api_url+'/club-padel-api/reservas/' + reservaId + '/pagos/' + pagoId,
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(pago),
-                success: function() {
-                    mostrarPagos(reservaId,pistaId,slotTime);
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error al actualizar el pago:', error);
                 }
             });
         }
@@ -502,14 +482,7 @@
             const row = event.target.closest('tr');
             const paymentId = event.target.dataset.id;
             const reservaId = document.getElementById('reservaIdPago').value;
-            if (event.target.classList.contains('edit-payment')) {
-                const updatedPayment = {
-                    cantidad: parseFloat(row.querySelector('td:nth-child(1)').textContent),
-                    metodoPago: row.querySelector('td:nth-child(2)').textContent,
-                    detalle: row.querySelector('td:nth-child(3)').textContent
-                };
-                actualizarPago(reservaId, paymentId, updatedPayment);
-            } else if (event.target.classList.contains('delete-payment')) {
+            if (event.target.classList.contains('delete-payment')) {
                 if (confirm('¿Desea eliminar este pago?')) {
                     eliminarPago(reservaId, paymentId);
                 }
