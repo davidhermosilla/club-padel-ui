@@ -57,7 +57,11 @@ $(document).ready(function(){
             url: api_url+'/club-padel-api/roles',
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ "nombre": nombre , "diasAntelacion" : diasAntelacion }),
+            headers: {
+                            'Content-Type' : 'application/json',
+                            'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                    },
+            data: JSON.stringify({ "nombre": nombre , "diasAntelacion" : diasAntelacion }),            
             success: function(data) {
                 // Si la solicitud es exitosa, recargar la tabla de roles
                 cargarRoles();
@@ -73,6 +77,10 @@ $(document).ready(function(){
         $.ajax({
             url: api_url+'/club-padel-api/roles',
             type: 'GET',
+            headers: {
+                            'Content-Type' : 'application/json',
+                            'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                    },
             dataType: 'json',
             success: function(data) {
                 // Limpiar la tabla antes de agregar los nuevos datos
@@ -104,6 +112,10 @@ $(document).ready(function(){
         $.ajax({
             url: api_url+'/club-padel-api/roles/' + roleId,
             type: 'DELETE',
+            headers: {
+                            'Content-Type' : 'application/json',
+                            'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                    },
             success: function(data) {
                 // Si la solicitud es exitosa, recargar la tabla de roles
                 cargarRoles();
