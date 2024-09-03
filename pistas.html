@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .modal-body input {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-1 wp-block-columns-is-layout-flex">
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:80%">
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:80%">
+
+        <form id="form-nueva-pista">
+            <center><h2>Gestión de Pistas</h2></center>
+            <label>Nombre</label><input type="text" id="nombre" name="nombre" required>
+            <label>Ubicación</label>
+            <select id="ubicacion" name="ubicacion" required>
+                <option value="INTERNA">Interna</option>
+                <option value="EXTERNA">Externa</option>
+            </select>
+            </br>
+            <button type="submit" id="añadir-pista" class="wpforms" aria-live="assertive">Añadir Nueva Pista</button>
+        </form>
+
+        <figure class="wp-block-table is-style-stripes">
+        <table id="tabla-pistas" class="has-text-color has-link-color" style="color:#1e73be">
+          <thead>
+            <tr>
+              <th class="has-text-align-center" data-align="center">ID</th>
+              <th class="has-text-align-center" data-align="center">Nombre</th>
+              <th class="has-text-align-center" data-align="center">Ubicación</th>
+              <th class="has-text-align-center" data-align="center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+        <figcaption class="wp-element-caption">Tabla de pistas</figcaption>
+        </figure>
+    </div>
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+</div>
+
+    <!-- Modal para editar pista -->
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Editar Pista</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>                    
+                </div>
+                <div class="modal-body">
+                    <form id="editPistaForm">
+                        <input type="hidden" id="pistaId">
+                        <div class="form-group">
+                            <label for="pistaName">Nombre</label>
+                            <input type="text" class="form-control" id="pistaName" placeholder="Nombre de la pista">
+                        </div>
+                        <div class="form-group">
+                            <label for="pistaLocation">Ubicación</label>
+                            <input type="text" class="form-control" id="pistaLocation" placeholder="Ubicación de la pista">
+                        </div>
+                        <button id="save-pista-id" type="button">Guardar cambios</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com"; // Cambia esto por la URL de tu API
+
+$(document).ready(function(){
+    // Función para manejar el envío del formulario
+    $('#form-nueva-pista').submit(function(event) {
+        event.preventDefault(); // Evitar el envío del formulario por defecto
+
+        // Obtener los valores del formulario
+        var nombre = $('#nombre').val();
+        var ubicacion = $('#ubicacion').val();
+
+        // Realizar la solicitud POST a la API
+        $.ajax({
+            url: api_url + '/pistas',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' // Asegúrate de actualizar esta cabecera si es necesario
+            },
+            data: JSON.stringify({ "nombre": nombre, "ubicacion": ubicacion }),            
+            success: function(data) {
+                // Si la solicitud es exitosa, recargar la tabla de pistas
+                cargarPistas();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al añadir una nueva pista:', error);
+            }
+        });
+    });
+
+    // Función para cargar las pistas y actualizar la tabla
+    function cargarPistas() {
+        $.ajax({
+            url: api_url + '/pistas',
+            type: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' // Asegúrate de actualizar esta cabecera si es necesario
+            },
+            dataType: 'json',
+            success: function(data) {
+                // Limpiar la tabla antes de agregar los nuevos datos
+                $('#tabla-pistas tbody').empty();
+
+                // Iterar sobre los datos obtenidos y agregarlos a la tabla
+                $.each(data, function(index, pista) {                    
+                    $('#tabla-pistas tbody').append(`
+                        <tr class="has-text-align-center" data-align="center">
+                            <td>${pista.id}</td>
+                            <td>${pista.nombre}</td>
+                            <td>${pista.ubicacion}</td>
+                            <td>
+                                <button class="editar-pista" data-toggle="modal" data-target="#editModal" data-id="${pista.id}" data-nombre="${pista.nombre}" data-ubicacion="${pista.ubicacion}">Editar</button>
+                                <button class="eliminar-pista" data-id="${pista.id}">Eliminar</button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al obtener datos de la API:', error);
+            }
+        });
+    }
+
+    // Evento para eliminar una pista al hacer clic en el botón "Eliminar"
+    $('#tabla-pistas').on('click', '.eliminar-pista', function() {
+        var pistaId = $(this).data('id');
+
+        // Realizar la solicitud DELETE a la API
+        $.ajax({
+            url: api_url + '/pistas/' + pistaId,
+            type: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' // Asegúrate de actualizar esta cabecera si es necesario
+            },
+            success: function(data) {
+                // Si la solicitud es exitosa, recargar la tabla de pistas
+                cargarPistas();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al eliminar la pista:', error);
+            }
+        });
+    });
+
+    function loadPistaData(pistaId, pistaNombre, pistaUbicacion) {
+            
+            // Cargar los datos en el formulario
+            document.getElementById('pistaId').value = pistaId;
+            document.getElementById('pistaName').value = pistaNombre;
+            document.getElementById('pistaLocation').value = pistaUbicacion;
+    }
+
+    function savePista() {
+        // Aquí deberías realizar una solicitud a tu API para guardar los cambios
+        const pistaId = document.getElementById('pistaId').value;
+        const name = document.getElementById('pistaName').value;
+        const location = document.getElementById('pistaLocation').value;
+
+        console.log(`Guardando pista: ${pistaId}, ${name}, ${location}`);
+        
+        $.ajax({
+            url: api_url + '/pistas/' + pistaId,
+            type: 'PUT',
+            contentType: 'application/json',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' // Asegúrate de actualizar esta cabecera si es necesario
+            },
+            data: JSON.stringify({ "nombre": name, "ubicacion": location }),            
+            success: function(data) {
+                // Si la solicitud es exitosa, recargar la tabla de pistas
+                cargarPistas();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al añadir una nueva pista:', error);
+            }
+        });
+
+
+        $('#editModal').modal('hide');
+    }
+    
+    $('#save-pista-id').on('click', function() {
+        savePista();
+    });
+
+    // Evento para editar una pista al hacer clic en el botón "Editar"
+    $('#tabla-pistas').on('click', '.editar-pista', function() {
+        var pistaId = $(this).data('id');
+        var pistaNombre = $(this).data('nombre');
+        var pistaUbicacion = $(this).data('ubicacion');
+        loadPistaData(pistaId,pistaNombre,pistaUbicacion);
+    });
+
+    // Cargar pistas al cargar la página
+    cargarPistas();
+});
+</script>
+
+</body>
+</html>

@@ -313,8 +313,10 @@
                     document.getElementById('payments-container').style.display = 'block';
                     if (pistaNombre==='BAR') {
                         document.getElementById('rapids-payments').style.display = 'none';
+                        document.getElementById('payment-detail').value='BAR CONTADO';
                     } else {
                         document.getElementById('rapids-payments').style.display = 'flex';
+                        document.getElementById('payment-detail').value='';
                     }                    
                     
                 },
@@ -670,6 +672,17 @@
                 }
             }
         });        
+
+        document.getElementById('payment-method').addEventListener('change', (event) => {
+            if (document.getElementById('pistaNombre').value==='BAR') {
+                if (event.target.value==='CONTADO') {
+                    document.getElementById('payment-detail').value='BAR CONTADO';
+                } else {
+                    document.getElementById('payment-detail').value='BAR TARJETA';
+                }
+            }
+        });
+        
 
         document.getElementById('reservation-date').addEventListener('change', (event) => {
             const selectedDate = new Date(event.target.value);
