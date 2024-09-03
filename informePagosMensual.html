@@ -53,7 +53,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
     <script>
-        const api_url = "http://localhost:8080";
+        var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
         async function generarReporte() {
             const mes = document.getElementById('mes').value;
             if (!mes) {
@@ -70,9 +70,15 @@
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const fecha = `${day.toString().padStart(2, '0')}/${month}/${year}`;
-                const url = `${api_url}/club-padel-api/pagos/buscar?fecha=${fecha}`;
+                const url = `${api_url}/pagos/buscar?fecha=${fecha}`;
                 try {
-                    const response = await fetch(url);
+                    const response = await fetch(url, {
+                        method: 'GET', // o 'POST', 'PUT', 'DELETE', etc.
+                        headers: {
+                            'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz',
+                            'Content-Type': 'application/json',
+                        }
+                    });
                     const data = await response.json();
 
                     const totalDia = data.total || 0;

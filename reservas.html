@@ -178,7 +178,7 @@
         </div>    
     </center>
     <script>
-        var api_url = "http://localhost:8080";
+        var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
         const scheduleContainer = document.getElementById('schedule-container');
         const timeSlots = [
             { time: '16:30 - 18:00'},
@@ -203,8 +203,12 @@
         async function cargarRolUsuario() {
             var username = document.getElementById('user-info').value;
             $.ajax({
-                url: api_url+'/club-padel-api/usuarios/buscar?username='+username,
+                url: api_url+'/usuarios/buscar?username='+username,
                 type: 'GET',
+                headers: {
+                    'Content-Type' : 'application/json',
+                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                },
                 dataType: 'json',
                 success: function(data) {
                     // Limpiar el input hidden de roleName
@@ -222,8 +226,12 @@
         function obtenerReservas(todayDay) { 
             return new Promise((resolve, reject) => {
                 $.ajax({
-                    url: api_url+'/club-padel-api/reservas/buscar?fecha='+todayDay,
+                    url: api_url+'/reservas/buscar?fecha='+todayDay,
                     type: 'GET',
+                    headers: {
+                        'Content-Type' : 'application/json',
+                        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                    },
                     dataType: 'json',
                     success: function(data) {
                         resolve(data);                    
@@ -264,8 +272,12 @@
             document.getElementById('pistaNombre').value=pistaNombre;
             document.getElementById('slotTimePago').value=slotTime;
             $.ajax({
-                url: api_url+'/club-padel-api/reservas/' + reservaId + '/pagos',
+                url: api_url+'/reservas/' + reservaId + '/pagos',
                 type: 'GET',
+                headers: {
+                    'Content-Type' : 'application/json',
+                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                },
                 dataType: 'json',
                 success: function(pagosResponse) {
                     paymentsTable.innerHTML = '';
@@ -317,8 +329,12 @@
             var pistaNombre=document.getElementById('pistaNombre').value;
             var slotTime=document.getElementById('slotTimePago').value;
             $.ajax({
-                url: api_url+'/club-padel-api/reservas/' + reservaId + '/pagos',
+                url: api_url+'/reservas/' + reservaId + '/pagos',
                 type: 'PUT',
+                headers: {
+                    'Content-Type' : 'application/json',
+                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                },
                 contentType: 'application/json',
                 data: JSON.stringify(pago),
                 success: function() {
@@ -335,8 +351,12 @@
             var pistaNombre=document.getElementById('pistaNombre').value;
             var slotTime=document.getElementById('slotTimePago').value;
             $.ajax({
-                url: api_url+'/club-padel-api/reservas/' + reservaId + '/pagos/' + pagoId,
+                url: api_url+'/reservas/' + reservaId + '/pagos/' + pagoId,
                 type: 'DELETE',
+                headers: {
+                    'Content-Type' : 'application/json',
+                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                },
                 success: function() {
                     mostrarPagos(reservaId,pistaId,pistaNombre,slotTime);
                 },
@@ -348,8 +368,12 @@
 
         function cancelarReserva(slot) {
             $.ajax({
-                url: api_url+'/club-padel-api/reservas/'+slot.dataset.reserva,
+                url: api_url+'/reservas/'+slot.dataset.reserva,
                 type: 'DELETE',
+                headers: {
+                    'Content-Type' : 'application/json',
+                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                },
                 contentType: 'application/json',
                 success: function() {
                     slot.className = 'time-slot';
@@ -390,8 +414,12 @@
             };
 
             $.ajax({
-                url: api_url+'/club-padel-api/reservas',
+                url: api_url+'/reservas',
                 type: 'POST',
+                headers: {
+                    'Content-Type' : 'application/json',
+                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                },
                 contentType: 'application/json',
                 data: JSON.stringify(reservaRequest),
                 success: function(dataResponse) {
@@ -694,8 +722,12 @@
                 datosReservas = data;
                 console.log(datosReservas);
                 $.ajax({
-                    url: api_url+'/club-padel-api/pistas',
+                    url: api_url+'/pistas',
                     type: 'GET',
+                    headers: {
+                        'Content-Type' : 'application/json',
+                        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                    },
                     dataType: 'json',
                     success: function(data) {
                         datosPista=data;

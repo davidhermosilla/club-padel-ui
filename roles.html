@@ -42,7 +42,7 @@
 
 
 <script>
-var api_url = "http://localhost:8080";
+var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
 $(document).ready(function(){
     // Función para manejar el envío del formulario
     $('#form-nuevo-rol').submit(function(event) {
@@ -54,7 +54,7 @@ $(document).ready(function(){
         var diasAntelacion = $('#diasAntelacion').val();
         // Realizar la solicitud POST a la API
         $.ajax({
-            url: api_url+'/club-padel-api/roles',
+            url: api_url+'/roles',
             type: 'POST',
             contentType: 'application/json',
             headers: {
@@ -75,7 +75,7 @@ $(document).ready(function(){
     // Función para cargar los roles y actualizar la tabla
     function cargarRoles() {
         $.ajax({
-            url: api_url+'/club-padel-api/roles',
+            url: api_url+'/roles',
             type: 'GET',
             headers: {
                             'Content-Type' : 'application/json',
@@ -110,7 +110,7 @@ $(document).ready(function(){
 
         // Realizar la solicitud DELETE a la API
         $.ajax({
-            url: api_url+'/club-padel-api/roles/' + roleId,
+            url: api_url+'/roles/' + roleId,
             type: 'DELETE',
             headers: {
                             'Content-Type' : 'application/json',

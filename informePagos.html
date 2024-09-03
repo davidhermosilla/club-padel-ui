@@ -64,7 +64,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
     <script>
-        const api_url = "http://localhost:8080";
+        var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
         async function buscarPagos() {
             const fecha = new Date(document.getElementById('fecha').value);
             if (!fecha) {
@@ -78,9 +78,15 @@
             const yyyy = fecha.getFullYear();
             const dia = `${dd}/${mm}/${yyyy}`;
 
-            const url = `${api_url}/club-padel-api/pagos/buscar?fecha=${dia}`;
+            const url = `${api_url}/pagos/buscar?fecha=${dia}`;
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    method: 'GET', // o 'POST', 'PUT', 'DELETE', etc.
+                    headers: {
+                        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz',
+                        'Content-Type': 'application/json',
+                    }
+                });
                 const data = await response.json();
 
                 mostrarResultados(data.pagos);

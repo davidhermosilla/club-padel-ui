@@ -60,7 +60,7 @@
 </div>
 
 <script>
-var api_url = "http://localhost:8080";
+var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
 $(document).ready(function(){
     // Función para manejar el envío del formulario de nuevo usuario
     $('#form-nuevo-usuario').submit(function(event) {
@@ -70,8 +70,12 @@ $(document).ready(function(){
         var rolId = $('#rolId').val();
 
         $.ajax({
-            url: api_url+'/club-padel-api/usuarios',
+            url: api_url+'/usuarios',
             type: 'POST',
+            headers: {
+                'Content-Type' : 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+            },
             contentType: 'application/json',
             data: JSON.stringify({ "username": nombreUsuario, "rolId": rolId }),
             success: function(data) {
@@ -92,8 +96,12 @@ $(document).ready(function(){
         var rolId = $('#editRolId').val();
 
         $.ajax({
-            url: api_url+'/club-padel-api/usuarios/' + usuarioId,
+            url: api_url+'/usuarios/' + usuarioId,
             type: 'PUT',
+            headers: {
+                'Content-Type' : 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+            },
             contentType: 'application/json',
             data: JSON.stringify({ "username": nombreUsuario, "rolId": rolId }),
             success: function(data) {
@@ -116,8 +124,12 @@ $(document).ready(function(){
     // Función para cargar los roles y poblar los combos box
     function cargarRoles() {
         $.ajax({
-            url: api_url+'/club-padel-api/roles',
+            url: api_url+'/roles',
             type: 'GET',
+            headers: {
+                'Content-Type' : 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+            },
             dataType: 'json',
             success: function(data) {
                 $('#rolId, #editRolId').empty();
@@ -135,9 +147,13 @@ $(document).ready(function(){
     // Función para cargar los usuarios y actualizar la tabla
     function cargarUsuarios() {
         $.ajax({
-            url: api_url+'/club-padel-api/usuarios',
+            url: api_url+'/usuarios',
             type: 'GET',
             dataType: 'json',
+            headers: {
+                'Content-Type' : 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+            },
             success: function(data) {
                 $('#tabla-usuarios tbody').empty();
 
@@ -181,8 +197,12 @@ $(document).ready(function(){
         var usuarioId = $(this).data('id');
 
         $.ajax({
-            url: api_url+'/club-padel-api/usuarios/' + usuarioId,
+            url: api_url+'/usuarios/' + usuarioId,
             type: 'DELETE',
+            headers: {
+                'Content-Type' : 'application/json',
+                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+            },
             success: function(data) {
                 cargarUsuarios();
             },
