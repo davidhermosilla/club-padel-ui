@@ -21,15 +21,7 @@
             margin-bottom: 100px;
         }
 
-        .pista-header, .time-slot {
-            background-color: #007BFF;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-        }
-
-        .time-slot-bar {
+        .pista-header, .time-slot,.time-slot-no-user {
             background-color: #007BFF;
             color: white;
             padding: 15px;
@@ -37,22 +29,13 @@
             border-radius: 5px;
         }
         
-        .time-slot-booked {
+        .time-slot-booked,.time-slot-booked-no-user {
             background-color: #ff3333;
             color: white;
             padding: 15px;
             text-align: center;
             border-radius: 5px;
-        }
-
-        .time-slot-bar-booked {
-            background-color: #020201;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-        }        
-        
+        }                
 
         .pista-header {
             background-color: #0056b3;
@@ -64,12 +47,20 @@
             font-weight: bold;
         }
 
-        .time-slot:hover,.time-slot-bar:hover {
+        .time-slot-no-user:hover {
+            background-color: #007BFF;
+        }
+
+        .time-slot:hover {
             background-color: #003f7f;
             cursor: pointer;
         }
         
-        .time-slot-booked:hover,.time-slot-bar-booked:hover {
+        .time-slot-booked-no-user:hover {
+            background-color: #ff3333;
+        }
+
+        .time-slot-booked:hover {
             background-color: #ba1717;
             cursor: pointer;
         }
@@ -112,8 +103,10 @@
     <!-- Contenedor del calendario -->
     <div class="calendar-container">
         <label for="reservation-date">Selecciona una fecha:</label>
-        <input type="date" id="reservation-date" placeholder="DD/MM/YYYY">
+        <input type="date" id="reservation-date" placeholder="DD/MM/YYYY">        
     </div>
+
+    <div id="warning-message"></div>
 
     <center>
         <div class="schedule-container" id="schedule-container"></div>
@@ -137,6 +130,8 @@
             </table>
             <br/>
             <h3 id="payment-total"></h3>
+            <h3 id="expenses-total"></h3>
+            <h3 id="paymentandexpenses-total"></h3>
             <br/>
             <div id="rapids-payments" class="contenedor-centrado">
                 <div class="contenedor">
@@ -175,10 +170,23 @@
                 <button type="submit">Añadir Pago</button>
                 </br>
             </form>
+            <br/>
+            <div id="div-expenses" style="display:none;">
+                <h3>Añadir Gasto</h3>
+                <form id="expense-form">
+                    <label for="expense-amount">Cantidad:</label>
+                    <input type="number" id="expense-amount" name="amount" required><br>
+                    <label for="expense-method">Método de Pago:</label>
+                    <input type="text" id="expense-method" name="method" value="CONTADO" readonly><br>
+                    <label for="expense-detail">Detalle del Gasto:</label>
+                    <textarea id="expense-detail" name="detail" required></textarea><br>
+                    <button type="submit">Añadir Gasto</button>
+                </form>
+            </div>
         </div>    
     </center>
     <script>
-        var api_url = "http://localhost:8080/club-padel-api";
+        var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
         const scheduleContainer = document.getElementById('schedule-container');
         const timeSlots = [
             { time: '16:30 - 18:00'},
@@ -203,7 +211,7 @@
         async function cargarRolUsuario() {
             var username = document.getElementById('user-info').value;
             $.ajax({
-                url: api_url+'/club-padel-api/usuarios/buscar?username='+username,
+                url: api_url+'/usuarios/buscar?username='+username,
                 type: 'GET',
                 headers: {
                     'Content-Type' : 'application/json',
@@ -271,6 +279,7 @@
             document.getElementById('pistaIdPago').value=pistaId;
             document.getElementById('pistaNombre').value=pistaNombre;
             document.getElementById('slotTimePago').value=slotTime;
+            let total=0;
             $.ajax({
                 url: api_url+'/reservas/' + reservaId + '/pagos',
                 type: 'GET',
@@ -284,7 +293,6 @@
                     document.getElementById('payment-amount').value='';
                     document.getElementById('payment-detail').value='';
                     document.getElementById('payment-total').innerHTML='';                    
-                    var total=0;
                     pagosResponse.pagos.forEach(pago => {
                         const row = document.createElement('tr');
                                                   
@@ -292,7 +300,7 @@
                             <td>${pago.cantidad}</td>
                             <td>${pago.metodoPago}</td>
                             <td>${pago.detalle || ''}</td>
-                            <td><button class="delete-payment" data-id="${pago.id}">Eliminar</button></td>
+                            <td><button class="delete-payment" data-id="${pago.id}">Eliminar Pago</button></td>
                         `;
                         // Convierte `pago.cantidad` a número utilizando `parseFloat`
                         const cantidadNumerica = parseFloat(pago.cantidad);
@@ -304,22 +312,81 @@
                             console.warn(`La cantidad "${pago.cantidad}" no es un número válido.`);
                         }
 
-
                         paymentsTable.appendChild(row);
+                        
                     });
-
-                    document.getElementById('payment-total').append('Total de pagos: '+total+'€');
-                    // Mostrar el contenedor de pagos
-                    document.getElementById('payments-container').style.display = 'block';
-                    if (pistaNombre==='BAR') {
-                        document.getElementById('rapids-payments').style.display = 'none';
-                    } else {
-                        document.getElementById('rapids-payments').style.display = 'flex';
-                    }                    
+                    document.getElementById('payment-total').dataset.value = total;
+                    document.getElementById('payment-total').innerText = 'Total de Pagos: ' + total + '€';
                     
+                    // Obtener y mostrar los gastos
+                    $.ajax({
+                        url: api_url + '/reservas/' + reservaId + '/gastos',
+                        type: 'GET',
+                        headers: {
+                            'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                        },
+                        success: function(gastosResponse) {
+                            let totalExpenses=0;
+                            gastosResponse.gastos.forEach(gasto => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>-${gasto.cantidad}</td>
+                                    <td>${gasto.metodo}</td>
+                                    <td>${gasto.detalle || ''}</td>
+                                    <td><button class="delete-expense" data-id="${gasto.id}">Eliminar Gasto</button></td>
+                                `;
+                                const cantidadNumerica = parseFloat(gasto.cantidad);
+                                if (!isNaN(cantidadNumerica)) {
+                                    totalExpenses -= cantidadNumerica;
+                                }
+                                paymentsTable.appendChild(row);
+                            });
+                            if (totalExpenses<0) { 
+                                let total = document.getElementById('payment-total').dataset.value;                                           
+                                document.getElementById('expenses-total').innerText = 'Total de Gastos: ' + totalExpenses + '€';
+                                let resultTotal = parseFloat(total)+totalExpenses;
+                                document.getElementById('paymentandexpenses-total').innerText = 'Total: ' + resultTotal + '€';
+                            }
+                            // Mostrar el contenedor de pagos
+                            document.getElementById('payments-container').style.display = 'block';
+                            if (pistaNombre==='BAR') {
+                                document.getElementById('rapids-payments').style.display = 'none';
+                                document.getElementById('payment-detail').value='BAR CONTADO';
+                                document.getElementById('expense-detail').value='';
+                                document.getElementById('div-expenses').style.display = 'block';
+                            } else {
+                                document.getElementById('rapids-payments').style.display = 'flex';
+                                document.getElementById('payment-detail').value='';
+                                document.getElementById('expense-detail').value='';
+                                document.getElementById('div-expenses').style.display = 'none';
+                            } 
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error al obtener gastos:', error);
+                        }
+                    });                    
                 },
                 error: function(xhr, status, error) {
                     console.error('Error al obtener pagos:', error);
+                }
+            });
+        }
+
+        function agregarGasto(reservaId, gasto) {
+            $.ajax({
+                url: api_url + '/reservas/' + reservaId + '/gastos',
+                type: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                },
+                contentType: 'application/json',
+                data: JSON.stringify(gasto),
+                success: function() {
+                    mostrarPagos(reservaId, document.getElementById('pistaIdPago').value, document.getElementById('pistaNombre').value, document.getElementById('slotTimePago').value);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al añadir el gasto:', error);
                 }
             });
         }
@@ -365,6 +432,26 @@
                 }
             });
         }
+
+        function eliminarGasto(reservaId, gastoId) {
+            var pistaId=document.getElementById('pistaIdPago').value;
+            var pistaNombre=document.getElementById('pistaNombre').value;
+            var slotTime=document.getElementById('slotTimePago').value;
+            $.ajax({
+                url: api_url+'/reservas/' + reservaId + '/gastos/' + gastoId,
+                type: 'DELETE',
+                headers: {
+                    'Content-Type' : 'application/json',
+                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                },
+                success: function() {
+                    mostrarPagos(reservaId,pistaId,pistaNombre,slotTime);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al eliminar el gasto:', error);
+                }
+            });
+        }        
 
         function cancelarReserva(slot) {
             $.ajax({
@@ -492,7 +579,6 @@
 
         function crearTimeSlotReserva(pista, slot, dia, datosReservas) {
             const timeSlot = document.createElement('div');
-            timeSlot.className = 'time-slot';
             timeSlot.id = `${pista.id}_${dia}_${slot.time}`;
             timeSlot.dataset.pista = pista.id;
             timeSlot.dataset.pistaNombre = pista.nombre;
@@ -501,8 +587,11 @@
             const { username, rolename } = obtenerDatosUsuario();
             const reserva = obtenerReserva(datosReservas, pista.id, slot.time);
 
-            configurarTimeSlot(timeSlot, reserva, username, rolename);            
-            agregarEventListener(timeSlot, dia, username, rolename);
+            configurarTimeSlot(timeSlot, reserva, username, rolename);  
+            if (username!=='') {
+                agregarEventListener(timeSlot, dia, username, rolename);
+            }          
+            
             
             return timeSlot;
         }
@@ -510,7 +599,6 @@
         function crearTimeSlotBar(pista, slot, dia, datosReservas) {
             const timeSlot = document.createElement('div');
             if (slot.time==='16:30 - 18:00' && document.getElementById('role-info').value==='administrador') {                
-                timeSlot.className = 'time-slot-bar';
                 timeSlot.id = `${pista.id}_${dia}_${slot.time}`;
                 timeSlot.dataset.pista = pista.id;
                 timeSlot.dataset.pistaNombre = pista.nombre;
@@ -520,7 +608,9 @@
                 const reserva = obtenerReserva(datosReservas, pista.id, slot.time);
 
                 configurarTimeSlot(timeSlot, reserva, username, rolename);
-                agregarEventListener(timeSlot, dia, username, rolename);
+                if (username!=='') {
+                    agregarEventListener(timeSlot, dia, username, rolename);
+                }
             }
             return timeSlot;
         }        
@@ -548,13 +638,22 @@
         function configurarTimeSlot(timeSlot, reserva, username, rolename) {
             if (reserva) {
                 timeSlot.innerHTML = `<span>Reservada</span><br><span>${reserva.userName === username || rolename === 'administrador' ? reserva.userName : ''}</span>`;
-                timeSlot.className = 'time-slot-booked';
+                if (username!==''){
+                    timeSlot.className = 'time-slot-booked';
+                } else {
+                    timeSlot.className = 'time-slot-booked-no-user';
+                }                
                 timeSlot.dataset.estado = 'Reservada';
                 timeSlot.dataset.reserva = reserva.reservaId;
                 timeSlot.dataset.username = reserva.userName;
             } else {
                 timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
                 timeSlot.dataset.estado = 'Disponible';
+                if (username!==''){
+                    timeSlot.className = 'time-slot';
+                } else {
+                    timeSlot.className = 'time-slot-no-user';
+                }
             }
         }
         
@@ -565,7 +664,7 @@
                     alert('Por favor, selecciona una fecha antes de reservar.');
                     return;
                 }
-
+                
                 if (rolename === 'administrador' && timeSlot.dataset.reserva) {
                     mostrarPagos(timeSlot.dataset.reserva, timeSlot.dataset.pista,timeSlot.dataset.pistaNombre, timeSlot.dataset.time);
                 } else if (timeSlot.dataset.estado === 'Reservada') {
@@ -645,6 +744,17 @@
             anadirPago(5.5,'TARJETA','Pago Pista deportista');
         });  
 
+        //Evento para manejar los gastos
+        document.getElementById('expense-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var reservaId = document.getElementById('reservaIdPago').value;
+            var gasto = {
+                cantidad: parseFloat(document.getElementById('expense-amount').value),
+                metodo: document.getElementById('expense-method').value,
+                detalle: document.getElementById('expense-detail').value
+            };
+            agregarGasto(reservaId, gasto);
+        });
         // Evento para manejar la adición de pagos
         document.getElementById('add-payment-form').addEventListener('submit', function(event) {
             event.preventDefault();
@@ -669,7 +779,23 @@
                     eliminarPago(reservaId, paymentId);
                 }
             }
+            if (event.target.classList.contains('delete-expense')) {
+                if (confirm('¿Desea eliminar este gasto?')) {
+                    eliminarGasto(reservaId, paymentId);
+                }
+            }
         });        
+
+        document.getElementById('payment-method').addEventListener('change', (event) => {
+            if (document.getElementById('pistaNombre').value==='BAR') {
+                if (event.target.value==='CONTADO') {
+                    document.getElementById('payment-detail').value='BAR CONTADO';
+                } else {
+                    document.getElementById('payment-detail').value='BAR TARJETA';
+                }
+            }
+        });
+        
 
         document.getElementById('reservation-date').addEventListener('change', (event) => {
             const selectedDate = new Date(event.target.value);

@@ -11,6 +11,17 @@
         .modal-body input {
             margin-bottom: 10px;
         }
+        /* Aislar Bootstrap dentro del contenedor .bootstrap-scope */
+        .bootstrap-scope .modal,
+        .bootstrap-scope .modal-dialog,
+        .bootstrap-scope .modal-content,
+        .bootstrap-scope .modal-header,
+        .bootstrap-scope .modal-body,
+        .bootstrap-scope .form-group,
+        .bootstrap-scope .form-control,
+        .bootstrap-scope .btn {
+            /* Aquí se aplican las clases de Bootstrap dentro del scope */
+        }       
     </style>
 </head>
 <body>
@@ -54,6 +65,7 @@
 </div>
 
     <!-- Modal para editar pista -->
+<div class="bootstrap-scope">    
     <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -80,6 +92,7 @@
             </div>
         </div>
     </div>
+</div>
 
 <script>
 var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com"; // Cambia esto por la URL de tu API
