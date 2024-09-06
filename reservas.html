@@ -292,7 +292,9 @@
                     paymentsTable.innerHTML = '';
                     document.getElementById('payment-amount').value='';
                     document.getElementById('payment-detail').value='';
-                    document.getElementById('payment-total').innerHTML='';                    
+                    document.getElementById('payment-total').innerHTML='';  
+                    document.getElementById('expenses-total').innerHTML=''; 
+                    document.getElementById('paymentandexpenses-total').innerHTML=''; 
                     pagosResponse.pagos.forEach(pago => {
                         const row = document.createElement('tr');
                                                   
