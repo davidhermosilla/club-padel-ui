@@ -31,7 +31,7 @@
     </style>
 </head>
 <body>
-    <h1>Reporte Mensual de Pagos</h1>
+    <h1>Reporte Mensual</h1>
     <label for="mes">Mes:</label>
     <input type="month" id="mes">
     <button onclick="generarReporte()">Generar Reporte</button>
@@ -70,7 +70,7 @@
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const fecha = `${day.toString().padStart(2, '0')}/${month}/${year}`;
-                const url = `${api_url}/pagos/buscar?fecha=${fecha}`;
+                const url = `${api_url}/informes/buscar?fecha=${fecha}`;
                 try {
                     const response = await fetch(url, {
                         method: 'GET', // o 'POST', 'PUT', 'DELETE', etc.
