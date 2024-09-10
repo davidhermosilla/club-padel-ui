@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Cuotas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .paid {
+            background-color: #d4edda;
+        }
+        .not-paid {
+            background-color: #f8d7da;
+        }
+        button {
+            padding: 5px 10px;
+            margin-top: 5px;
+        }
+        select {
+            margin-top: 5px;
+            padding: 5px;
+        }
+        .filters {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Gestión de Cuotas</h1>
+
+    <!-- Filtros para año y rol -->
+    <div class="filters">
+        <label for="year-select">Año:</label>
+        <select id="year-select" onchange="filterData()">
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+        </select>
+
+        <label for="role-select">Rol:</label>
+        <select id="role-select" onchange="filterData()">
+            <option value="all">Todos</option>
+            <option value="Socio Propietario">Socio Propietario</option>
+            <option value="Socio Deportista">Socio Deportista</option>
+        </select>
+        <label for="user-filter">Usuario:</label>
+        <input type="text" id="user-filter" onkeyup="filterByUser()" placeholder="Buscar por nombre de usuario">
+    </div>
+
+    <table id="cuotas-table">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Enero</th>
+                <th>Febrero</th>
+                <th>Marzo</th>
+                <th>Abril</th>
+                <th>Mayo</th>
+                <th>Junio</th>
+                <th>Julio</th>
+                <th>Agosto</th>
+                <th>Septiembre</th>
+                <th>Octubre</th>
+                <th>Noviembre</th>
+                <th>Diciembre</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Ejemplo de datos de usuarios hardcodeados -->
+            <tr data-usuario="1" data-role="Socio Propietario">
+                <td>Juan Pérez</td>
+                <td>Socio Propietario</td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+            </tr>
+            <tr data-usuario="2" data-role="Socio Deportista">
+                <td>María Gómez</td>
+                <td>Socio Deportista</td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+                <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        function filterByUser() {
+            const input = document.getElementById('user-filter');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('cuotas-table');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                const userName = cells[0].textContent || cells[0].innerText;
+                if (userName.toLowerCase().indexOf(filter) > -1) {
+                    rows[i].style.display = '';
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+        }
+
+        function removePayment(button) {
+            const cell = button.parentElement;
+            cell.classList.add('not-paid');
+            cell.classList.remove('paid');
+            cell.innerHTML = `<select>
+                                <option value="CONTADO">Contado</option>
+                                <option value="TARJETA">Tarjeta</option>
+                            </select>
+                            <button onclick="markPaid(this)">Pagar</button>`;
+        }
+        // Simular marcado de pago
+        function markPaid(button) {
+            const td = button.parentElement;
+            const select = td.querySelector('select');
+            const metodoPago = select.value;  // Obtener el método de pago seleccionado
+            
+            // Comprobamos si se ha seleccionado un método de pago
+            if (!metodoPago) {
+                alert("Por favor, selecciona un método de pago.");
+                return;
+            }
+
+            var currentDate = new Date();
+            const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(currentDate.getDate()).padStart(2, '0');
+            const yyyy = currentDate.getFullYear();
+            const dia = `${dd}/${mm}/${yyyy}`;
+
+            td.classList.remove('not-paid');
+            td.classList.add('paid');
+            td.innerHTML = `Pagado (${metodoPago})</br>${dia}</br>            
+                            <button onclick="removePayment(this)">Eliminar Pago</button>`;
+        }
+
+        // Filtro por año y rol
+        function filterData() {
+            const selectedYear = document.getElementById('year-select').value;
+            const selectedRole = document.getElementById('role-select').value;
+            
+            // Filtrar las filas de la tabla
+            const rows = document.querySelectorAll('#cuotas-table tbody tr');
+            rows.forEach(row => {
+                const role = row.getAttribute('data-role');
+                if (selectedRole === 'all' || role === selectedRole) {
+                    row.style.display = ''; // Mostrar
+                } else {
+                    row.style.display = 'none'; // Ocultar
+                }
+            });
+
+            console.log(`Filtrando por año: ${selectedYear} y rol: ${selectedRole}`);
+        }
+    </script>
+
+</body>
+</html>
