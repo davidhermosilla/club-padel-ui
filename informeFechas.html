@@ -57,6 +57,22 @@
     <input type="search" id="filtro" placeholder="Filtrar resultados..." onkeyup="filtrarTabla()">
     <div id="datos">
         <center>
+            <h3>Resumen</h3>
+        </center>
+        <table id="tablaResumen">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Total Pagos Contado</th>
+                    <th>Total Pagos Tarjeta</th>
+                    <th>Total Gastos</th>                    
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>        
+        </br>        
+        <center>
             <h3>Pagos</h3>
         </center>
         <table id="tablaPagos">
@@ -71,9 +87,7 @@
             </thead>
             <tbody>
             </tbody>
-        </table>
-        <div id="totalPagosContado"></div>
-        <div id="totalPagosTarjeta"></div>
+        </table>        
         </br>
         <center>
             <h3>Gastos</h3>
@@ -91,6 +105,8 @@
             <tbody>
             </tbody>
         </table>
+        <div id="totalPagosContado"></div>
+        <div id="totalPagosTarjeta"></div>        
         <div id="totalGastos"></div>
         </br>
         <div id="total"></div>
@@ -137,9 +153,11 @@
                     });
                     const data = await response.json();
                     if (index==0) {
+                        mostrarTablaResumen(data.totalPagosContado, data.totalPagosTarjeta, data.totalGastos, dia,true);
                         mostrartablaPagos(data.pagos, true);
                         mostrartablaGastos(data.gastos,true);
                     } else {
+                        mostrarTablaResumen(data.totalPagosContado, data.totalPagosTarjeta, data.totalGastos, dia);
                         mostrartablaPagos(data.pagos);
                         mostrartablaGastos(data.gastos);
                     }
@@ -153,7 +171,25 @@
                 }                        
                     
             }
+            mostrarTablaResumen('<b>'+totalPagosContado+'</b>', '<b>'+totalPagosTarjeta+'</b>', '<b>'+totalGastos+'</b>', '<b>Totales</b>');
             mostrarTotal(totalPagosContado, totalPagosTarjeta, totalGastos);
+
+        }
+
+        function mostrarTablaResumen(totalPagosContado, totalPagosTarjeta, totalGastos, fecha,clean) {
+            const tbody = document.getElementById('tablaResumen').querySelector('tbody');
+            if (clean) {
+                tbody.innerHTML = ''; // Limpiar los tablaPagos anteriores
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${fecha}</td>    
+                <td>${totalPagosContado}</td>
+                <td>${totalPagosTarjeta}</td>
+                <td>${totalGastos}</td>
+            `;
+            tbody.appendChild(row);
 
         }
 
@@ -229,6 +265,41 @@
                     row.style.display = 'none';
                 }
             });
+
+            const rowsGastos = document.querySelectorAll('#tablaGastos tbody tr');
+
+            rowsGastos.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let match = false;
+                cells.forEach(cell => {
+                    if (cell.textContent.toLowerCase().includes(filter)) {
+                        match = true;
+                    }
+                });
+                if (match) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            const rowsResumen = document.querySelectorAll('#tablaResumen tbody tr');
+
+            rowsResumen.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let match = false;
+                cells.forEach(cell => {
+                    if (cell.textContent.toLowerCase().includes(filter)) {
+                        match = true;
+                    }
+                });
+                if (match) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });            
+
         }
 
         function exportarPDF() {
@@ -240,7 +311,7 @@
             const fechaIni = document.getElementById('fechaIni').value;
             const fechaIniFormateada = fechaIni.split('-').reverse().join('/'); // Formato dd/mm/yyyy
             const fechaFin = document.getElementById('fechaFin').value;
-            const fechaFinFormateada = fechaIni.split('-').reverse().join('/'); // Formato dd/mm/yyyy
+            const fechaFinFormateada = fechaFin.split('-').reverse().join('/'); // Formato dd/mm/yyyy
 
             doc.addImage(imgBase64, 'PNG', 10, 10, 30, 30); // Añadir imagen al PDF
             doc.setFontSize(18);
@@ -248,6 +319,23 @@
 
             doc.setFontSize(14);
             doc.text(`Reporte de Pagos y Gastos - ${fechaIniFormateada} - ${fechaFinFormateada}`, 50, 30);  // Añadir el texto con la fecha
+
+            // Añadir la tabla de resumen
+            let rowsTotales = [];
+            document.querySelectorAll("#tablaResumen tbody tr").forEach(row => {
+                let data = [];
+                row.querySelectorAll("td").forEach(td => {
+                    data.push(td.innerText);
+                });
+                rowsTotales.push(data);
+            });
+
+            doc.text("Resumen", 15, 50); // Añadir el título de la tabla de pagos
+            doc.autoTable({
+                startY: 55, // Posición de la tabla en Y después de la cabecera
+                head: [['Fecha','Total Pagos Contado', 'Total Pagos Tarjeta', 'Total Gastos']],
+                body: rowsTotales,
+            });
 
             // Añadir la tabla de pagos
             let rowsPagos = [];
@@ -259,9 +347,9 @@
                 rowsPagos.push(data);
             });
 
-            doc.text("Pagos", 15, 50); // Añadir el título de la tabla de pagos
+            doc.text("Pagos", 15, doc.lastAutoTable.finalY + 20); // Añadir el título de la tabla de pagos
             doc.autoTable({
-                startY: 55, // Posición de la tabla en Y después de la cabecera
+                startY: doc.lastAutoTable.finalY + 25, // Posicionar la tabla de pagos después de la de resumen
                 head: [['ID', 'Detalle', 'Cantidad', 'Método de Pago', 'Fecha de Pago']],
                 body: rowsPagos,
             });
