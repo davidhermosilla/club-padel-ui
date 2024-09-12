@@ -70,7 +70,20 @@
 
     <script>
         var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
-
+        const meses = [
+            { mes: 'Enero', numero: '01' },
+            { mes: 'Febrero', numero: '02' },
+            { mes: 'Marzo', numero: '03' },
+            { mes: 'Abril', numero: '04' },
+            { mes: 'Mayo', numero: '05' },
+            { mes: 'Junio', numero: '06' },
+            { mes: 'Julio', numero: '07' },
+            { mes: 'Agosto', numero: '08' },
+            { mes: 'Septiembre', numero: '09' },
+            { mes: 'Octubre', numero: '10' },
+            { mes: 'Noviembre', numero: '11' },
+            { mes: 'Diciembre', numero: '12' }            
+        ]; 
         function filterByUser() {
             const input = document.getElementById('user-filter');
             const filter = input.value.toLowerCase();
@@ -89,22 +102,33 @@
             }
         }
 
-        function removePayment(button) {
-            const cell = button.parentElement;
-            cell.classList.add('not-paid');
-            cell.classList.remove('paid');
-            cell.innerHTML = `<select>
-                                <option value="CONTADO">Contado</option>
-                                <option value="TARJETA">Tarjeta</option>
-                            </select>
-                            <button onclick="markPaid(this)">Pagar</button>`;
+        function removePayment(button,cuotaId) {
+            const tr = button.parentElement.parentElement;
+            var userId = tr.dataset.userId;
+
+             $.ajax({
+                url: api_url+'/usuarios/'+userId+'/cuotas/'+cuotaId,
+                type: 'DELETE',
+                contentType: 'application/json',
+                headers: {
+                                'Content-Type' : 'application/json',
+                                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                        },
+                success: function(data) {
+                    cargarUsuarios(document.getElementById('year-select'));                    
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al eliminar el pago:', error);
+                }
+            });
         }
-        // Simular marcado de pago
-        function markPaid(button) {
+
+        // Marcar como pagado
+        function markPaid(button,mesanopago) {
             const td = button.parentElement;
             const select = td.querySelector('select');
             const metodoPago = select.value;  // Obtener el método de pago seleccionado
-            
+            const tr = td.parentElement
             // Comprobamos si se ha seleccionado un método de pago
             if (!metodoPago) {
                 alert("Por favor, selecciona un método de pago.");
@@ -115,12 +139,32 @@
             const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
             const dd = String(currentDate.getDate()).padStart(2, '0');
             const yyyy = currentDate.getFullYear();
-            const dia = `${dd}/${mm}/${yyyy}`;
+            const diaPago = `${dd}/${mm}/${yyyy}`;
+            var userId = tr.dataset.userId;
+            var cuotaMensual = tr.dataset.cuotaMensual;
+            var detalle = 'Pago de cuota mensual de '+tr.dataset.cuotaMensual+' euros por el usuario '+tr.dataset.username;
+            var diasAntelacion = tr.dataset.diasAntelacion;
 
-            td.classList.remove('not-paid');
-            td.classList.add('paid');
-            td.innerHTML = `Pagado (${metodoPago})</br>${dia}</br>            
-                            <button onclick="removePayment(this)">Eliminar Pago</button>`;
+            //Anadir aqui la llamada para pagar
+            $.ajax({
+                url: api_url+'/usuarios/'+userId+'/cuotas',
+                type: 'PUT',
+                contentType: 'application/json',
+                headers: {
+                                'Content-Type' : 'application/json',
+                                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                        },
+                data: JSON.stringify({ "cantidad": cuotaMensual , "detalle" : detalle , "metodoPago" : metodoPago , "fechaPago" : diaPago, "mesPagoCuota" : mesanopago}),            
+                success: function(data) {
+                    // Si la solicitud es exitosa, recargar la tabla de roles
+                    cargarUsuarios(document.getElementById('year-select'));                    
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al añadir la cuota de pago:', error);
+                }
+            });
+
+            
         }
 
         // Filtro por año y rol
@@ -138,6 +182,36 @@
                 }
             });
 
+        }
+        
+        function multiFilter(array, filters) {
+            let filterKeys = Object.keys(filters);
+            return array.filter((item) => filterKeys.every((key) => (filters[key].indexOf(item[key]) !== -1)));
+        }
+
+        function agregarTdMeses(cuotasPagadas, meses, year,row) {
+            meses.forEach(mes => {
+                const filters = { mesPagoCuota: [mes.numero+'/'+year] };
+                const cuotaPagada = multiFilter(cuotasPagadas, filters)[0] || null
+                if (cuotaPagada) {
+                    const td = document.createElement('td');
+                    td.classList.add('paid');
+                    td.dataset.cuotaId = cuotaPagada.id;
+                    td.innerHTML = `Pagado (${cuotaPagada.metodoPago})</br>${cuotaPagada.fechaPago}</br>${cuotaPagada.mesPagoCuota}</br>            
+                                    <button onclick="removePayment(this,'${cuotaPagada.id}')">Eliminar Pago</button>`;
+                    row.appendChild(td);
+                } else {
+                    const td = document.createElement('td');
+                    td.classList.add('not-paid');
+                    td.innerHTML = `<select>
+                                        <option value="CONTADO">Contado</option>
+                                        <option value="TARJETA">Tarjeta</option>
+                                    </select>
+                                    <button onclick="markPaid(this,'${mes.numero}/${year}')">Pagar</button>`;
+                    row.appendChild(td);
+                }
+
+            });
         }
 
         function cargarUsuarios(yearSelect) {
@@ -160,25 +234,18 @@
                         row.dataset.rolId = user.rolId; 
                         row.dataset.role = user.rolName;
                         row.dataset.userId = user.userId; 
-                        row.dataset.uername = user.username;
+                        row.dataset.username = user.username;
                         row.dataset.cuotaMensual = user.cuotaMensual;
-
-                        row.innerHTML = `
-                            <td>${user.username}</td>
-                            <td>${user.rolName}</td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                            <td class="not-paid"><select><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button onclick="markPaid(this)">Pagar</button></td>
-                        `;
+                        //Anadir nombre usuario
+                        const tdUsername = document.createElement('td');
+                        tdUsername.innerText = user.username;
+                        row.appendChild(tdUsername);
+                        //Anadir rol usuario
+                        const tdRol = document.createElement('td');
+                        tdRol.innerText = user.rolName;
+                        row.appendChild(tdRol);
+                        agregarTdMeses(user.cuotas,meses,year,row);
+                        
                         tbody.appendChild(row);
                     });
                 },
