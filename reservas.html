@@ -87,7 +87,14 @@
             align-items: center;
             margin-bottom: 2px; /* Espacio entre cada .contenedor */
         }
-
+        .container {
+            display: flex;
+        }
+        .columna {
+            flex: 1; /* Ocupa el mismo espacio cada columna */
+            padding: 10px;
+            margin: 5px;
+        }
         .botones {
             display: flex;
             flex-direction: column;
@@ -111,77 +118,77 @@
     <center>
         <div class="schedule-container" id="schedule-container"></div>
         <!-- Contenedor de la tabla de pagos y el formulario -->
-        
-        <div id="payments-container" style="display:none;">
-            <button id='cancelar-reserva-button' type="submit">Cancelar Reserva</button>
-            </br>
-            <h3>Pagos asociados a la reserva</h3>
-            <table id="payments-table">
-                <thead>
-                    <tr>
-                        <th>Cantidad</th>
-                        <th>Método de Pago</th>
-                        <th>Detalle</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-            <br/>
-            <h3 id="payment-total"></h3>
-            <h3 id="expenses-total"></h3>
-            <h3 id="paymentandexpenses-total"></h3>
-            <br/>
-            <div id="rapids-payments" class="contenedor-centrado">
-                <div class="contenedor">
-                    <h3>CONTADO</h3>
-                    <div class="botones">
-                        <button id='socio-propietario-contado-btn' type="submit">Pista Socio P.</button>
-                        <button id='socio-deportista-contado-btn' type="submit">Pista Socio D.</button>
-                        <button id='deportista-contado-btn' type="submit">Pista Deportista</button>
-                    </div>
-                </div>
-                <div class="contenedor">
-                    <h3>TARJETA</h3>
-                    <div class="botones">
-                        <button id='socio-propietario-tarjeta-btn' type="submit">Pista Socio P.</button>
-                        <button id='socio-deportista-tarjeta-btn' type="submit">Pista Socio D.</button>
-                        <button id='deportista-tarjeta-btn' type="submit">Pista Deportista</button>
-                    </div>
-                </div>
-            </div>            
-            <br/>
-            <h3>Añadir Pago</h3>
-            <form id="add-payment-form">
-                <input type="hidden" id="reservaIdPago"/>
-                <input type="hidden" id="pistaIdPago"/>
-                <input type="hidden" id="pistaNombre"/>
-                <input type="hidden" id="slotTimePago"/>                                
-                <label for="payment-amount">Cantidad:</label>
-                <input type="number" id="payment-amount" step="0.1" required><br>
-                <label for="payment-method">Método de Pago:</label>
-                <select id="payment-method" required>
-                    <option value="CONTADO">Contado</option>
-                    <option value="TARJETA">Tarjeta</option>
-                </select><br>
-                <label for="payment-detail">Detalle:</label>
-                <input type="text" id="payment-detail"><br>
-                <button type="submit">Añadir Pago</button>
+        <div class="container">
+            <div id="payments-container" class="columna" style="display:none;">
+                <button id='cancelar-reserva-button' type="submit">Cancelar Reserva</button>
                 </br>
-            </form>
-            <br/>
-            <div id="div-expenses" style="display:none;">
-                <h3>Añadir Gasto</h3>
-                <form id="expense-form">
-                    <label for="expense-amount">Cantidad:</label>
-                    <input type="number" id="expense-amount" name="amount" required><br>
-                    <label for="expense-method">Método de Pago:</label>
-                    <input type="text" id="expense-method" name="method" value="CONTADO" readonly><br>
-                    <label for="expense-detail">Detalle del Gasto:</label>
-                    <textarea id="expense-detail" name="detail" required></textarea><br>
-                    <button type="submit">Añadir Gasto</button>
+                <div id="rapids-payments" class="contenedor-centrado">
+                    <div class="contenedor">
+                        <h3>CONTADO</h3>
+                        <div class="botones">
+                            <button id='socio-propietario-contado-btn' type="submit">Pista Socio P.</button>
+                            <button id='socio-deportista-contado-btn' type="submit">Pista Socio D.</button>
+                            <button id='deportista-contado-btn' type="submit">Pista Deportista</button>
+                        </div>
+                    </div>
+                    <div class="contenedor">
+                        <h3>TARJETA</h3>
+                        <div class="botones">
+                            <button id='socio-propietario-tarjeta-btn' type="submit">Pista Socio P.</button>
+                            <button id='socio-deportista-tarjeta-btn' type="submit">Pista Socio D.</button>
+                            <button id='deportista-tarjeta-btn' type="submit">Pista Deportista</button>
+                        </div>
+                    </div>
+                </div> 
+                <h3>Añadir Pago</h3>
+                <form id="add-payment-form">
+                    <input type="hidden" id="reservaIdPago"/>
+                    <input type="hidden" id="pistaIdPago"/>
+                    <input type="hidden" id="pistaNombre"/>
+                    <input type="hidden" id="slotTimePago"/>                                
+                    <label for="payment-amount">Cantidad:</label>
+                    <input type="number" id="payment-amount" step="0.1" required><br>
+                    <label for="payment-method">Método de Pago:</label>
+                    <select id="payment-method" required>
+                        <option value="CONTADO">Contado</option>
+                        <option value="TARJETA">Tarjeta</option>
+                    </select><br>
+                    <label for="payment-detail">Detalle:</label>
+                    <input type="text" id="payment-detail"><br>
+                    <button type="submit">Añadir Pago</button>
+                    </br>
                 </form>
+                <br/>
+                <div id="div-expenses" style="display:none;">
+                    <h3>Añadir Gasto</h3>
+                    <form id="expense-form">
+                        <label for="expense-amount">Cantidad:</label>
+                        <input type="number" id="expense-amount" name="amount" required><br>
+                        <label for="expense-method">Método de Pago:</label>
+                        <input type="text" id="expense-method" name="method" value="CONTADO" readonly><br>
+                        <label for="expense-detail">Detalle del Gasto:</label>
+                        <textarea id="expense-detail" name="detail" required></textarea><br>
+                        <button type="submit">Añadir Gasto</button>
+                    </form>
+                </div>
+            </div>
+            <div id="payments-table-div" class="columna" style="display:none;">           
+                <h3>Pagos asociados a la reserva</h3>
+                <table id="payments-table">
+                    <thead>
+                        <tr>
+                            <th>Cantidad</th>
+                            <th>Método de Pago</th>
+                            <th>Detalle</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                <h3 id="payment-total"></h3>
+                <h3 id="expenses-total"></h3>
+                <h3 id="paymentandexpenses-total"></h3>      
             </div>
         </div>    
     </center>
@@ -267,12 +274,16 @@
         function ocultarPagos() {
             const paymentsContainer = document.getElementById('payments-container');
             paymentsContainer.style.display = 'none';
+            const paymentsTable = document.getElementById('payments-table-div');
+            paymentsTable.style.display = 'none';
         }
 
         // Lógica para mostrar pagos y gestionar acciones
         function mostrarPagos(reservaId,pistaId,pistaNombre,slotTime) {
             const paymentsContainer = document.getElementById('payments-container');
             paymentsContainer.style.display = 'block';
+            const paymentsTableDiv = document.getElementById('payments-table-div');
+            paymentsTableDiv.style.display = 'block';
             
             const paymentsTable = document.getElementById('payments-table').querySelector('tbody');            
             document.getElementById('reservaIdPago').value=reservaId;
@@ -351,6 +362,7 @@
                             }
                             // Mostrar el contenedor de pagos
                             document.getElementById('payments-container').style.display = 'block';
+                            document.getElementById('payments-table-div').style.display = 'block';
                             if (pistaNombre==='BAR') {
                                 document.getElementById('rapids-payments').style.display = 'none';
                                 document.getElementById('payment-detail').value='BAR CONTADO';
