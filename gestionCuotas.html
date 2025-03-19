@@ -238,7 +238,7 @@
                         row.dataset.cuotaMensual = user.cuotaMensual;
                         //Anadir nombre usuario
                         const tdUsername = document.createElement('td');
-                        tdUsername.innerText = user.username;
+                        tdUsername.innerText = user.username+'('+user.cuotaMensual+')';
                         row.appendChild(tdUsername);
                         //Anadir rol usuario
                         const tdRol = document.createElement('td');
