@@ -30,3 +30,19 @@ function encolar_wpforms_dynamic_script() {
     ));
 }
 add_action( 'wp_enqueue_scripts', 'encolar_wpforms_dynamic_script' );
+
+function encolar_inscripcion_torneo_script() {
+    // Encola el archivo JavaScript personalizado.
+    wp_enqueue_script(
+        'inscripcion-torneo-script', // Identificador único.
+        get_template_directory_uri() . '/js/inscripcion-torneo.js', // Ruta al archivo JavaScript.
+        array( 'jquery' ), // Dependencias (asegúrate de incluir jQuery).
+        null, // Versión del script (opcional).
+        true // Carga el script en el footer.
+    );
+
+    // Proporciona la URL AJAX a JavaScript.
+    wp_localize_script( 'inscripcion-torneo-script', 'ajaxurl', array('ajaxurl' => admin_url( 'admin-ajax.php' ),
+    ));
+}
+add_action( 'wp_enqueue_scripts', 'encolar_inscripcion_torneo_script' );
