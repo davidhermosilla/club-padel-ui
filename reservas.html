@@ -543,66 +543,53 @@
 
         function procesarTablaReservas(datosPista, slots, dia, datosReservas) {
             ocultarPagos();
-            limpiarYConfigurarContenedor(datosPista);
+            limpiarYConfigurarContenedor(datosPista.length);
             agregarHeaders(datosPista);
             agregarSlotsConReservas(datosPista, slots, dia, datosReservas);
             
         }
 
-        function limpiarYConfigurarContenedor(datosPista) {
-			const divTime = document.createElement('div');
-			divTime.className = 'time-label';
-			scheduleContainer.innerHTML = '';
-			scheduleContainer.appendChild(divTime);
-
-			const pistasSinBar = datosPista.filter(p => p.nombre !== 'BAR');
-			const pistaBar = datosPista.find(p => p.nombre === 'BAR');
-			const isAdmin = document.getElementById('role-info').value === 'administrador';
-
-			const totalPistas = pistasSinBar.length + (isAdmin && pistaBar ? 1 : 0);
-			scheduleContainer.style.gridTemplateColumns = `repeat(${totalPistas + 1}, 1fr)`; // +1 por la columna de horas
-		}
-
-        function agregarHeaders(datosPista) {
-			const pistasSinBar = datosPista.filter(p => p.nombre !== 'BAR');
-			const pistaBar = datosPista.find(p => p.nombre === 'BAR');
-
-			pistasSinBar.forEach(pista => {
-				const header = document.createElement('div');
-				header.className = 'pista-header';
-				header.innerHTML = `${pista.nombre}<br>(${pista.ubicacion})`;
-				scheduleContainer.appendChild(header);
-			});
-
-			// Pintar la pista BAR al final si existe y el usuario es admin
-			if (pistaBar && document.getElementById('role-info').value === 'administrador') {
-				const header = document.createElement('div');
-				header.className = 'pista-header';
-				header.innerHTML = `${pistaBar.nombre}<br>(${pistaBar.ubicacion})`;
-				scheduleContainer.appendChild(header);
+        function limpiarYConfigurarContenedor(numPistas) {
+            const divTime = document.createElement('div');
+            divTime.className = 'time-label';
+            scheduleContainer.innerHTML = '';
+            scheduleContainer.appendChild(divTime);
+			if (document.getElementById('role-info').value==='administrador') {
+				scheduleContainer.style.gridTemplateColumns = `repeat(${numPistas + 1}, 1fr)`;
+			} else {
+				scheduleContainer.style.gridTemplateColumns = `repeat(${numPistas}, 1fr)`;
 			}
         }
 
-        function agregarSlotsConReservas(datosPista, slots, dia, datosReservas) {
-			const pistasSinBar = datosPista.filter(p => p.nombre !== 'BAR');
-			const pistaBar = datosPista.find(p => p.nombre === 'BAR');
-
-			slots.forEach(slot => {
-				const timeLabel = crearTimeLabel(slot.time);
-				scheduleContainer.appendChild(timeLabel);
-
-				pistasSinBar.forEach(pista => {
-					const timeSlot = crearTimeSlot(pista, slot, dia, datosReservas);
-					scheduleContainer.appendChild(timeSlot);
-				});
-
-				if (pistaBar) {
-					const timeSlot = crearTimeSlot(pistaBar, slot, dia, datosReservas);
-					if (timeSlot && timeSlot.id) {  // Sólo lo agrega si es válido
-						scheduleContainer.appendChild(timeSlot);
-					}
+        function agregarHeaders(datosPista) {
+            datosPista.forEach(pista => {
+			
+                const header = document.createElement('div');
+				
+                if (pista.nombre!=='BAR') {
+                    header.className = 'pista-header';
+                    header.innerHTML = `${pista.nombre}<br>(${pista.ubicacion})`;
+                } else if (document.getElementById('role-info').value==='administrador') {
+                    header.className = 'pista-header';
+                    header.innerHTML = `${pista.nombre}<br>(${pista.ubicacion})`;
+                } else {
+					header.style.display = 'none';
 				}
-			});
+                
+                scheduleContainer.appendChild(header);
+            });
+        }
+
+        function agregarSlotsConReservas(datosPista, slots, dia, datosReservas) {
+            slots.forEach(slot => {
+                const timeLabel = crearTimeLabel(slot.time);
+                scheduleContainer.appendChild(timeLabel);
+
+                datosPista.forEach(pista => {
+                    const timeSlot = crearTimeSlot(pista, slot, dia, datosReservas);
+                    scheduleContainer.appendChild(timeSlot); 
+                });
+            });
         }
 
         function crearTimeLabel(time) {
@@ -631,31 +618,35 @@
             return timeSlot;
         }
 
-		function crearTimeSlotBar(pista, slot, dia, datosReservas) {
-			const timeSlot = document.createElement('div');
-
-			// Siempre renderizamos, aunque no sea interactivo fuera del horario permitido
-			timeSlot.id = `${pista.id}_${dia}_${slot.time}`;
-			timeSlot.dataset.pista = pista.id;
-			timeSlot.dataset.pistaNombre = pista.nombre;
-			timeSlot.dataset.time = slot.time;
-
-			const { username, rolename } = obtenerDatosUsuario();
-			const reserva = obtenerReserva(datosReservas, pista.id, slot.time);
-
-			configurarTimeSlot(timeSlot, reserva, username, rolename);
-
-			// Si no es el slot válido para interacción, deshabilita el cursor
-			if (slot.time !== '16:30 - 18:00') {
-				timeSlot.style.pointerEvents = 'none';
-				timeSlot.style.opacity = '0.3'; // Visualmente atenuado
-                                timeSlot.innerHTML = '<span></span><br><span></span>';
-			} else if (username !== '') {
-				agregarEventListener(timeSlot, dia, username, rolename);
+        function crearTimeSlotBar(pista, slot, dia, datosReservas) {
+            const timeSlot = document.createElement('div');
+			if (document.getElementById('role-info').value==='administrador') {
+				if (slot.time==='16:30 - 18:00') {                
+					timeSlot.id = `${pista.id}_${dia}_${slot.time}`;
+					timeSlot.dataset.pista = pista.id;
+					timeSlot.dataset.pistaNombre = pista.nombre;
+					timeSlot.dataset.time = slot.time;
+					timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
+					timeSlot.className = 'time-slot';
+					
+					const { username, rolename } = obtenerDatosUsuario();
+					const reserva = obtenerReserva(datosReservas, pista.id, slot.time);
+					configurarTimeSlot(timeSlot, reserva, username, rolename);            
+					
+					if (username!=='') {
+						agregarEventListener(timeSlot, dia, username, rolename);
+					}
+				} else {					
+						timeSlot.className = 'time-slot-no-user';
+						timeSlot.innerHTML = '<span></span><br><span></span>';
+						timeSlot.style.opacity = '0.3';
+					} 
+			} else {
+				timeSlot.style.display = 'none';
 			}
-
-			return timeSlot;
-		}        
+			
+            return timeSlot;
+        }             
 
         function crearTimeSlot(pista, slot, dia, datosReservas) {
             if (pista.nombre!=='BAR') {
