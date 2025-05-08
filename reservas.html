@@ -670,7 +670,7 @@
 
         function configurarTimeSlot(timeSlot, reserva, username, rolename) {
             if (reserva) {
-                timeSlot.innerHTML = `<span>Reservada</span><br><span>${reserva.userName === username || rolename === 'administrador' ? reserva.userName : ''}</span>`;
+                timeSlot.innerHTML = `<span>Reservada</span><br><span>${reserva.userName === username || rolename === 'administrador' ? reserva.userName : reserva.userName}</span>`;
                 if (username!==''){
                     timeSlot.className = 'time-slot-booked';
                 } else {
