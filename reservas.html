@@ -122,6 +122,8 @@
 			<h3>Reservar pista para otro usuario</h3>
 			<label for="user-select-modal">Selecciona el usuario:</label><br>
 			<select id="user-select-modal" style="margin:10px 0;"></select><br>
+			<label for="concepto-admin">Concepto:</label><br>
+			<input type="text" id="concepto-admin" style="width: 90%; margin-bottom: 10px;" /><br>
 			<button id="confirmar-reserva-admin">Confirmar</button>
 			<button onclick="document.getElementById('modal-reserva-admin').style.display='none'">Cancelar</button>
 		</div>
@@ -142,6 +144,10 @@
         <!-- Contenedor de la tabla de pagos y el formulario -->
         <div class="container">
             <div id="payments-container" class="columna" style="display:none;">
+				<div id="concepto-reserva-admin" style="display:none; margin-bottom:10px;">
+					<h3 for="concepto-text">Concepto de la reserva:</h3><br>
+					<input type="text" id="concepto-text" style="width:100%;" readonly />
+				</div>
                 <button id='cancelar-reserva-button' type="submit">Cancelar Reserva</button>
                 </br>
                 <div id="rapids-payments" class="contenedor-centrado">
@@ -330,112 +336,134 @@
         }
 
         // Lógica para mostrar pagos y gestionar acciones
-        function mostrarPagos(reservaId,pistaId,pistaNombre,slotTime) {
-            const paymentsContainer = document.getElementById('payments-container');
-            paymentsContainer.style.display = 'block';
-            const paymentsTableDiv = document.getElementById('payments-table-div');
-            paymentsTableDiv.style.display = 'block';
-            
-            const paymentsTable = document.getElementById('payments-table').querySelector('tbody');            
-            document.getElementById('reservaIdPago').value=reservaId;
-            document.getElementById('pistaIdPago').value=pistaId;
-            document.getElementById('pistaNombre').value=pistaNombre;
-            document.getElementById('slotTimePago').value=slotTime;
-            let total=0;
-            $.ajax({
-                url: api_url+'/reservas/' + reservaId + '/pagos',
-                type: 'GET',
-                headers: {
-                    'Content-Type' : 'application/json',
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                },
-                dataType: 'json',
-                success: function(pagosResponse) {
-                    paymentsTable.innerHTML = '';
-                    document.getElementById('payment-amount').value='';
-                    document.getElementById('payment-detail').value='';
-                    document.getElementById('payment-total').innerHTML='';  
-                    document.getElementById('expenses-total').innerHTML=''; 
-                    document.getElementById('paymentandexpenses-total').innerHTML=''; 
-                    pagosResponse.pagos.forEach(pago => {
-                        const row = document.createElement('tr');
-                                                  
-                        row.innerHTML = `
-                            <td>${pago.cantidad}</td>
-                            <td>${pago.metodoPago}</td>
-                            <td>${pago.detalle || ''}</td>
-                            <td><button class="delete-payment" data-id="${pago.id}">Eliminar Pago</button></td>
-                        `;
-                        // Convierte `pago.cantidad` a número utilizando `parseFloat`
-                        const cantidadNumerica = parseFloat(pago.cantidad);
-                        
-                        // Verifica si la conversión fue exitosa
-                        if (!isNaN(cantidadNumerica)) {
-                            total += cantidadNumerica;
-                        } else {
-                            console.warn(`La cantidad "${pago.cantidad}" no es un número válido.`);
-                        }
+		function mostrarPagos(reservaId, pistaId, pistaNombre, slotTime) {
+			const paymentsContainer = document.getElementById('payments-container');
+			paymentsContainer.style.display = 'block';
+			const paymentsTableDiv = document.getElementById('payments-table-div');
+			paymentsTableDiv.style.display = 'block';
 
-                        paymentsTable.appendChild(row);
-                        
-                    });
-                    document.getElementById('payment-total').dataset.value = total;
-                    document.getElementById('payment-total').innerText = 'Total de Pagos: ' + total + '€';
-                    
-                    // Obtener y mostrar los gastos
-                    $.ajax({
-                        url: api_url + '/reservas/' + reservaId + '/gastos',
-                        type: 'GET',
-                        headers: {
-                            'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                        },
-                        success: function(gastosResponse) {
-                            let totalExpenses=0;
-                            gastosResponse.gastos.forEach(gasto => {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td>-${gasto.cantidad}</td>
-                                    <td>${gasto.metodo}</td>
-                                    <td>${gasto.detalle || ''}</td>
-                                    <td><button class="delete-expense" data-id="${gasto.id}">Eliminar Gasto</button></td>
-                                `;
-                                const cantidadNumerica = parseFloat(gasto.cantidad);
-                                if (!isNaN(cantidadNumerica)) {
-                                    totalExpenses -= cantidadNumerica;
-                                }
-                                paymentsTable.appendChild(row);
-                            });
-                            if (totalExpenses<0) { 
-                                let total = document.getElementById('payment-total').dataset.value;                                           
-                                document.getElementById('expenses-total').innerText = 'Total de Gastos: ' + totalExpenses + '€';
-                                let resultTotal = parseFloat(total)+totalExpenses;
-                                document.getElementById('paymentandexpenses-total').innerText = 'Total: ' + resultTotal + '€';
-                            }
-                            // Mostrar el contenedor de pagos
-                            document.getElementById('payments-container').style.display = 'block';
-                            document.getElementById('payments-table-div').style.display = 'block';
-                            if (pistaNombre==='BAR') {
-                                document.getElementById('rapids-payments').style.display = 'none';
-                                document.getElementById('payment-detail').value='BAR CONTADO';
-                                document.getElementById('expense-detail').value='';
-                                document.getElementById('div-expenses').style.display = 'block';
-                            } else {
-                                document.getElementById('rapids-payments').style.display = 'flex';
-                                document.getElementById('payment-detail').value='';
-                                document.getElementById('expense-detail').value='';
-                                document.getElementById('div-expenses').style.display = 'none';
-                            } 
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('Error al obtener gastos:', error);
-                        }
-                    });                    
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error al obtener pagos:', error);
-                }
-            });
-        }
+			// Set hidden fields
+			document.getElementById('reservaIdPago').value = reservaId;
+			document.getElementById('pistaIdPago').value = pistaId;
+			document.getElementById('pistaNombre').value = pistaNombre;
+			document.getElementById('slotTimePago').value = slotTime;
+
+			const paymentsTable = document.getElementById('payments-table').querySelector('tbody');
+			paymentsTable.innerHTML = '';
+
+			// Limpiar campos de pago
+			document.getElementById('payment-amount').value = '';
+			document.getElementById('payment-detail').value = '';
+			document.getElementById('payment-total').innerHTML = '';
+			document.getElementById('expenses-total').innerHTML = '';
+			document.getElementById('paymentandexpenses-total').innerHTML = '';
+
+			// Mostrar concepto si eres administrador
+			if (document.getElementById('role-info').value === 'administrador') {
+				$.ajax({
+					url: api_url + '/reservas/' + reservaId,
+					type: 'GET',
+					headers: {
+						'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+					},
+					success: function (reservaData) {
+						const conceptoDiv = document.getElementById('concepto-reserva-admin');
+						const conceptoInput = document.getElementById('concepto-text');
+						conceptoDiv.style.display = 'block';
+						conceptoInput.value = reservaData.concepto || '';
+					},
+					error: function (error) {
+						console.error('Error al obtener el concepto de la reserva:', error);
+					}
+				});
+			}
+
+			// Obtener pagos
+			$.ajax({
+				url: api_url + '/reservas/' + reservaId + '/pagos',
+				type: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+				},
+				dataType: 'json',
+				success: function (pagosResponse) {
+					let total = 0;
+					pagosResponse.pagos.forEach(pago => {
+						const row = document.createElement('tr');
+						row.innerHTML = `
+							<td></td>
+							<td>${pago.cantidad}</td>
+							<td>${pago.metodoPago}</td>
+							<td>${pago.detalle || ''}</td>
+							<td><button class="delete-payment" data-id="${pago.id}">Eliminar Pago</button></td>
+						`;
+						const cantidadNumerica = parseFloat(pago.cantidad);
+						if (!isNaN(cantidadNumerica)) {
+							total += cantidadNumerica;
+						}
+						paymentsTable.appendChild(row);
+					});
+
+					document.getElementById('payment-total').dataset.value = total;
+					document.getElementById('payment-total').innerText = 'Total de Pagos: ' + total + '€';
+
+					// Obtener y mostrar gastos
+					$.ajax({
+						url: api_url + '/reservas/' + reservaId + '/gastos',
+						type: 'GET',
+						headers: {
+							'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+						},
+						success: function (gastosResponse) {
+							let totalExpenses = 0;
+							gastosResponse.gastos.forEach(gasto => {
+								const row = document.createElement('tr');
+								row.innerHTML = `
+									<td></td>
+									<td>-${gasto.cantidad}</td>
+									<td>${gasto.metodo}</td>
+									<td>${gasto.detalle || ''}</td>
+									<td><button class="delete-expense" data-id="${gasto.id}">Eliminar Gasto</button></td>
+								`;
+								const cantidadNumerica = parseFloat(gasto.cantidad);
+								if (!isNaN(cantidadNumerica)) {
+									totalExpenses -= cantidadNumerica;
+								}
+								paymentsTable.appendChild(row);
+							});
+
+							if (totalExpenses < 0) {
+								const totalPagos = parseFloat(document.getElementById('payment-total').dataset.value);
+								document.getElementById('expenses-total').innerText = 'Total de Gastos: ' + totalExpenses + '€';
+								const resultTotal = totalPagos + totalExpenses;
+								document.getElementById('paymentandexpenses-total').innerText = 'Total: ' + resultTotal + '€';
+							}
+
+							// Mostrar controles según pista
+							if (pistaNombre === 'BAR') {
+								document.getElementById('rapids-payments').style.display = 'none';
+								document.getElementById('payment-detail').value = 'BAR CONTADO';
+								document.getElementById('expense-detail').value = '';
+								document.getElementById('div-expenses').style.display = 'block';
+							} else {
+								document.getElementById('rapids-payments').style.display = 'flex';
+								document.getElementById('payment-detail').value = '';
+								document.getElementById('expense-detail').value = '';
+								document.getElementById('div-expenses').style.display = 'none';
+							}
+						},
+						error: function (xhr, status, error) {
+							console.error('Error al obtener gastos:', error);
+						}
+					});
+				},
+				error: function (xhr, status, error) {
+					console.error('Error al obtener pagos:', error);
+				}
+			});
+		}
+
 
         function agregarGasto(reservaId, gasto) {
             $.ajax({
@@ -556,14 +584,17 @@
             const yyyy = selectedDate.getFullYear();
 
             const dia = `${dd}/${mm}/${yyyy}`;
-            
+			
+			const concepto = document.getElementById('concepto-admin')?.value || '';
+
             const reservaRequest = {
-                username: username,
-                pistaId: slot.dataset.pista,
-                fechaReserva: dia,
-                horaInicio: horaInicio,
-                horaFin: horaFin
-            };
+				username: username,
+				pistaId: slot.dataset.pista,
+				fechaReserva: dia,
+				horaInicio: horaInicio,
+				horaFin: horaFin,
+				concepto: concepto
+			};
 
             $.ajax({
                 url: api_url+'/reservas',
