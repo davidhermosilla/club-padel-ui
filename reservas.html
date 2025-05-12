@@ -105,6 +105,16 @@
 </head>
 <body>
     <center><h1>Reserva de Pistas</h1></center>
+	<div id="modal-reserva-admin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:9999;">
+		<div style="background:white; padding:20px; border-radius:10px; text-align:center; min-width:300px;">
+			<h3>Reservar pista para otro usuario</h3>
+			<label for="user-select-modal">Selecciona el usuario:</label><br>
+			<select id="user-select-modal" style="margin:10px 0;"></select><br>
+			<button id="confirmar-reserva-admin">Confirmar</button>
+			<button onclick="document.getElementById('modal-reserva-admin').style.display='none'">Cancelar</button>
+		</div>
+	</div>
+
     <input type="hidden" id="user-info"/>
     <input type="hidden" id="role-info"/>
     <!-- Contenedor del calendario -->
@@ -214,6 +224,31 @@
         
         let datosPista;
         let datosReservas; 
+		let usuariosDisponibles = [];
+
+		function cargarUsuariosCombo() {
+			$.ajax({
+				url: api_url + '/usuarios',
+				type: 'GET',
+				headers: {
+					'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+				},
+				success: function(usuarios) {
+					usuariosDisponibles = usuarios;
+					const select = document.getElementById('user-select-modal');
+					select.innerHTML = '';
+					usuarios.forEach(usuario => {
+						const option = document.createElement('option');
+						option.value = usuario.username;
+						option.textContent = usuario.username;
+						select.appendChild(option);
+					});
+				},
+				error: function(err) {
+					console.error('Error al cargar usuarios:', err);
+				}
+			});
+		}
 
         async function cargarRolUsuario() {
             var username = document.getElementById('user-info').value;
@@ -229,6 +264,10 @@
                     // Limpiar el input hidden de roleName
                     $('#role-info').empty();
                     document.getElementById('role-info').setAttribute('value', data.rolName);
+					if (data.rolName === 'administrador') {
+						cargarUsuariosCombo();
+					}
+
                     cargaPrincipal();
                 },
                 error: function(xhr, status, error) {
@@ -717,12 +756,23 @@
             }
         }
 
-        function manejarNuevaReserva(timeSlot, username) {
-            const text = "¿Desea realmente reservar la pista?";
-            if (cancelamosOreservamos(text)) {
-                anadirReserva(timeSlot, username);
-            }
-        }
+		let slotPendienteAdmin = null;
+
+		function manejarNuevaReserva(timeSlot, username) {
+			const rolename = document.getElementById('role-info').value;
+
+			if (rolename === 'administrador') {
+				slotPendienteAdmin = timeSlot;
+				document.getElementById('modal-reserva-admin').style.display = 'flex';
+			} else {
+				const confirmMsg = "¿Desea realmente reservar la pista?";
+				if (cancelamosOreservamos(confirmMsg)) {
+					anadirReserva(timeSlot, username);
+				}
+			}
+		}
+
+
 
         document.getElementById('cancelar-reserva-button').addEventListener('click', () => { 
             var pistaId=document.getElementById('pistaIdPago').value;
@@ -912,6 +962,15 @@
         document.getElementById('user-info').addEventListener('userReady', function (event) {
             cargarRolUsuario();
         });
+		
+		document.getElementById('confirmar-reserva-admin').addEventListener('click', () => {
+			const userTarget = document.getElementById('user-select-modal').value;
+			if (userTarget && slotPendienteAdmin) {
+				anadirReserva(slotPendienteAdmin, userTarget);
+				document.getElementById('modal-reserva-admin').style.display = 'none';
+				slotPendienteAdmin = null;
+			}
+		});
 
     </script>
 </body>
