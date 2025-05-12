@@ -64,7 +64,19 @@
             background-color: #ba1717;
             cursor: pointer;
         }
+		
+		.time-slot-past {
+			background-color: #d3d3d3; /* gris claro para disponibles pasados */
+			color: #888;
+			cursor: default;
+		}
 
+		.time-slot-booked-past {
+			background-color: #a9a9a9; /* gris más oscuro para reservadas pasadas */
+			color: #fff;
+			cursor: default;
+		}
+		
         .time-label {
             background-color: #555;
             color: white;
@@ -707,28 +719,41 @@
             return multiFilter(datosReservas, filters)[0] || null;
         }
 
-        function configurarTimeSlot(timeSlot, reserva, username, rolename) {
-            if (reserva) {
-                timeSlot.innerHTML = `<span>Reservada</span><br><span>${reserva.userName === username || rolename === 'administrador' ? reserva.userName : reserva.userName}</span>`;
-                if (username!==''){
-                    timeSlot.className = 'time-slot-booked';
-                } else {
-                    timeSlot.className = 'time-slot-booked-no-user';
-                }                
-                timeSlot.dataset.estado = 'Reservada';
-                timeSlot.dataset.reserva = reserva.reservaId;
-                timeSlot.dataset.username = reserva.userName;
-            } else {
-                timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
-                timeSlot.dataset.estado = 'Disponible';
-                if (username!==''){
-                    timeSlot.className = 'time-slot';
-                } else {
-                    timeSlot.className = 'time-slot-no-user';
-                }
-            }
-        }
-        
+		function configurarTimeSlot(timeSlot, reserva, username, rolename) {
+			const selectedDate = document.getElementById('reservation-date').value;
+			const slotTime = timeSlot.dataset.time;
+			const [startHour, startMinute] = slotTime.split('-')[0].trim().split(':');
+
+			const dateObj = new Date(selectedDate); // formato yyyy-mm-dd
+			const slotDate = new Date(
+				dateObj.getFullYear(),
+				dateObj.getMonth(),
+				dateObj.getDate(),
+				Number(startHour),
+				Number(startMinute)
+			);
+
+			const ahora = new Date();
+			const esPasado = slotDate.getTime() < ahora.getTime();
+
+			if (reserva) {
+				timeSlot.innerHTML = `<span>Reservada</span><br><span>${reserva.userName}</span>`;
+				timeSlot.dataset.estado = 'Reservada';
+				timeSlot.dataset.reserva = reserva.reservaId;
+				timeSlot.dataset.username = reserva.userName;
+				timeSlot.className = esPasado ? 'time-slot-booked-past' : (username !== '' ? 'time-slot-booked' : 'time-slot-booked-no-user');
+			} else {
+				timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
+				timeSlot.dataset.estado = 'Disponible';
+				timeSlot.className = esPasado ? 'time-slot-past' : (username !== '' ? 'time-slot' : 'time-slot-no-user');
+			}
+
+			// Solo bloqueamos clics si es pasado Y no es administrador
+			if (esPasado && rolename !== 'administrador') {
+				timeSlot.style.pointerEvents = 'none';
+			}
+		}
+       
 
         function agregarEventListener(timeSlot, dia, username, rolename) {
             timeSlot.addEventListener('click', () => {
