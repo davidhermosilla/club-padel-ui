@@ -147,7 +147,7 @@
 				<div id="concepto-reserva-admin" style="display:none; margin-bottom:10px;">
 					<h3 for="concepto-text">Concepto de la reserva:</h3><br>
 					<input type="text" id="concepto-text" style="width:100%;" readonly />
-				</div>
+				</div></br>
                 <button id='cancelar-reserva-button' type="submit">Cancelar Reserva</button>
                 </br>
                 <div id="rapids-payments" class="contenedor-centrado">
@@ -556,15 +556,59 @@
                 },
                 contentType: 'application/json',
                 success: function() {
-                    slot.className = 'time-slot';
-                    slot.innerHTML = '<span>Disponible</span></br><span></span>';
-                    slot.dataset.estado='Disponible';
-                    slot.dataset.username='';
-                    slot.dataset.reserva='';
-                    if (document.getElementById('role-info').value=='administrador') {
-                        ocultarPagos();                     
-                    }
-                },
+					slot.className = 'time-slot';
+					slot.innerHTML = '<span>Disponible</span></br><span></span>';
+					slot.dataset.estado = 'Disponible';
+					const username = slot.dataset.username;
+					slot.dataset.username = '';
+					slot.dataset.reserva = '';
+
+					if (document.getElementById('role-info').value === 'administrador') {
+						ocultarPagos();
+					}
+
+					// Obtener email y enviar correo de cancelación
+					
+					const pistaNombre = slot.dataset.pistaNombre;
+					const slotTime = slot.dataset.time;
+					const selectedDate = new Date(document.getElementById('reservation-date').value);
+					const dia = `${String(selectedDate.getDate()).padStart(2, '0')}/${String(selectedDate.getMonth() + 1).padStart(2, '0')}/${selectedDate.getFullYear()}`;
+					const [horaInicio, horaFin] = slotTime.split('-').map(str => str.trim());
+
+					// 1. Obtener el email del usuario
+					fetch(club_ajaxurl, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+						body: new URLSearchParams({
+							action: 'obtener_email_usuario',
+							username: username
+						})
+					})
+					.then(res => res.json())
+					.then(data => {
+						if (data.success) {
+							const email = data.data.email;
+
+							// 2. Enviar el correo de cancelación
+							return fetch(club_ajaxurl, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+								body: new URLSearchParams({
+									action: 'enviar_correo_custom',
+									para: email,
+									asunto: 'Cancelación de tu reserva en Club Pádel Andújar',
+									pista: pistaNombre,
+									fecha: dia,
+									hora: `${horaInicio} - ${horaFin}`,
+									tipo: 'cancelacion'
+								})
+							});
+						}
+					})
+					.catch(error => {
+						console.error('Error al enviar correo de cancelación:', error);
+					});
+				},
                 error: function(xhr, status, error) {
                     console.error('Error al eliminar la reserva:', error);
                 }
@@ -606,17 +650,52 @@
                 contentType: 'application/json',
                 data: JSON.stringify(reservaRequest),
                 success: function(dataResponse) {
-                    slot.className = 'time-slot-booked';
-                    slot.innerHTML = '<span>Reservada</span></br><span>'+username+'</span>'
-                    slot.dataset.estado='Reservada'; 
-                    slot.dataset.reserva=dataResponse.id;
-                    slot.dataset.username=username;
-                    
-                    if (document.getElementById('role-info').value=='administrador') {
-                        mostrarPagos(slot.dataset.reserva,slot.dataset.pista,slot.dataset.pistaNombre,slot.dataset.time);
-                    } 
-                },
-                error: function(xhr, status, error) {
+
+    // 🔄 Actualizar UI como antes
+    slot.className = 'time-slot-booked';
+    slot.innerHTML = '<span>Reservada</span></br><span>' + username + '</span>';
+    slot.dataset.estado = 'Reservada'; 
+    slot.dataset.reserva = dataResponse.id;
+    slot.dataset.username = username;
+
+    if (document.getElementById('role-info').value === 'administrador') {
+        mostrarPagos(slot.dataset.reserva, slot.dataset.pista, slot.dataset.pistaNombre, slot.dataset.time);
+    }
+
+    // ✉️ Obtener email y enviar correo sin interrumpir la interfaz
+    const usernameEmail = username;
+    fetch(club_ajaxurl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            action: 'obtener_email_usuario',
+            username: usernameEmail
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.data.email) {
+            const email = data.data.email;
+            fetch(club_ajaxurl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    action: 'enviar_correo_custom',
+                    para: email,
+                    asunto: 'Confirmación de tu reserva en Club Pádel Andújar',
+                    pista: slot.dataset.pistaNombre,
+                    fecha: dia,
+                    hora: `${horaInicio} - ${horaFin}`,
+                    tipo: 'reserva'
+                })
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error al enviar correo de reserva:', error);
+    });
+
+}, error: function(xhr, status, error) {
                     alert(xhr.responseJSON.message);
                     console.error('Error al realizar la reserva:', xhr.responseJSON.message);
                 }
