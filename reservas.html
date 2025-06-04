@@ -782,7 +782,6 @@
         function crearTimeSlotBar(pista, slot, dia, datosReservas) {
             const timeSlot = document.createElement('div');
 			if (document.getElementById('role-info').value==='administrador') {
-				if (slot.time==='16:30 - 18:00') {                
 					timeSlot.id = `${pista.id}_${dia}_${slot.time}`;
 					timeSlot.dataset.pista = pista.id;
 					timeSlot.dataset.pistaNombre = pista.nombre;
@@ -796,11 +795,6 @@
 					
 					if (username!=='') {
 						agregarEventListener(timeSlot, dia, username, rolename);
-					}
-				} else {					
-						timeSlot.className = 'time-slot-no-user';
-						timeSlot.innerHTML = '<span></span><br><span></span>';
-						timeSlot.style.opacity = '0.3';
 					} 
 			} else {
 				timeSlot.style.display = 'none';
