@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <title>Reserva de Pistas</title>
     <style>
@@ -17,8 +17,11 @@
             grid-template-columns: repeat(6, 1fr); /* 5 pistas + 1 columna para las horas */
             gap: 10px;
             width: 100%;
+            min-width: 720px;
             max-width: 1000px;
             margin-bottom: 100px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .pista-header, .time-slot,.time-slot-no-user {
@@ -71,11 +74,20 @@
 			cursor: default;
 		}
 
-		.time-slot-booked-past {
-			background-color: #a9a9a9; /* gris más oscuro para reservadas pasadas */
-			color: #fff;
-			cursor: default;
-		}
+        .time-slot-booked-past {
+            background-color: #a9a9a9; /* gris más oscuro para reservadas pasadas */
+            color: #fff;
+            cursor: default;
+        }
+
+        .time-slot-disabled {
+            background-color: #cccccc;
+            color: #666666;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+            pointer-events: none;
+        }
 		
         .time-label {
             background-color: #555;
@@ -241,7 +253,8 @@
         ];
         
         let datosPista;
-        let datosReservas; 
+        let datosReservas;
+        let firstSlotTime = '';
 		let usuariosDisponibles = [];
 
 		function cargarUsuariosCombo() {
@@ -704,6 +717,7 @@
 
         function procesarTablaReservas(datosPista, slots, dia, datosReservas) {
             ocultarPagos();
+            firstSlotTime = slots[0].time;
             limpiarYConfigurarContenedor(datosPista.length);
             agregarHeaders(datosPista);
             agregarSlotsConReservas(datosPista, slots, dia, datosReservas);
@@ -715,28 +729,14 @@
             divTime.className = 'time-label';
             scheduleContainer.innerHTML = '';
             scheduleContainer.appendChild(divTime);
-			if (document.getElementById('role-info').value==='administrador') {
-				scheduleContainer.style.gridTemplateColumns = `repeat(${numPistas + 1}, 1fr)`;
-			} else {
-				scheduleContainer.style.gridTemplateColumns = `repeat(${numPistas}, 1fr)`;
-			}
+            scheduleContainer.style.gridTemplateColumns = `repeat(${numPistas + 1}, 1fr)`;
         }
 
         function agregarHeaders(datosPista) {
             datosPista.forEach(pista => {
-			
                 const header = document.createElement('div');
-				
-                if (pista.nombre!=='BAR') {
-                    header.className = 'pista-header';
-                    header.innerHTML = `${pista.nombre}<br>(${pista.ubicacion})`;
-                } else if (document.getElementById('role-info').value==='administrador') {
-                    header.className = 'pista-header';
-                    header.innerHTML = `${pista.nombre}<br>(${pista.ubicacion})`;
-                } else {
-					header.style.display = 'none';
-				}
-                
+                header.className = 'pista-header';
+                header.innerHTML = `${pista.nombre}<br>(${pista.ubicacion})`;
                 scheduleContainer.appendChild(header);
             });
         }
@@ -780,28 +780,15 @@
         }
 
         function crearTimeSlotBar(pista, slot, dia, datosReservas) {
+            if (slot.time === firstSlotTime) {
+                return crearTimeSlotReserva(pista, slot, dia, datosReservas);
+            }
+
             const timeSlot = document.createElement('div');
-			if (document.getElementById('role-info').value==='administrador') {
-					timeSlot.id = `${pista.id}_${dia}_${slot.time}`;
-					timeSlot.dataset.pista = pista.id;
-					timeSlot.dataset.pistaNombre = pista.nombre;
-					timeSlot.dataset.time = slot.time;
-					timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
-					timeSlot.className = 'time-slot';
-					
-					const { username, rolename } = obtenerDatosUsuario();
-					const reserva = obtenerReserva(datosReservas, pista.id, slot.time);
-					configurarTimeSlot(timeSlot, reserva, username, rolename);            
-					
-					if (username!=='') {
-						agregarEventListener(timeSlot, dia, username, rolename);
-					} 
-			} else {
-				timeSlot.style.display = 'none';
-			}
-			
+            timeSlot.className = 'time-slot-disabled';
+            timeSlot.textContent = 'No Reservable';
             return timeSlot;
-        }             
+        }
 
         function crearTimeSlot(pista, slot, dia, datosReservas) {
             if (pista.nombre!=='BAR') {
@@ -1068,7 +1055,14 @@
                     },
                     dataType: 'json',
                     success: function(data) {
-                        datosPista=data;
+                        datosPista = data.sort((a, b) => {
+                            if (a.nombre === 'BAR') return 1;
+                            if (b.nombre === 'BAR') return -1;
+                            return 0;
+                        });
+                        if (document.getElementById('role-info').value !== 'administrador') {
+                            datosPista = datosPista.filter(p => p.nombre !== 'BAR');
+                        }
                         // Renderizar las horas por defecto
                         if (todayDay === 6 || todayDay === 0) { // S�bado (6) o Domingo (0)
                             procesarTablaReservas(datosPista,weekendSlots,currentDate,datosReservas);
