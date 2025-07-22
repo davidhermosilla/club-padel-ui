@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<!-- DataTables CSS y JS para paginado y filtrado -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<title>Gestión de Usuarios</title>
 </head>
 <body>
 
@@ -17,12 +21,12 @@
             <!-- Formulario para añadir nuevo usuario -->
             <form id="form-nuevo-usuario">
                 <center><h2>Gestión de Usuarios</h2></center>
-                <h3><label>Nombre de Usuario</label></h3></br>
-                <input type="text" id="nombreUsuario" name="nombreUsuario" required></br>
-                <h3><label>Rol</label></h3></br>
+                <h3><label>Nombre de Usuario</label></h3><br>
+                <input type="text" id="nombreUsuario" name="nombreUsuario" required><br>
+                <h3><label>Rol</label></h3><br>
                 <select id="rolId" name="rolId" required>
                     <option value="">Seleccione un rol</option>
-                </select></br>
+                </select><br>
                 <button type="submit" id="añadir-usuario" class="wpforms" aria-live="assertive">Añadir Nuevo Usuario</button>
             </form>
 
@@ -62,6 +66,10 @@
 <script>
 var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
 $(document).ready(function(){
+    // Inicializar DataTable con paginado y buscador en español
+    var tablaUsuarios = $('#tabla-usuarios').DataTable({
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
+    });
     // Función para manejar el envío del formulario de nuevo usuario
     $('#form-nuevo-usuario').submit(function(event) {
         event.preventDefault(); // Evitar el envío del formulario por defecto
@@ -79,6 +87,7 @@ $(document).ready(function(){
             contentType: 'application/json',
             data: JSON.stringify({ "username": nombreUsuario, "rolId": rolId }),
             success: function(data) {
+                $('#nombreUsuario').val('');
                 cargarUsuarios();
             },
             error: function(xhr, status, error) {
@@ -155,22 +164,19 @@ $(document).ready(function(){
                 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
             },
             success: function(data) {
-                $('#tabla-usuarios tbody').empty();
+                tablaUsuarios.clear();
 
                 $.each(data, function(index, usuario) {
                     var rol = usuario.rolId ? usuario.rolName : 'Sin rol';
-                    $('#tabla-usuarios tbody').append(`
-                        <tr class="has-text-align-center" data-align="center">
-                            <td>${usuario.userId}</td>
-                            <td>${usuario.username}</td>
-                            <td>${rol}</td>
-                            <td>
-                                <button class="editar-usuario" data-id="${usuario.userId}" data-nombre="${usuario.username}" data-rol="${usuario.rolId}">Editar</button>
-                                <button class="eliminar-usuario" data-id="${usuario.userId}">Eliminar</button>
-                            </td>
-                        </tr>
-                    `);
+                    tablaUsuarios.row.add([
+                        usuario.userId,
+                        usuario.username,
+                        rol,
+                        `<button class="editar-usuario" data-id="${usuario.userId}" data-nombre="${usuario.username}" data-rol="${usuario.rolId}">Editar</button>` +
+                        ` <button class="eliminar-usuario" data-id="${usuario.userId}">Eliminar</button>`
+                    ]);
                 });
+                tablaUsuarios.draw();
             },
             error: function(xhr, status, error) {
                 console.error('Error al obtener datos de la API:', error);
