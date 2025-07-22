@@ -560,8 +560,9 @@
         }        
 
         function cancelarReserva(slot) {
+            const skipValidationFlag = document.getElementById('role-info').value === 'administrador';
             $.ajax({
-                url: api_url+'/reservas/'+slot.dataset.reserva,
+                url: api_url+'/reservas/'+slot.dataset.reserva+'?skipValidation='+skipValidationFlag,
                 type: 'DELETE',
                 headers: {
                     'Content-Type' : 'application/json',
