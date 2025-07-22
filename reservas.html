@@ -623,7 +623,9 @@
 					});
 				},
                 error: function(xhr, status, error) {
-                    console.error('Error al eliminar la reserva:', error);
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Error al cancelar la reserva';
+                    alert(msg);
+                    console.error('Error al eliminar la reserva:', msg);
                 }
             });
             
