@@ -711,9 +711,10 @@
         console.error('Error al enviar correo de reserva:', error);
     });
 
-}, error: function(xhr, status, error) {
+        }, error: function(xhr, status, error) {
                     alert(xhr.responseJSON.message);
                     console.error('Error al realizar la reserva:', xhr.responseJSON.message);
+                    document.getElementById('reservation-date').dispatchEvent(new Event('change'));
                 }
             });
         }
