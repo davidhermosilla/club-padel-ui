@@ -213,6 +213,7 @@ $(document).ready(function(){
                 cargarUsuarios();
             },
             error: function(xhr, status, error) {
+                alert('El borrado ha fallado. Contacte con el administrador de la aplicación.');
                 console.error('Error al eliminar el usuario:', error);
             }
         });
