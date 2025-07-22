@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resultados Liga de Pádel</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <style>
+    .filter-container, #table-container {
+      max-width: 100%;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .filter-container label {
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    button.borrar-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button.borrar-btn:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <div class="filter-container">
+    <label for="division-filter">Filtrar por División:</label>
+    <select id="division-filter">
+      <option value="1ª División">1ª División</option>
+      <option value="2ª División">2ª División</option>
+      <option value="3ª División">3ª División</option>
+      <option value="4ª División">4ª División</option>
+      <option value="5ª División">5ª División</option>
+      <option value="6ª División">6ª División</option>
+      <option value="7ª División">7ª División</option>
+      <option value="8ª División">8ª División</option>
+      <option value="9ª División">9ª División</option>
+      <option value="10ª División">10ª División</option>
+      <option value="11ª División">11ª División</option>
+      <option value="12ª División">12ª División</option>
+    </select>
+  </div>
+  <div id="table-container"></div>
+
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=0&single=true&output=csv";
+
+    async function loadAndProcessSheet() {
+      const response = await fetch(sheetURL);
+      const data = await response.text();
+      const rows = data.split("\n").map(row => row.split(","));
+      const headers = rows[0];
+      const body = rows.slice(1);
+
+      let tableHTML = '<table id="dynamic-table" class="display"><thead><tr>';
+      headers.slice(0, -1).forEach(header => {
+        tableHTML += `<th>${header}</th>`;
+      });
+      tableHTML += '<th>Acción</th></tr></thead><tbody>';
+
+body.forEach(row => {
+  const clave = row[row.length - 1].trim(); // ✅ limpieza aquí
+  const safeClave = JSON.stringify(clave);
+  tableHTML += '<tr>';
+  row.slice(0, -1).forEach(cell => {
+    tableHTML += `<td>${cell}</td>`;
+  });
+  tableHTML += `<td><button class="borrar-btn" data-clave=${safeClave}>🗑️ Borrar</button></td>`;
+  tableHTML += '</tr>';
+});
+
+
+      tableHTML += '</tbody></table>';
+      document.getElementById("table-container").innerHTML = tableHTML;
+
+      // Asignar eventos a botones de borrar
+      document.querySelectorAll(".borrar-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+          const clave = this.getAttribute("data-clave");
+          borrarResultado(clave);
+        });
+      });
+
+      const table = $('#dynamic-table').DataTable({
+        paging: true,
+        searching: true,
+        ordering: true,
+        pageLength: 50,
+        order: [[0, 'asc']],
+        language: {
+          url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+        }
+      });
+
+      $('#division-filter').on('change', function () {
+        const selectedDivision = $(this).val();
+        if (selectedDivision) {
+          table.column(0).search(`^${selectedDivision}$`, true, false).draw();
+        } else {
+          table.column(0).search('').draw();
+        }
+      });
+
+      $('#division-filter').val("1ª División").trigger('change');
+    }
+
+    function borrarResultado(clave) {
+      if (!confirm("¿Estás seguro de que deseas borrar este resultado?")) return;
+
+      const idhoja = "1ZX00c_avB5Pjguexc6CeSlqmmKWTSqHiryYZmSYKS18";
+      const scriptURL = "https://script.google.com/macros/s/AKfycbyVBFjlW_CQNlqHzfGcL_BeHVYf3ygVGc31kORZhShFznyMChHFxxHBHT3jeERQhi6e/exec";
+
+      fetch(scriptURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `clave=${encodeURIComponent(clave)}&google_sheet_id=${idhoja}&_method=delete`
+      })
+      .then(res => res.text())
+      .then(msg => {
+        alert(msg);
+        location.reload();
+      })
+      .catch(err => alert("Error al borrar: " + err));
+    }
+
+    loadAndProcessSheet();
+  </script>
+</body>
+</html>
