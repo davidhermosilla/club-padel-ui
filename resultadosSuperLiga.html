@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filtro por División</title>
+  <!-- Estilos de DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <!-- jQuery y DataTables -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <style>
+    .filter-container, #table-container {
+      max-width: 100%;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    .filter-container label {
+      font-weight: bold;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+  </style>
+</head>
+<body>
+  <!-- Contenedor para el filtro y la tabla -->
+  <div class="filter-container">
+    <label for="division-filter">Filtrar por División:</label>
+    <select id="division-filter">
+      <option value="1ª División">1ª División</option>
+      <option value="2ª División">2ª División</option>
+      <option value="3ª División">3ª División</option>
+      <option value="4ª División">4ª División</option>
+      <option value="5ª División">5ª División</option>
+      <option value="6ª División">6ª División</option>
+      <option value="7ª División">7ª División</option>
+      <option value="8ª División">8ª División</option>
+      <option value="9ª División">9ª División</option>
+      <option value="10ª División">10ª División</option>
+      <option value="11ª División">11ª División</option>
+      <option value="12ª División">12ª División</option>
+    </select>
+  </div>
+  <div id="table-container">
+    <!-- La tabla se generará aquí -->
+  </div>
+
+  <script>
+    // URL del CSV publicado desde Google Sheets
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=0&single=true&output=csv";
+
+    // Función para cargar y procesar el CSV
+    async function loadAndProcessSheet() {
+      const response = await fetch(sheetURL);
+      const data = await response.text();
+      const rows = data.split("\n").map(row => row.split(","));
+
+      // Obtener encabezados y datos
+      const headers = rows[0];
+      const body = rows.slice(1);
+
+      // Generar la tabla HTML
+      let tableHTML = '<table id="dynamic-table" class="display"><thead><tr>';
+      headers.slice(0, -1).forEach(header => {
+        tableHTML += `<th>${header}</th>`;
+      });
+      tableHTML += '</tr></thead><tbody>';
+      body.forEach(row => {
+        tableHTML += '<tr>';
+        row.slice(0, -1).forEach(cell => {
+          tableHTML += `<td>${cell}</td>`;
+        });
+        tableHTML += '</tr>';
+      });
+      tableHTML += '</tbody></table>';
+
+      // Insertar la tabla en el contenedor
+      document.getElementById("table-container").innerHTML = tableHTML;
+
+      // Inicializar DataTables
+      const table = $('#dynamic-table').DataTable({
+        paging: true,
+        searching: true,
+        ordering: true,
+        pageLength: 50,
+        order: [[0, 'asc']], // Ordenar inicialmente por la primera columna (División)
+        language: {
+          url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" // Traducción al español
+        }
+      });
+
+      // Filtro personalizado para "División"
+      $('#division-filter').on('change', function () {
+        const selectedDivision = $(this).val();
+        if (selectedDivision) {
+          table.column(0).search(`^${selectedDivision}$`, true, false).draw();
+        } else {
+          table.column(0).search('').draw();
+        }
+      });
+
+      // Establecer filtro inicial en "1ª División" y aplicar el filtro
+      $('#division-filter').val("1ª División").trigger('change');
+    }
+
+    // Cargar y mostrar la tabla al cargar la página
+    loadAndProcessSheet();
+  </script>
+</body>
+</html>
