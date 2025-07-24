@@ -55,7 +55,7 @@
   <div id="table-container"></div>
 
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=0&single=true&output=csv";
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=0&single=true&output=csv&t=" + Date.now();
 
     async function loadAndProcessSheet() {
       const response = await fetch(sheetURL);
@@ -65,16 +65,16 @@
       const body = rows.slice(1);
 
       let tableHTML = '<table id="dynamic-table" class="display"><thead><tr>';
-      headers.slice(0, -1).forEach(header => {
+      headers.slice(0, -2).forEach(header => {
         tableHTML += `<th>${header}</th>`;
       });
       tableHTML += '<th>Acción</th></tr></thead><tbody>';
 
 body.forEach(row => {
-  const clave = row[row.length - 1].trim(); // ✅ limpieza aquí
+  const clave = row[row.length - 2].trim(); // ✅ limpieza aquí
   const safeClave = JSON.stringify(clave);
   tableHTML += '<tr>';
-  row.slice(0, -1).forEach(cell => {
+  row.slice(0, -2).forEach(cell => {
     tableHTML += `<td>${cell}</td>`;
   });
   tableHTML += `<td><button class="borrar-btn" data-clave=${safeClave}>🗑️ Borrar</button></td>`;
@@ -120,7 +120,7 @@ body.forEach(row => {
       if (!confirm("¿Estás seguro de que deseas borrar este resultado?")) return;
 
       const idhoja = "1ZX00c_avB5Pjguexc6CeSlqmmKWTSqHiryYZmSYKS18";
-      const scriptURL = "https://script.google.com/macros/s/AKfycbyVBFjlW_CQNlqHzfGcL_BeHVYf3ygVGc31kORZhShFznyMChHFxxHBHT3jeERQhi6e/exec";
+      const scriptURL = "https://script.google.com/macros/s/AKfycbzh2-SQ-TnCXJf5g3o0xysncBChJsa7nqCkmq_fCmdydbzz14aTKM3rBtrv0JMkrShQ/exec";
 
       fetch(scriptURL, {
         method: "POST",
