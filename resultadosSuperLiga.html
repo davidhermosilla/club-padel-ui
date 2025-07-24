@@ -52,7 +52,7 @@
 
   <script>
     // URL del CSV publicado desde Google Sheets
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=0&single=true&output=csv";
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=0&single=true&output=csv&t=" + Date.now();
 
     // Función para cargar y procesar el CSV
     async function loadAndProcessSheet() {
@@ -66,13 +66,13 @@
 
       // Generar la tabla HTML
       let tableHTML = '<table id="dynamic-table" class="display"><thead><tr>';
-      headers.slice(0, -1).forEach(header => {
+      headers.slice(0, -2).forEach(header => {
         tableHTML += `<th>${header}</th>`;
       });
       tableHTML += '</tr></thead><tbody>';
       body.forEach(row => {
         tableHTML += '<tr>';
-        row.slice(0, -1).forEach(cell => {
+        row.slice(0, -2).forEach(cell => {
           tableHTML += `<td>${cell}</td>`;
         });
         tableHTML += '</tr>';
