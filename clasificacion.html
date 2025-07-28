@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, minimum-scale=0.25, user-scalable=yes">
+    <title>Tabla de Posiciones</title>
+    <style>
+        .container {
+            max-width: 100%;
+            overflow-x: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #fff;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        td:nth-child(2) {
+            font-size: 11px;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 12px;
+                padding: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <label for="divisionSelect">Selecciona una División:</label>
+    <select id="divisionSelect"></select>
+
+    <div class="container">
+        <table id="positionsTable">
+            <thead>
+                <tr>
+                    <th>POS</th>
+                    <th>PAREJA</th>
+                    <th>PJ</th>
+                    <th>PG (+2)</th>
+                    <th>PP (0)</th>
+                    <th>P. No Jug (-1)</th>
+                    <th>Dif. Set</th>
+                    <th>Dif. Jg</th>
+                    <th>PTS LIGA</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=1390658928&single=true&output=csv&t=' + Date.now();
+            const divisionSelect = document.getElementById('divisionSelect');
+            const positionsTableBody = document.getElementById('positionsTable').querySelector('tbody');
+            let allData = [];
+
+            async function loadCSV() {
+                try {
+                    const response = await fetch(csvUrl);
+                    const csvText = await response.text();
+                    const rows = csvText.split('\n').map(row => row.split(','));
+
+                    allData = rows.slice(1).map(row => ({
+                        posicion: row[0],
+                        division: row[1],
+                        pareja: row[2] + "<br>-<br>" + row[3],
+                        pj: row[4],
+                        pg: row[5],
+                        pp: row[6],
+                        pNoJug: row[7],
+                        difSet: row[8],
+                        difJg: row[9],
+                        ptsLiga: row[10]
+                    }));
+
+                    const uniqueDivisions = [...new Set(allData.map(item => item.division))];
+                    populateDivisionSelect(uniqueDivisions);
+
+                    if (uniqueDivisions.length > 0) {
+                        displayData(allData.filter(item => item.division === uniqueDivisions[0]));
+                    }
+                } catch (error) {
+                    console.error('Error al cargar el CSV:', error);
+                }
+            }
+
+            function populateDivisionSelect(divisions) {
+                divisions.forEach(division => {
+                    const option = document.createElement('option');
+                    option.value = division;
+                    option.textContent = `${division}`;
+                    divisionSelect.appendChild(option);
+                });
+                divisionSelect.value = divisions[0];
+            }
+
+            function displayData(data) {
+                positionsTableBody.innerHTML = '';
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.posicion}</td>
+                        <td>${item.pareja}</td>
+                        <td>${item.pj}</td>
+                        <td>${item.pg}</td>
+                        <td>${item.pp}</td>
+                        <td>${item.pNoJug}</td>
+                        <td>${item.difSet}</td>
+                        <td>${item.difJg}</td>
+                        <td>${item.ptsLiga}</td>
+                    `;
+                    positionsTableBody.appendChild(row);
+                });
+            }
+
+            divisionSelect.addEventListener('change', function() {
+                const selectedDivision = divisionSelect.value;
+                const filteredData = allData.filter(item => item.division === selectedDivision);
+                displayData(filteredData);
+            });
+
+            loadCSV();
+        });
+    </script>
+</body>
+</html>
