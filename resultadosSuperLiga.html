@@ -1,12 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Filtro por División</title>
-  <!-- Estilos de DataTables -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>Resultados por Pareja</title>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-  <!-- jQuery y DataTables -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <style>
@@ -20,15 +19,31 @@
     .filter-container label {
       font-weight: bold;
     }
-    
+
     table {
       width: 100%;
       border-collapse: collapse;
     }
+
+    .dataTables_wrapper {
+      overflow-x: auto;
+    }
+
+    @media (max-width: 768px) {
+      table.dataTable thead th,
+      table.dataTable tbody td {
+        white-space: nowrap;
+        font-size: 12px;
+        padding: 4px;
+      }
+
+      .filter-container select {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 <body>
-  <!-- Contenedor para el filtro y la tabla -->
   <div class="filter-container">
     <label for="division-filter">Filtrar por División:</label>
     <select id="division-filter">
@@ -46,55 +61,53 @@
       <option value="12ª División">12ª División</option>
     </select>
   </div>
-  <div id="table-container">
-    <!-- La tabla se generará aquí -->
-  </div>
+  <div id="table-container" class="dataTables_wrapper"></div>
 
   <script>
-    // URL del CSV publicado desde Google Sheets
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=0&single=true&output=csv&t=" + Date.now();
 
-    // Función para cargar y procesar el CSV
     async function loadAndProcessSheet() {
       const response = await fetch(sheetURL);
       const data = await response.text();
       const rows = data.split("\n").map(row => row.split(","));
 
-      // Obtener encabezados y datos
       const headers = rows[0];
       const body = rows.slice(1);
 
-      // Generar la tabla HTML
       let tableHTML = '<table id="dynamic-table" class="display"><thead><tr>';
-      headers.slice(0, -2).forEach(header => {
-        tableHTML += `<th>${header}</th>`;
-      });
+      tableHTML += `<th>${headers[0]}</th>`; // División
+      tableHTML += `<th>Pareja 1</th><th>Pareja 2</th>`;
+      tableHTML += `<th>Set 1</th><th>Set 2</th><th>Set 3</th>`;
       tableHTML += '</tr></thead><tbody>';
-      body.forEach(row => {
-        tableHTML += '<tr>';
-        row.slice(0, -2).forEach(cell => {
-          tableHTML += `<td>${cell}</td>`;
-        });
-        tableHTML += '</tr>';
-      });
-      tableHTML += '</tbody></table>';
 
-      // Insertar la tabla en el contenedor
+      body.forEach(row => {
+        if (row.length >= 9) {
+          const division = row[0];
+          const pareja1 = `${row[1]} - ${row[2]}`;
+          const pareja2 = `${row[3]} - ${row[4]}`;
+          const set1 = `${row[5]}-${row[6]}`;
+          const set2 = `${row[7]}-${row[8]}`;
+          const set3 = row[9] && row[10] ? `${row[9]}-${row[10]}` : '';
+
+          tableHTML += `<tr><td>${division}</td><td>${pareja1}</td><td>${pareja2}</td>`;
+          tableHTML += `<td>${set1}</td><td>${set2}</td><td>${set3}</td></tr>`;
+        }
+      });
+
+      tableHTML += '</tbody></table>';
       document.getElementById("table-container").innerHTML = tableHTML;
 
-      // Inicializar DataTables
       const table = $('#dynamic-table').DataTable({
         paging: true,
         searching: true,
         ordering: true,
         pageLength: 50,
-        order: [[0, 'asc']], // Ordenar inicialmente por la primera columna (División)
+        order: [[0, 'asc']],
         language: {
-          url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" // Traducción al español
+          url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
         }
       });
 
-      // Filtro personalizado para "División"
       $('#division-filter').on('change', function () {
         const selectedDivision = $(this).val();
         if (selectedDivision) {
@@ -104,11 +117,9 @@
         }
       });
 
-      // Establecer filtro inicial en "1ª División" y aplicar el filtro
       $('#division-filter').val("1ª División").trigger('change');
     }
 
-    // Cargar y mostrar la tabla al cargar la página
     loadAndProcessSheet();
   </script>
 </body>
