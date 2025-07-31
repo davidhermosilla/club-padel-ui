@@ -106,8 +106,14 @@
             </tbody>
         </table>
         <div id="totalPagosContado"></div>
-        <div id="totalPagosTarjeta"></div>        
+        <div id="totalPagosTarjeta"></div>
         <div id="totalGastos"></div>
+        <div id="totalPistasPagosContado"></div>
+        <div id="totalPistasPagosTarjeta"></div>
+        <div id="totalTiendaPagosContado"></div>
+        <div id="totalTiendaPagosTarjeta"></div>
+        <div id="totalBarPagosContado"></div>
+        <div id="totalBarPagosTarjeta"></div>
         </br>
         <div id="total"></div>
     </div>
@@ -132,9 +138,15 @@
             const INTERVALO = UN_DIA_EN_MILISEGUNDOS * 1; // Cada dia
             const formateadorFecha = new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', });
             var index=0;
-            let totalPagosContado = 0;           
+            let totalPagosContado = 0;
             let totalPagosTarjeta = 0;
             let totalGastos = 0;
+            let totalPistasPagosContado = 0;
+            let totalPistasPagosTarjeta = 0;
+            let totalTiendaPagosContado = 0;
+            let totalTiendaPagosTarjeta = 0;
+            let totalBarPagosContado = 0;
+            let totalBarPagosTarjeta = 0;
             for (let i = fechaIni; i <= fechaFin; i = new Date(i.getTime() + INTERVALO)) {
                 console.log(formateadorFecha.format(i));
                 const mm = String(i.getMonth() + 1).padStart(2, '0');
@@ -164,6 +176,12 @@
                     totalPagosContado+=parseFloat(data.totalPagosContado);
                     totalPagosTarjeta+=parseFloat(data.totalPagosTarjeta);
                     totalGastos+=parseFloat(data.totalGastos);
+                    totalPistasPagosContado+=parseFloat(data.totalPistasPagosContado);
+                    totalPistasPagosTarjeta+=parseFloat(data.totalPistasPagosTarjeta);
+                    totalTiendaPagosContado+=parseFloat(data.totalTiendaPagosContado);
+                    totalTiendaPagosTarjeta+=parseFloat(data.totalTiendaPagosTarjeta);
+                    totalBarPagosContado+=parseFloat(data.totalBarPagosContado);
+                    totalBarPagosTarjeta+=parseFloat(data.totalBarPagosTarjeta);
                     index++;
                 } catch (error) {
                     console.error("Error al buscar los pagos:", error);
@@ -172,7 +190,10 @@
                     
             }
             mostrarTablaResumen('<b>'+totalPagosContado+'</b>', '<b>'+totalPagosTarjeta+'</b>', '<b>'+totalGastos+'</b>', '<b>Totales</b>');
-            mostrarTotal(totalPagosContado, totalPagosTarjeta, totalGastos);
+            mostrarTotal(totalPagosContado, totalPagosTarjeta, totalGastos,
+                         totalPistasPagosContado, totalPistasPagosTarjeta,
+                         totalTiendaPagosContado, totalTiendaPagosTarjeta,
+                         totalBarPagosContado, totalBarPagosTarjeta);
 
         }
 
@@ -231,15 +252,28 @@
             });
         }
 
-        function mostrarTotal(totalPagosContado, totalPagosTarjeta, totalGastos) {
+        function mostrarTotal(totalPagosContado, totalPagosTarjeta, totalGastos,
+                             totalPistasPagosContado, totalPistasPagosTarjeta,
+                             totalTiendaPagosContado, totalTiendaPagosTarjeta,
+                             totalBarPagosContado, totalBarPagosTarjeta) {
             const totalPagosContadoDiv = document.getElementById('totalPagosContado');
             totalPagosContadoDiv.innerHTML = `<center><h3>Total Pagos Contado: ${totalPagosContado.toFixed(2)}€</h3></center>`
             const totalPagosTarjetaDiv = document.getElementById('totalPagosTarjeta');
             totalPagosTarjetaDiv.innerHTML = `<center><h3>Total Pagos Tarjeta: ${totalPagosTarjeta.toFixed(2)}€</h3></center>`
             const totalGastosDiv = document.getElementById('totalGastos');
             totalGastosDiv.innerHTML = `<center><h3>Total Gastos: ${totalGastos.toFixed(2)}€</h3></center>`
-
-
+            const pistasContadoDiv = document.getElementById('totalPistasPagosContado');
+            pistasContadoDiv.innerHTML = `<center><h3>Total Pistas Contado: ${totalPistasPagosContado.toFixed(2)}€</h3></center>`
+            const pistasTarjetaDiv = document.getElementById('totalPistasPagosTarjeta');
+            pistasTarjetaDiv.innerHTML = `<center><h3>Total Pistas Tarjeta: ${totalPistasPagosTarjeta.toFixed(2)}€</h3></center>`
+            const tiendaContadoDiv = document.getElementById('totalTiendaPagosContado');
+            tiendaContadoDiv.innerHTML = `<center><h3>Total Tienda Contado: ${totalTiendaPagosContado.toFixed(2)}€</h3></center>`
+            const tiendaTarjetaDiv = document.getElementById('totalTiendaPagosTarjeta');
+            tiendaTarjetaDiv.innerHTML = `<center><h3>Total Tienda Tarjeta: ${totalTiendaPagosTarjeta.toFixed(2)}€</h3></center>`
+            const barContadoDiv = document.getElementById('totalBarPagosContado');
+            barContadoDiv.innerHTML = `<center><h3>Total Bar Contado: ${totalBarPagosContado.toFixed(2)}€</h3></center>`
+            const barTarjetaDiv = document.getElementById('totalBarPagosTarjeta');
+            barTarjetaDiv.innerHTML = `<center><h3>Total Bar Tarjeta: ${totalBarPagosTarjeta.toFixed(2)}€</h3></center>`
 
             let resultTotal = parseFloat(totalPagosContado) + parseFloat(totalPagosTarjeta) - parseFloat(totalGastos);
             const totalDiv = document.getElementById('total');
@@ -375,12 +409,24 @@
             const totalPagosContado = document.getElementById('totalPagosContado').innerText;
             const totalPagosTarjeta = document.getElementById('totalPagosTarjeta').innerText;
             const totalGastos = document.getElementById('totalGastos').innerText;
+            const totalPistasContado = document.getElementById('totalPistasPagosContado').innerText;
+            const totalPistasTarjeta = document.getElementById('totalPistasPagosTarjeta').innerText;
+            const totalTiendaContado = document.getElementById('totalTiendaPagosContado').innerText;
+            const totalTiendaTarjeta = document.getElementById('totalTiendaPagosTarjeta').innerText;
+            const totalBarContado = document.getElementById('totalBarPagosContado').innerText;
+            const totalBarTarjeta = document.getElementById('totalBarPagosTarjeta').innerText;
             const total = document.getElementById('total').innerText;
 
             doc.text(totalPagosContado, 10, doc.lastAutoTable.finalY + 30);
             doc.text(totalPagosTarjeta, 10, doc.lastAutoTable.finalY + 40);
             doc.text(totalGastos, 10, doc.lastAutoTable.finalY + 50);
-            doc.text(total, 10, doc.lastAutoTable.finalY + 60);
+            doc.text(totalPistasContado, 10, doc.lastAutoTable.finalY + 60);
+            doc.text(totalPistasTarjeta, 10, doc.lastAutoTable.finalY + 70);
+            doc.text(totalTiendaContado, 10, doc.lastAutoTable.finalY + 80);
+            doc.text(totalTiendaTarjeta, 10, doc.lastAutoTable.finalY + 90);
+            doc.text(totalBarContado, 10, doc.lastAutoTable.finalY + 100);
+            doc.text(totalBarTarjeta, 10, doc.lastAutoTable.finalY + 110);
+            doc.text(total, 10, doc.lastAutoTable.finalY + 120);
 
             doc.save(`reporte_pagos_gastos_${fechaIniFormateada}_${fechaFinFormateada}.pdf`);
         }
