@@ -190,8 +190,8 @@
 <div class="columna" id="payments-container" style="display:none;">
 <div id="concepto-reserva-admin" style="display:none; margin-bottom:10px;">
 <h3 for="concepto-text">Concepto de la reserva:</h3><br/>
-<input id="concepto-text" readonly="" style="width:100%;" type="text">
-</input></div>
+<input id="concepto-text" readonly="" style="width:100%;" type="text"/>
+</div>
 <button id="cancelar-reserva-button" type="submit">Cancelar Reserva</button>
 <div class="contenedor-centrado" id="rapids-payments">
 <div class="contenedor">
@@ -211,6 +211,15 @@
 </div>
 </div>
 </div>
+<div class="contenedor">
+<h3>Conceptos rápidos</h3>
+<div class="botones" style="display: flex; flex-direction: row; gap: 10px;">
+<button id="btn-detalle-tienda" type="button">TIENDA</button>
+<button id="btn-detalle-bar" type="button">BAR</button>
+</div>
+</div>
+<label for="payment-detail">Detalle:</label>
+<input id="payment-detail" type="text"/><br/>
 <h3>Añadir Pago</h3>
 <form id="add-payment-form">
 <input id="reservaIdPago" type="hidden"/>
@@ -218,17 +227,20 @@
 <input id="pistaNombre" type="hidden"/>
 <input id="slotTimePago" type="hidden"/>
 <label for="payment-amount">Cantidad:</label>
-<input id="payment-amount" required="" step="0.1" type="number"/><br/>
-<label for="payment-method">Método de Pago:</label>
-<select id="payment-method" required="">
-<option value="CONTADO">Contado</option>
-<option value="TARJETA">Tarjeta</option>
-</select><br/>
-<label for="payment-detail">Detalle:</label>
-<input id="payment-detail" type="text"/><br/>
-<button type="submit">Añadir Pago</button>
+<div style="display: flex; flex-direction: row; gap: 10px;">
+<input id="payment-amount" required="" step="0.1" type="number"/><button type="submit">Añadir Pago</button><br/>
+</div>
+<div class="contenedor">
+<h3>Método de Pago</h3>
+<div class="botones" style="display: flex; flex-direction: row; gap: 10px;">
+<input checked="" id="metodo-contado" name="payment-method" type="radio" value="CONTADO"/>
+<label for="metodo-contado">Contado</label>
+<input id="metodo-tarjeta" name="payment-method" type="radio" value="TARJETA"/>
+<label for="metodo-tarjeta">Tarjeta</label>
+</div></div>
+<br/>
 </form>
-<br>
+<br/>
 <div id="div-expenses" style="display:none;">
 <h3>Añadir Gasto</h3>
 <form id="expense-form">
@@ -241,7 +253,7 @@
 <button type="submit">Añadir Gasto</button>
 </form>
 </div>
-</br></div>
+</div>
 <div class="columna" id="payments-table-div" style="display:none;">
 <h3>Pagos asociados a la reserva</h3>
 <table id="payments-table">
@@ -263,6 +275,18 @@
 </div>
 </center>
 <script>
+// Obtener el método de pago desde radio buttons
+function getSelectedPaymentMethod() {
+    const radios = document.getElementsByName('payment-method');
+    for (const radio of radios) {
+        if (radio.checked) {
+            return radio.value;
+        }
+    }
+    return null;
+}
+
+
         var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
         const scheduleContainer = document.getElementById('schedule-container');
         const timeSlots = [
@@ -943,7 +967,7 @@
         function anadirPago(cantidad,metodoPago,detalle){
             var reservaId=document.getElementById('reservaIdPago').value;
             document.getElementById('payment-amount').value=cantidad;
-            document.getElementById('payment-method').value=metodoPago;
+            document.querySelector(`input[name='payment-method'][value='${metodoPago}']`).checked = true;
             document.getElementById('payment-detail').value=detalle;
             const newPayment = {
                 cantidad: parseFloat(cantidad),
@@ -995,7 +1019,7 @@
             const reservaId = document.getElementById('reservaIdPago').value;
             const newPayment = {
                 cantidad: parseFloat(document.getElementById('payment-amount').value),
-                metodoPago: document.getElementById('payment-method').value,
+                metodoPago: getSelectedPaymentMethod(),
                 detalle: document.getElementById('payment-detail').value
             };
             
@@ -1019,15 +1043,17 @@
             }
         });        
 
-        document.getElementById('payment-method').addEventListener('change', (event) => {
-            if (document.getElementById('pistaNombre').value==='BAR') {
-                if (event.target.value==='CONTADO') {
-                    document.getElementById('payment-detail').value='BAR CONTADO';
-                } else {
-                    document.getElementById('payment-detail').value='BAR TARJETA';
-                }
+        document.querySelectorAll('input[name="payment-method"]').forEach((radio) => {
+    radio.addEventListener('change', (event) => {
+        if (document.getElementById('pistaNombre').value === 'BAR') {
+            if (event.target.value === 'CONTADO') {
+                document.getElementById('payment-detail').value = 'BAR CONTADO';
+            } else {
+                document.getElementById('payment-detail').value = 'BAR TARJETA';
             }
-        });
+        }
+    });
+});
         
 
         document.getElementById('reservation-date').addEventListener('change', (event) => {
@@ -1129,6 +1155,15 @@
 			}
 		});
 
-    </script>
+    
+document.getElementById('btn-detalle-tienda').addEventListener('click', () => {
+  document.getElementById('payment-detail').value = 'TIENDA';
+});
+
+document.getElementById('btn-detalle-bar').addEventListener('click', () => {
+  document.getElementById('payment-detail').value = 'BAR';
+});
+
+</script>
 </body>
 </html>
