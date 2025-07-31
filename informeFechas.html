@@ -110,9 +110,9 @@
         <div id="totalBarPagosContado"></div>
         <div id="totalPagosContado"></div>
         <div id="totalPistasPagosTarjeta"></div>
-        <div id="totalPagosTarjeta"></div>
         <div id="totalTiendaPagosTarjeta"></div>
         <div id="totalBarPagosTarjeta"></div>
+        <div id="totalPagosTarjeta"></div>
         <div id="totalGastos"></div>
         </br>
         <div id="total"></div>
@@ -417,15 +417,19 @@
             const totalBarTarjeta = document.getElementById('totalBarPagosTarjeta').innerText;
             const total = document.getElementById('total').innerText;
 
-            doc.text(totalPagosContado, 10, doc.lastAutoTable.finalY + 30);
-            doc.text(totalPagosTarjeta, 10, doc.lastAutoTable.finalY + 40);
-            doc.text(totalGastos, 10, doc.lastAutoTable.finalY + 50);
-            doc.text(totalPistasContado, 10, doc.lastAutoTable.finalY + 60);
+            doc.text(totalPistasContado, 10, doc.lastAutoTable.finalY + 30);
+            doc.text(totalTiendaContado, 10, doc.lastAutoTable.finalY + 40);
+            doc.text(totalBarContado, 10, doc.lastAutoTable.finalY + 50);
+            doc.text(totalPagosContado, 10, doc.lastAutoTable.finalY + 60);
+
             doc.text(totalPistasTarjeta, 10, doc.lastAutoTable.finalY + 70);
-            doc.text(totalTiendaContado, 10, doc.lastAutoTable.finalY + 80);
-            doc.text(totalTiendaTarjeta, 10, doc.lastAutoTable.finalY + 90);
-            doc.text(totalBarContado, 10, doc.lastAutoTable.finalY + 100);
-            doc.text(totalBarTarjeta, 10, doc.lastAutoTable.finalY + 110);
+            doc.text(totalTiendaTarjeta, 10, doc.lastAutoTable.finalY + 80);
+            doc.text(totalBarTarjeta, 10, doc.lastAutoTable.finalY + 90);
+            doc.text(totalPagosTarjeta, 10, doc.lastAutoTable.finalY + 100);
+            
+            doc.text(totalGastos, 10, doc.lastAutoTable.finalY + 110);
+            
+
             doc.text(total, 10, doc.lastAutoTable.finalY + 120);
 
             doc.save(`reporte_pagos_gastos_${fechaIniFormateada}_${fechaFinFormateada}.pdf`);
