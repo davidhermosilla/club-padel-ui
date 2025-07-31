@@ -216,6 +216,7 @@
 <div class="botones" style="display: flex; flex-direction: row; gap: 10px;">
 <button id="btn-detalle-tienda" type="button">TIENDA</button>
 <button id="btn-detalle-bar" type="button">BAR</button>
+<button id="btn-detalle-pista" type="button">PISTA</button>
 </div>
 </div>
 <label for="payment-detail">Detalle:</label>
@@ -1162,6 +1163,10 @@ document.getElementById('btn-detalle-tienda').addEventListener('click', () => {
 
 document.getElementById('btn-detalle-bar').addEventListener('click', () => {
   document.getElementById('payment-detail').value = 'BAR';
+});
+
+document.getElementById('btn-detalle-pista').addEventListener('click', () => {
+  document.getElementById('payment-detail').value = 'Pago Pista';
 });
 
 </script>
