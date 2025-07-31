@@ -105,15 +105,15 @@
             <tbody>
             </tbody>
         </table>
-        <div id="totalPagosContado"></div>
-        <div id="totalPagosTarjeta"></div>
-        <div id="totalGastos"></div>
         <div id="totalPistasPagosContado"></div>
-        <div id="totalPistasPagosTarjeta"></div>
         <div id="totalTiendaPagosContado"></div>
-        <div id="totalTiendaPagosTarjeta"></div>
         <div id="totalBarPagosContado"></div>
+        <div id="totalPagosContado"></div>
+        <div id="totalPistasPagosTarjeta"></div>
+        <div id="totalPagosTarjeta"></div>
+        <div id="totalTiendaPagosTarjeta"></div>
         <div id="totalBarPagosTarjeta"></div>
+        <div id="totalGastos"></div>
         </br>
         <div id="total"></div>
     </div>
@@ -263,17 +263,17 @@
             const totalGastosDiv = document.getElementById('totalGastos');
             totalGastosDiv.innerHTML = `<center><h3>Total Gastos: ${totalGastos.toFixed(2)}€</h3></center>`
             const pistasContadoDiv = document.getElementById('totalPistasPagosContado');
-            pistasContadoDiv.innerHTML = `<center><h3>Total Pistas Contado: ${totalPistasPagosContado.toFixed(2)}€</h3></center>`
+            pistasContadoDiv.innerHTML = `<center><h4>Total Pistas Contado: ${totalPistasPagosContado.toFixed(2)}€</h4></center>`
             const pistasTarjetaDiv = document.getElementById('totalPistasPagosTarjeta');
-            pistasTarjetaDiv.innerHTML = `<center><h3>Total Pistas Tarjeta: ${totalPistasPagosTarjeta.toFixed(2)}€</h3></center>`
+            pistasTarjetaDiv.innerHTML = `<center><h4>Total Pistas Tarjeta: ${totalPistasPagosTarjeta.toFixed(2)}€</h4></center>`
             const tiendaContadoDiv = document.getElementById('totalTiendaPagosContado');
-            tiendaContadoDiv.innerHTML = `<center><h3>Total Tienda Contado: ${totalTiendaPagosContado.toFixed(2)}€</h3></center>`
+            tiendaContadoDiv.innerHTML = `<center><h4>Total Tienda Contado: ${totalTiendaPagosContado.toFixed(2)}€</h4></center>`
             const tiendaTarjetaDiv = document.getElementById('totalTiendaPagosTarjeta');
-            tiendaTarjetaDiv.innerHTML = `<center><h3>Total Tienda Tarjeta: ${totalTiendaPagosTarjeta.toFixed(2)}€</h3></center>`
+            tiendaTarjetaDiv.innerHTML = `<center><h4>Total Tienda Tarjeta: ${totalTiendaPagosTarjeta.toFixed(2)}€</h4></center>`
             const barContadoDiv = document.getElementById('totalBarPagosContado');
-            barContadoDiv.innerHTML = `<center><h3>Total Bar Contado: ${totalBarPagosContado.toFixed(2)}€</h3></center>`
+            barContadoDiv.innerHTML = `<center><h4>Total Bar Contado: ${totalBarPagosContado.toFixed(2)}€</h4></center>`
             const barTarjetaDiv = document.getElementById('totalBarPagosTarjeta');
-            barTarjetaDiv.innerHTML = `<center><h3>Total Bar Tarjeta: ${totalBarPagosTarjeta.toFixed(2)}€</h3></center>`
+            barTarjetaDiv.innerHTML = `<center><h4>Total Bar Tarjeta: ${totalBarPagosTarjeta.toFixed(2)}€</h4></center>`
 
             let resultTotal = parseFloat(totalPagosContado) + parseFloat(totalPagosTarjeta) - parseFloat(totalGastos);
             const totalDiv = document.getElementById('total');
