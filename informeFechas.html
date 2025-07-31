@@ -417,20 +417,30 @@
             const totalBarTarjeta = document.getElementById('totalBarPagosTarjeta').innerText;
             const total = document.getElementById('total').innerText;
 
-            doc.text(totalPistasContado, 10, doc.lastAutoTable.finalY + 30);
-            doc.text(totalTiendaContado, 10, doc.lastAutoTable.finalY + 40);
-            doc.text(totalBarContado, 10, doc.lastAutoTable.finalY + 50);
-            doc.text(totalPagosContado, 10, doc.lastAutoTable.finalY + 60);
+            const lineHeight = 10;
+            const totalsStart = doc.lastAutoTable.finalY + 30;
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const neededHeight = totalsStart + lineHeight * 9; // space needed for all totals
 
-            doc.text(totalPistasTarjeta, 10, doc.lastAutoTable.finalY + 70);
-            doc.text(totalTiendaTarjeta, 10, doc.lastAutoTable.finalY + 80);
-            doc.text(totalBarTarjeta, 10, doc.lastAutoTable.finalY + 90);
-            doc.text(totalPagosTarjeta, 10, doc.lastAutoTable.finalY + 100);
-            
-            doc.text(totalGastos, 10, doc.lastAutoTable.finalY + 110);
-            
+            let y = totalsStart;
+            if (neededHeight > pageHeight) {
+                doc.addPage();
+                y = 20; // start near top of new page
+            }
 
-            doc.text(total, 10, doc.lastAutoTable.finalY + 120);
+            doc.text(totalPistasContado, 10, y);
+            doc.text(totalTiendaContado, 10, y + lineHeight);
+            doc.text(totalBarContado, 10, y + lineHeight * 2);
+            doc.text(totalPagosContado, 10, y + lineHeight * 3);
+
+            doc.text(totalPistasTarjeta, 10, y + lineHeight * 4);
+            doc.text(totalTiendaTarjeta, 10, y + lineHeight * 5);
+            doc.text(totalBarTarjeta, 10, y + lineHeight * 6);
+            doc.text(totalPagosTarjeta, 10, y + lineHeight * 7);
+
+            doc.text(totalGastos, 10, y + lineHeight * 8);
+
+            doc.text(total, 10, y + lineHeight * 9);
 
             doc.save(`reporte_pagos_gastos_${fechaIniFormateada}_${fechaFinFormateada}.pdf`);
         }
