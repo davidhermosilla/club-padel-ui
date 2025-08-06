@@ -1,221 +1,297 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<title>Gestión de Ligas</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <title>Gestión de Ligas</title>
 </head>
 <body>
 
 <form id="form-liga" style="margin-bottom:30px;">
-    <h2 id="form-liga-titulo">Añadir Nueva Liga:</h2>
-    <input type="hidden" id="ligaId">
-    <label>Nombre</label>
-    <input type="text" id="ligaNombre" required><br>
-    <label>Fecha Inicio</label>
-    <input type="date" id="ligaInicio" required><br>
-    <label>Fecha Fin</label>
-    <input type="date" id="ligaFin" required><br>
-    <button type="submit" id="btn-guardar-liga">Añadir Liga</button>
-    <button type="button" id="cancelar-edicion-liga" style="display:none;">Cancelar</button>
+  <h2 id="form-liga-titulo">Añadir Nueva Liga:</h2>
+  <input type="hidden" id="ligaId">
+  <label>Nombre</label>
+  <input type="text" id="ligaNombre" required><br>
+  <label>Fecha Inicio</label>
+  <input type="date" id="ligaInicio" required><br>
+  <label>Fecha Fin</label>
+  <input type="date" id="ligaFin" required><br>
+  <label><input type="checkbox" id="ligaActual"> Liga actual</label><br>
+  <button type="submit" id="btn-guardar-liga">Añadir Liga</button>
+  <button type="button" id="cancelar-edicion-liga" style="display:none;">Cancelar</button>
 </form>
 
 <figure class="wp-block-table is-style-stripes">
 <table id="tabla-ligas" class="has-text-color has-link-color" style="color:#1e73be">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Nombre</th>
+      <th>Inicio</th>
+      <th>Fin</th>
+      <th>Actual</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
 </table>
 </figure>
 
-<div id="clasificacion-section" style="display:none; margin-top:40px;">
-    <h2>Clasificación de Liga: <span id="liga-seleccionada-nombre"></span></h2>
-    <figure class="wp-block-table is-style-stripes">
-    <table id="tabla-clasificacion" class="has-text-color has-link-color" style="color:#1e73be">
-        <thead>
-            <tr>
-                <th>POS</th>
-                <th>PAREJA</th>
-                <th>PJ</th>
-                <th>PG</th>
-                <th>PP</th>
-                <th>PNJ</th>
-                <th>DIF. SET</th>
-                <th>DIF. JG</th>
-                <th>PTS LIGA</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-    </figure>
-</div>
+<h2 style="margin-top:50px">Clasificación de <span id="nombre-liga-seleccionada">(selecciona una liga)</span></h2>
+<label for="filtroDivision">Filtrar por División:</label>
+<select id="filtroDivision">
+  <option value="">Todas</option>
+</select>
+<figure class="wp-block-table is-style-stripes">
+<table id="tabla-clasificacion" class="has-text-color has-link-color" style="color:#1e73be">
+  <thead>
+    <tr>
+      <th>División</th>
+      <th>POS</th>
+      <th>Pareja</th>
+      <th>PJ</th>
+      <th>PG</th>
+      <th>PP</th>
+      <th>No Jug.</th>
+      <th>DIF SET</th>
+      <th>DIF JG</th>
+      <th>PTS LIGA</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+</figure>
 
 <script>
 var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
-var parejas = {};
-var ligaSeleccionada = null;
+var headers = {
+  'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+};
+var ultimaDivisionSeleccionada = localStorage.getItem('ultimaDivisionSeleccionada') || "";
+var ultimaLigaId = localStorage.getItem('ultimaLigaId') || null;
 
 $(document).ready(function(){
-    var tablaLigas = $('#tabla-ligas').DataTable({
-        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
-    });
+  var tablaLigas = $('#tabla-ligas').DataTable({
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
+  });
 
-    var tablaClasificacion = $('#tabla-clasificacion').DataTable({
-        paging: false,
-        searching: false,
-        info: false,
-        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
-    });
+  var tablaClasificacion = $('#tabla-clasificacion').DataTable({
+    order: [[0, 'asc'], [1, 'asc']],
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
+  });
 
-    function cargarParejas(){
-        $.get({
-            url: api_url + '/parejas',
-            headers: { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
-            success: function(data){
-                parejas = {};
-                $.each(data, function(i, p){
-                    parejas[p.parejaId] = p.jugador1.nombre + ' - ' + p.jugador2.nombre;
-                });
-            }
+  function cargarDivisiones() {
+    $.get({
+      url: api_url + '/divisiones',
+      headers,
+      success: function(data) {
+        const filtro = $('#filtroDivision');
+        filtro.empty().append('<option value="">Todas</option>');
+        data.forEach(d => {
+          const selected = d.nombre === ultimaDivisionSeleccionada ? 'selected' : '';
+          filtro.append(`<option value="${d.nombre}" ${selected}>${d.nombre}</option>`);
         });
+        filtro.trigger('change');
+      }
+    });
+  }
+
+  function cargarLigas(){
+    $.get({
+      url: api_url + '/ligas',
+      headers,
+      success: function(data){
+        tablaLigas.clear();
+        $.each(data, function(i, liga){
+          const esActual = liga.current ? 'Sí' : 'No';
+          tablaLigas.row.add([
+            liga.id,
+            liga.nombre,
+            liga.fechaInicio,
+            liga.fechaFin,
+            esActual,
+            `<button class="editar-liga" data-id="${liga.id}" data-nombre="${liga.nombre}" data-inicio="${liga.fechaInicio}" data-fin="${liga.fechaFin}" data-actual="${liga.current}">Editar</button>
+             <button class="eliminar-liga" data-id="${liga.id}">Eliminar</button>
+             <button class="ver-clasificacion" data-id="${liga.id}" data-nombre="${liga.nombre}">Ver Clasificación</button>`
+          ]);
+        });
+        tablaLigas.draw();
+        if (ultimaLigaId) {
+          const btn = $(`button.ver-clasificacion[data-id="${ultimaLigaId}"]`);
+          if (btn.length) btn.trigger('click');
+        }
+      }
+    });
+  }
+
+  function cargarClasificacion(ligaId, nombreLiga){
+    localStorage.setItem('ultimaLigaId', ligaId);
+    $('#nombre-liga-seleccionada').text(nombreLiga);
+    $.get({
+      url: `${api_url}/clasificaciones?ligaId=${ligaId}`,
+      headers,
+      success: function(data){
+        tablaClasificacion.clear();
+        $.each(data, function(i, c){
+          if (c.liga?.id != ligaId) return;
+          const divisionNombre = c.division?.nombre || '-';
+		  const divisionId = c.division?.id || '';
+          const parejaNombre = (c.pareja?.jugador1?.nombre && c.pareja?.jugador2?.nombre)
+            ? `${c.pareja.jugador1.nombre} / ${c.pareja.jugador2.nombre}` : '-';
+		  
+		  const parejaId = c.pareja?.id || '';
+		  
+          tablaClasificacion.row.add([
+            `<span data-division-id="${divisionId}">${divisionNombre}</span>`,
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="posicion" value="${c.posicion ?? ''}" style="width:50px">`,
+            `<span data-pareja-id="${parejaId}">${parejaNombre}</span>`,
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pj" value="${c.partidosJugados ?? ''}" style="width:50px">`,
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pg" value="${c.partidosGanados ?? ''}" style="width:50px">`,
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pp" value="${c.partidosPerdidos ?? ''}" style="width:50px">`,
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pnj" value="${c.noJugados ?? ''}" style="width:50px">`,
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="difSet" value="${c.diferenciaSets ?? ''}" style="width:50px">`,
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="difJuegos" value="${c.diferenciaJuegos ?? ''}" style="width:50px">`,
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pts" value="${c.puntos ?? ''}" style="width:50px">`
+          ]);
+
+        });
+        tablaClasificacion.draw();
+        $('#filtroDivision').trigger('change');
+      }
+    });
+  }
+
+  $('#tabla-clasificacion').on('change', '.edit-clas', function(){
+    const id = $(this).data('id');
+    const field = $(this).data('field');
+    const value = $(this).val();
+    const fila = $(this).closest('tr');
+	const parejaId = parseInt(fila.find('span[data-pareja-id]').data('pareja-id')) || null;
+    const divisionId = parseInt(fila.find('span[data-division-id]').data('division-id')) || null;
+    const data = {
+      parejaId: parejaId,
+      divisionId: divisionId,
+      ligaId: parseInt(ultimaLigaId),
+      partidosJugados: parseInt(fila.find('[data-field="pj"]').val()) || 0,
+      partidosGanados: parseInt(fila.find('[data-field="pg"]').val()) || 0,
+      partidosPerdidos: parseInt(fila.find('[data-field="pp"]').val()) || 0,
+      noJugados: parseInt(fila.find('[data-field="pnj"]').val()) || 0,
+      diferenciaSets: parseInt(fila.find('[data-field="difSet"]').val()) || 0,
+      diferenciaJuegos: parseInt(fila.find('[data-field="difJuegos"]').val()) || 0,
+      puntos: parseInt(fila.find('[data-field="pts"]').val()) || 0,
+      posicion: parseInt(fila.find('[data-field="posicion"]').val()) || 0
+    };
+
+    $.ajax({
+      url: `${api_url}/clasificaciones/${id}`,
+      type: 'PUT',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      data: JSON.stringify(data),
+      success: function(){
+        console.log('Clasificación actualizada');
+      },
+      error: function(xhr){
+        alert('Error al actualizar clasificación: ' + xhr.responseText);
+      }
+    });
+  });
+
+  $('#filtroDivision').on('change', function(){
+    var division = $(this).val();
+    localStorage.setItem('ultimaDivisionSeleccionada', division);
+    if (division) {
+      tablaClasificacion.column(0).search('^' + division + '$', true, false).draw();
+    } else {
+      tablaClasificacion.column(0).search('').draw();
     }
+  });
 
-    function cargarLigas(){
-        $.get({
-            url: api_url + '/ligas',
-            headers: { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
-            success: function(data){
-                tablaLigas.clear();
-                $.each(data, function(i, liga){
-                    tablaLigas.row.add([
-                        liga.id,
-                        liga.nombre,
-                        liga.fechaInicio,
-                        liga.fechaFin,
-                        `<button class="editar-liga" data-id="${liga.id}" data-nombre="${liga.nombre}" data-inicio="${liga.fechaInicio}" data-fin="${liga.fechaFin}">Editar</button>
-                         <button class="ver-clasificacion" data-id="${liga.id}" data-nombre="${liga.nombre}">Clasificación</button>`
-                    ]);
-                });
-                tablaLigas.draw();
-            }
-        });
-    }
+  $('#form-liga').submit(function(e){
+    e.preventDefault();
+    const id = $('#ligaId').val();
+    const data = {
+      nombre: $('#ligaNombre').val(),
+      fechaInicio: $('#ligaInicio').val(),
+      fechaFin: $('#ligaFin').val(),
+      current: $('#ligaActual').is(':checked')
+    };
+    const method = id ? 'PUT' : 'POST';
+    const url = api_url + '/ligas' + (id ? '/' + id : '');
 
-    function cargarClasificacion(ligaId, nombreLiga){
-        ligaSeleccionada = ligaId;
-        $('#clasificacion-section').show();
-        $('#liga-seleccionada-nombre').text(nombreLiga);
-        $.get({
-            url: api_url + '/clasificaciones',
-            data: { ligaId: ligaId },
-            headers: { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
-            success: function(data){
-                tablaClasificacion.clear();
-                $.each(data, function(i, c){
-                    var row = [
-                        `<input type="number" class="clas-input" data-field="pos" value="${c.pos || 0}" data-pareja="${c.parejaId}">`,
-                        parejas[c.parejaId] || c.parejaId,
-                        `<input type="number" class="clas-input" data-field="pj" value="${c.pj || 0}" data-pareja="${c.parejaId}">`,
-                        `<input type="number" class="clas-input" data-field="pg" value="${c.pg || 0}" data-pareja="${c.parejaId}">`,
-                        `<input type="number" class="clas-input" data-field="pp" value="${c.pp || 0}" data-pareja="${c.parejaId}">`,
-                        `<input type="number" class="clas-input" data-field="pnj" value="${c.pnj || 0}" data-pareja="${c.parejaId}">`,
-                        `<input type="number" class="clas-input" data-field="difSet" value="${c.difSet || 0}" data-pareja="${c.parejaId}">`,
-                        `<input type="number" class="clas-input" data-field="difJuegos" value="${c.difJuegos || 0}" data-pareja="${c.parejaId}">`,
-                        `<input type="number" class="clas-input" data-field="ptsLiga" value="${c.ptsLiga || 0}" data-pareja="${c.parejaId}">`
-                    ];
-                    tablaClasificacion.row.add(row);
-                });
-                tablaClasificacion.draw();
-            }
-        });
-    }
-
-    $('#form-liga').submit(function(e){
-        e.preventDefault();
-        var id = $('#ligaId').val();
-        var data = {
-            nombre: $('#ligaNombre').val(),
-            fechaInicio: $('#ligaInicio').val(),
-            fechaFin: $('#ligaFin').val()
-        };
-        var method = id ? 'PUT' : 'POST';
-        var url = api_url + '/ligas' + (id ? '/' + id : '');
-        $.ajax({
-            url: url,
-            type: method,
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
-            data: JSON.stringify(data),
-            success: function(){
-                $('#form-liga')[0].reset();
-                $('#ligaId').val('');
-                $('#form-liga-titulo').text('Añadir Nueva Liga:');
-                $('#btn-guardar-liga').text('Añadir Liga');
-                $('#cancelar-edicion-liga').hide();
-                cargarLigas();
-            }
-        });
-    });
-
-    $('#tabla-ligas tbody').on('click', '.editar-liga', function(){
-        var btn = $(this);
-        $('#ligaId').val(btn.data('id'));
-        $('#ligaNombre').val(btn.data('nombre'));
-        $('#ligaInicio').val(btn.data('inicio'));
-        $('#ligaFin').val(btn.data('fin'));
-        $('#form-liga-titulo').text('Editar Liga:');
-        $('#btn-guardar-liga').text('Guardar Cambios');
-        $('#cancelar-edicion-liga').show();
-        $('html, body').animate({ scrollTop: $("#form-liga").offset().top }, 400);
-    });
-
-    $('#cancelar-edicion-liga').click(function(){
+    $.ajax({
+      url,
+      type: method,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      data: JSON.stringify(data),
+      success: function(){
         $('#form-liga')[0].reset();
         $('#ligaId').val('');
         $('#form-liga-titulo').text('Añadir Nueva Liga:');
         $('#btn-guardar-liga').text('Añadir Liga');
         $('#cancelar-edicion-liga').hide();
+        cargarLigas();
+        tablaClasificacion.clear().draw();
+        $('#nombre-liga-seleccionada').text('(selecciona una liga)');
+        cargarDivisiones();
+      },
+      error: function(xhr) {
+        alert("Error al guardar liga: " + xhr.responseText);
+      }
     });
+  });
 
-    $('#tabla-ligas tbody').on('click', '.ver-clasificacion', function(){
-        var ligaId = $(this).data('id');
-        var nombre = $(this).data('nombre');
-        cargarClasificacion(ligaId, nombre);
-    });
+  $('#tabla-ligas tbody').on('click', '.editar-liga', function(){
+    var btn = $(this);
+    $('#ligaId').val(btn.data('id'));
+    $('#ligaNombre').val(btn.data('nombre'));
+    $('#ligaInicio').val(btn.data('inicio'));
+    $('#ligaFin').val(btn.data('fin'));
+    $('#ligaActual').prop('checked', btn.data('actual') === true || btn.data('actual') === 'true');
+    $('#form-liga-titulo').text('Editar Liga:');
+    $('#btn-guardar-liga').text('Guardar Cambios');
+    $('#cancelar-edicion-liga').show();
+    $('html, body').animate({ scrollTop: $("#form-liga").offset().top }, 400);
+  });
 
-    $('#tabla-clasificacion tbody').on('change', '.clas-input', function(){
-        var parejaId = $(this).data('pareja');
-        var fila = $(this).closest('tr');
-        var payload = {
-            id: { ligaId: ligaSeleccionada, parejaId: parejaId },
-            pos: fila.find('input[data-field="pos"]').val(),
-            pj: fila.find('input[data-field="pj"]').val(),
-            pg: fila.find('input[data-field="pg"]').val(),
-            pp: fila.find('input[data-field="pp"]').val(),
-            pnj: fila.find('input[data-field="pnj"]').val(),
-            difSet: fila.find('input[data-field="difSet"]').val(),
-            difJuegos: fila.find('input[data-field="difJuegos"]').val(),
-            ptsLiga: fila.find('input[data-field="ptsLiga"]').val()
-        };
-        $.ajax({
-            url: api_url + '/clasificaciones',
-            type: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
-            data: JSON.stringify(payload)
-        });
-    });
+  $('#tabla-ligas tbody').on('click', '.ver-clasificacion', function(){
+    var ligaId = $(this).data('id');
+    var nombre = $(this).data('nombre');
+    cargarClasificacion(ligaId, nombre);
+  });
 
-    cargarParejas();
-    cargarLigas();
+  $('#cancelar-edicion-liga').click(function(){
+    $('#form-liga')[0].reset();
+    $('#ligaId').val('');
+    $('#form-liga-titulo').text('Añadir Nueva Liga:');
+    $('#btn-guardar-liga').text('Añadir Liga');
+    $('#cancelar-edicion-liga').hide();
+  });
+
+  $('#tabla-ligas tbody').on('click', '.eliminar-liga', function(){
+    var id = $(this).data('id');
+    if (confirm("¿Seguro que deseas eliminar esta liga?")) {
+      $.ajax({
+        url: api_url + '/ligas/' + id,
+        type: 'DELETE',
+        headers,
+        success: function(){
+          cargarLigas();
+          tablaClasificacion.clear().draw();
+          $('#nombre-liga-seleccionada').text('(selecciona una liga)');
+          cargarDivisiones();
+        },
+        error: function(xhr) {
+          alert("Error al eliminar liga: " + xhr.responseText);
+        }
+      });
+    }
+  });
+
+  cargarLigas();
+  cargarDivisiones();
 });
 </script>
 
