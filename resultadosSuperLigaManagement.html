@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión Resultados Super Liga</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    h2 { text-align: center; margin-bottom: 30px; }
+    #filtro-division, #filtro-liga { margin-bottom: 20px; margin-right: 10px; }
+    .accion-btn { color: red; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <h2>GESTION RESULTADOS SUPER LIGA</h2>
+
+  <label for="filtro-liga">Liga:</label>
+  <select id="filtro-liga"><option value="">Cargando ligas...</option></select>
+
+  <label for="filtro-division">División:</label>
+  <select id="filtro-division">
+    <option value="">Todas</option>
+  </select>
+
+  <table id="tabla-resultados" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th>División</th>
+        <th>Pareja 1</th>
+        <th>Pareja 2</th>
+        <th>Set 1</th>
+        <th>Set 2</th>
+        <th>Set 3</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API_BASE = 'https://club-padel-api-12f28391bbbd.herokuapp.com';
+    const AUTH_HEADER = { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' };
+
+    let divisionMap = {};
+    let dataTable;
+    let resultadosTotales = [];
+
+    function cargarLigas() {
+      $.ajax({
+        url: `${API_BASE}/ligas`,
+        headers: AUTH_HEADER,
+        success: function(ligas) {
+          const select = $('#filtro-liga');
+          select.empty();
+          ligas.forEach(l => {
+            const option = `<option value="${l.id}" ${l.current ? 'selected' : ''}>${l.nombre}</option>`;
+            select.append(option);
+          });
+
+          const ligaActualId = select.val();
+          if (ligaActualId) cargarResultados(ligaActualId);
+        }
+      });
+    }
+
+    function cargarDivisiones() {
+      $.ajax({
+        url: `${API_BASE}/divisiones`,
+        headers: AUTH_HEADER,
+        success: function(divisiones) {
+          const select = $('#filtro-division');
+          select.empty().append('<option value="">Todas</option>');
+          divisiones.forEach(d => {
+            divisionMap[d.id] = d.nombre;
+            select.append(`<option value="${d.id}">${d.nombre}</option>`);
+          });
+        }
+      });
+    }
+
+    function cargarResultados(ligaId) {
+      $.ajax({
+        url: `${API_BASE}/resultados/liga/${ligaId}`,
+        headers: AUTH_HEADER,
+        success: function(resultados) {
+          resultadosTotales = resultados;
+          renderizarResultados();
+        }
+      });
+    }
+
+    function renderizarResultados() {
+      const filtroDivision = $('#filtro-division').val();
+      const filtrados = filtroDivision
+        ? resultadosTotales.filter(r => r.division.id == filtroDivision)
+        : resultadosTotales;
+
+      const datos = filtrados.map(r => [
+        divisionMap[r.division.id] || `División ${r.division.id}`,
+        `${r.pareja1.jugador1.nombre} / ${r.pareja1.jugador2.nombre}`,
+        `${r.pareja2.jugador1.nombre} / ${r.pareja2.jugador2.nombre}`,
+        `${r.set1P1} - ${r.set1P2}`,
+        `${r.set2P1} - ${r.set2P2}`,
+        `${r.set3P1} - ${r.set3P2}`,
+        `<span class="accion-btn" data-id="${r.id}">🗑️</span>`
+      ]);
+
+      dataTable.clear().rows.add(datos).draw();
+    }
+
+    function eliminarResultado(id) {
+      if (!confirm("¿Estás seguro de que quieres eliminar este resultado?")) return;
+
+      $.ajax({
+        url: `${API_BASE}/resultados/${id}`,
+        type: 'DELETE',
+        headers: AUTH_HEADER,
+        success: function() {
+          resultadosTotales = resultadosTotales.filter(r => r.id !== id);
+          renderizarResultados();
+        },
+        error: function() {
+          alert("Error al eliminar el resultado.");
+        }
+      });
+    }
+
+    $(document).ready(function () {
+      dataTable = $('#tabla-resultados').DataTable({
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
+      });
+
+      $('#filtro-liga').on('change', function () {
+        const ligaId = $(this).val();
+        if (ligaId) cargarResultados(ligaId);
+      });
+
+      $('#filtro-division').on('change', renderizarResultados);
+
+      $('#tabla-resultados tbody').on('click', '.accion-btn', function () {
+        const id = parseInt($(this).data('id'));
+        eliminarResultado(id);
+      });
+
+      cargarDivisiones();
+      cargarLigas();
+    });
+  </script>
+
+</body>
+</html>
