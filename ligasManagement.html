@@ -40,6 +40,9 @@
 </table>
 </figure>
 
+<!-- CAMPO OCULTO PARA LIGA SELECCIONADA -->
+<input type="hidden" id="ligaIdSeleccionada">
+
 <h2 style="margin-top:50px">Clasificación de <span id="nombre-liga-seleccionada">(selecciona una liga)</span></h2>
 <label for="filtroDivision">Filtrar por División:</label>
 <select id="filtroDivision">
@@ -71,7 +74,6 @@ var headers = {
   'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
 };
 var ultimaDivisionSeleccionada = localStorage.getItem('ultimaDivisionSeleccionada') || "";
-var ultimaLigaId = localStorage.getItem('ultimaLigaId') || null;
 
 $(document).ready(function(){
   var tablaLigas = $('#tabla-ligas').DataTable({
@@ -119,16 +121,12 @@ $(document).ready(function(){
           ]);
         });
         tablaLigas.draw();
-        if (ultimaLigaId) {
-          const btn = $(`button.ver-clasificacion[data-id="${ultimaLigaId}"]`);
-          if (btn.length) btn.trigger('click');
-        }
       }
     });
   }
 
   function cargarClasificacion(ligaId, nombreLiga){
-    localStorage.setItem('ultimaLigaId', ligaId);
+    $('#ligaIdSeleccionada').val(ligaId);
     $('#nombre-liga-seleccionada').text(nombreLiga);
     $.get({
       url: `${api_url}/clasificaciones?ligaId=${ligaId}`,
@@ -138,12 +136,10 @@ $(document).ready(function(){
         $.each(data, function(i, c){
           if (c.liga?.id != ligaId) return;
           const divisionNombre = c.division?.nombre || '-';
-		  const divisionId = c.division?.id || '';
+          const divisionId = c.division?.id || '';
           const parejaNombre = (c.pareja?.jugador1?.nombre && c.pareja?.jugador2?.nombre)
             ? `${c.pareja.jugador1.nombre} / ${c.pareja.jugador2.nombre}` : '-';
-		  
-		  const parejaId = c.pareja?.id || '';
-		  
+          const parejaId = c.pareja?.id || '';
           tablaClasificacion.row.add([
             `<span data-division-id="${divisionId}">${divisionNombre}</span>`,
             `<input type="number" class="edit-clas" data-id="${c.id}" data-field="posicion" value="${c.posicion ?? ''}" style="width:50px">`,
@@ -156,7 +152,6 @@ $(document).ready(function(){
             `<input type="number" class="edit-clas" data-id="${c.id}" data-field="difJuegos" value="${c.diferenciaJuegos ?? ''}" style="width:50px">`,
             `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pts" value="${c.puntos ?? ''}" style="width:50px">`
           ]);
-
         });
         tablaClasificacion.draw();
         $('#filtroDivision').trigger('change');
@@ -166,15 +161,15 @@ $(document).ready(function(){
 
   $('#tabla-clasificacion').on('change', '.edit-clas', function(){
     const id = $(this).data('id');
-    const field = $(this).data('field');
-    const value = $(this).val();
     const fila = $(this).closest('tr');
-	const parejaId = parseInt(fila.find('span[data-pareja-id]').data('pareja-id')) || null;
+    const parejaId = parseInt(fila.find('span[data-pareja-id]').data('pareja-id')) || null;
     const divisionId = parseInt(fila.find('span[data-division-id]').data('division-id')) || null;
+    const ligaIdSeleccionada = parseInt($('#ligaIdSeleccionada').val());
+
     const data = {
       parejaId: parejaId,
       divisionId: divisionId,
-      ligaId: parseInt(ultimaLigaId),
+      ligaId: ligaIdSeleccionada,
       partidosJugados: parseInt(fila.find('[data-field="pj"]').val()) || 0,
       partidosGanados: parseInt(fila.find('[data-field="pg"]').val()) || 0,
       partidosPerdidos: parseInt(fila.find('[data-field="pp"]').val()) || 0,
