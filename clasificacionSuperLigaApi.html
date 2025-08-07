@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clasificación de la Liga</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    h2 { text-align: center; margin-bottom: 20px; }
+    select { margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+  <h2>Clasificación Super Liga</h2>
+
+  <label for="liga-select">Selecciona Liga:</label>
+  <select id="liga-select"></select>
+
+  <label for="filtro-division">Filtrar por División:</label>
+  <select id="filtro-division">
+  </select>
+
+  <table id="tabla-clasificacion" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th style="display:none;">División</th>
+        <th>POS</th>
+        <th>PAREJA</th>
+        <th>PJ</th>
+        <th>PG</th>
+        <th>PP</th>
+        <th>PNJ</th>
+        <th>DIF. SET</th>
+        <th>DIF. JG</th>
+        <th>PTS LIGA</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<script>
+const API_BASE = 'https://club-padel-api-12f28391bbbd.herokuapp.com';
+const AUTH_HEADER = { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' };
+let divisionMap = {};
+let clasificacionData = [];
+let dataTable;
+
+function cargarDivisiones(callback) {
+  $.ajax({
+    url: `${API_BASE}/divisiones`,
+    headers: AUTH_HEADER,
+    success: function(divisiones) {
+      const select = $('#filtro-division');
+      select.empty();
+      divisiones.forEach(d => {
+        divisionMap[d.id] = d.nombre;
+        select.append(`<option value="${d.nombre}">${d.nombre}</option>`);
+      });
+      if (callback) callback();
+    }
+  });
+}
+
+function cargarLigas() {
+  $.ajax({
+    url: `${API_BASE}/ligas`,
+    headers: AUTH_HEADER,
+    success: function(ligas) {
+      const select = $('#liga-select');
+      select.empty();
+      let ligaActualId = null;
+      ligas.forEach(l => {
+        const selected = l.current && ligaActualId === null ? 'selected' : '';
+        if (l.current && ligaActualId === null) {
+          ligaActualId = l.id;
+        }
+        select.append(`<option value="${l.id}" ${selected}>${l.nombre}</option>`);
+      });
+      if (ligaActualId !== null) {
+        $('#liga-select').val(ligaActualId);
+        cargarClasificacion(ligaActualId);
+      }
+    }
+  });
+}
+
+function cargarClasificacion(ligaId) {
+  $.ajax({
+    url: `${API_BASE}/clasificaciones?ligaId=${ligaId}`,
+    headers: AUTH_HEADER,
+    success: function(clasificacion) {
+      clasificacionData = clasificacion.map(c => ([
+        c.division?.nombre || `División ${c.divisionId}`,
+        c.posicion || '',
+        (c.pareja?.jugador1?.nombre && c.pareja?.jugador2?.nombre)
+            ? `${c.pareja.jugador1.nombre} / ${c.pareja.jugador2.nombre}` : '-',
+        c.partidosJugados ?? 0,
+        c.partidosGanados ?? 0,
+        c.partidosPerdidos ?? 0,
+        c.noJugados ?? 0,
+        c.diferenciaSets ?? 0,
+        c.diferenciaJuegos ?? 0,
+        c.puntos ?? 0
+      ]));
+      actualizarTabla();
+    }
+  });
+}
+
+function actualizarTabla() {
+  const divisionFiltro = $('#filtro-division').val();
+  const filtrados = divisionFiltro
+    ? clasificacionData.filter(row => row[0] === divisionFiltro)
+    : clasificacionData;
+  dataTable.clear().rows.add(filtrados).draw();
+}
+
+$(document).ready(function () {
+  dataTable = $('#tabla-clasificacion').DataTable({
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
+    order: [[1, 'asc']],
+    columnDefs: [
+      { targets: 0, visible: false } // Oculta la columna "División"
+    ]
+  });
+
+  $('#liga-select').on('change', function () {
+    const ligaId = $(this).val();
+    cargarClasificacion(ligaId);
+  });
+
+  $('#filtro-division').on('change', actualizarTabla);
+
+  cargarDivisiones(() => cargarLigas());
+});
+</script>
+</body>
+</html>
