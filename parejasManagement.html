@@ -1,49 +1,67 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- jQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<!-- DataTables -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
 <title>Gestión de Parejas</title>
 </head>
 <body>
 
+<!-- Alta/edición de pareja -->
 <form id="form-pareja" style="margin-bottom: 30px;">
-    <h2 id="form-titulo">Añadir Nueva Pareja:</h2>
-    <input type="hidden" id="parejaId">
-    <label>División</label>
-    <select id="divisionPareja" required></select><br>
-    <label>Jugador 1</label>
-    <select id="jugador1Pareja" required></select><br>
-    <label>Jugador 2</label>
-    <select id="jugador2Pareja" required></select><br>
-    <button type="submit" id="btn-guardar">Añadir Pareja</button>
-    <button type="button" id="cancelar-edicion" style="display:none;">Cancelar</button>
+  <h2 id="form-titulo">Añadir Nueva Pareja:</h2>
+  <input type="hidden" id="parejaId">
+  <label>División</label>
+  <select id="divisionPareja" required></select><br>
+  <label>Jugador 1</label>
+  <select id="jugador1Pareja" required></select><br>
+  <label>Jugador 2</label>
+  <select id="jugador2Pareja" required></select><br>
+  <button type="submit" id="btn-guardar">Añadir Pareja</button>
+  <button type="button" id="cancelar-edicion" style="display:none;">Cancelar</button>
 </form>
 
-
+<!-- Cargar parejas desde archivo -->
 <form id="form-cargar-archivo" style="margin-bottom: 30px;">
-    <h2>Cargar parejas desde archivo (.txt)</h2>
-    <input type="file" id="archivoParejas" accept=".txt"><br><br>
-    <button type="button" id="cargar-archivo">Cargar Parejas</button>
+  <h2>Cargar parejas desde archivo (.txt)</h2>
+  <input type="file" id="archivoParejas" accept=".txt"><br><br>
+  <button type="button" id="cargar-archivo">Cargar Parejas</button>
+</form>
+
+<!-- NUEVO: Carga de puntos por pareja -->
+<form id="form-cargar-puntos" style="margin-bottom: 30px;">
+  <h2>Actualizar puntos por pareja desde archivo (.txt)</h2>
+  <p style="margin:6px 0 12px 0; max-width:700px;">
+    Formato por línea: <code>jugador1|jugador2|puntos1|puntos2</code> &nbsp; Ej.: <code>Juan Pérez|Luis Gómez|120|98.5</code>
+  </p>
+  <input type="file" id="archivoPuntosParejas" accept=".txt"><br><br>
+  <button type="button" id="cargar-puntos">Actualizar Puntos</button>
 </form>
 
 <figure class="wp-block-table is-style-stripes">
-    <table id="tabla-parejas" class="has-text-color has-link-color" style="color:#1e73be">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>División</th>
-                <th>Jugador 1</th>
-                <th>Jugador 2</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+  <table id="tabla-parejas" class="has-text-color has-link-color" style="color:#1e73be; width:100%;">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>División</th>
+        <th>Jugador 1</th>
+        <th>Jugador 2</th>
+        <th>Puntos Jugador 1</th>
+        <th>Puntos Jugador 2</th>
+        <th>Total</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 </figure>
 
 <script>
@@ -51,237 +69,316 @@ var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
 var divisiones = [];
 var jugadores = [];
 var mapaDivisiones = {};
+var parejasCache = [];
 
 $(document).ready(function(){
-    var tablaParejas = $('#tabla-parejas').DataTable({
-        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
-        columns: [
-            { title: "ID" },
-            { title: "División" },
-            { title: "Jugador 1" },
-            { title: "Jugador 2" },
-            { title: "Acciones" }
-        ]
+  // Tabla
+  var tablaParejas = $('#tabla-parejas').DataTable({
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
+    columns: [
+      { title: "ID" },
+      { title: "División" },
+      { title: "Jugador 1" },
+      { title: "Jugador 2" },
+      { title: "Puntos Jugador 1" },
+      { title: "Puntos Jugador 2" },
+      { title: "Total" },
+      { title: "Acciones", orderable: false, searchable: false }
+    ]
+  });
+
+  function rellenarSelect(select, data, esJugador){
+    select.empty();
+    $.each(data, function(_, item){
+      if (esJugador) {
+        select.append($('<option>', { value: item.jugadorId, text: item.nombre }));
+      } else {
+        select.append($('<option>', { value: item.id, text: item.nombre }));
+      }
+    });
+  }
+
+  function cargarDivisionesYJugadores(callback){
+    let completado = 0;
+
+    $.get({
+      url: api_url + '/divisiones',
+      headers: { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
+      success: function(data){
+        divisiones = data || [];
+        mapaDivisiones = {};
+        divisiones.forEach(d => mapaDivisiones[d.id] = d.nombre);
+        rellenarSelect($('#divisionPareja'), divisiones, false);
+        if (++completado === 2 && callback) callback();
+      },
+      error: function(xhr){ alert('Error cargando divisiones: ' + (xhr.responseText || xhr.statusText)); }
     });
 
-    function rellenarSelect(select, data, esJugador){
-        select.empty();
-        $.each(data, function(index, item){
-            if (esJugador) {
-                select.append($('<option>', { value: item.jugadorId, text: item.nombre }));
-            } else {
-                select.append($('<option>', { value: item.id, text: item.nombre }));
-            }
-        });
-    }
-
-    function cargarDivisionesYJugadores(callback){
-        let completado = 0;
-        $.get({
-            url: api_url+'/divisiones',
-            headers: { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
-            success: function(data){
-                divisiones = data;
-                mapaDivisiones = {};
-                data.forEach(d => mapaDivisiones[d.id] = d.nombre);
-                rellenarSelect($('#divisionPareja'), divisiones, false);
-                if (++completado === 2 && callback) callback();
-            }
-        });
-
-        $.get({
-            url: api_url+'/jugadores',
-            headers: { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
-            success: function(data){
-                jugadores = data;
-                rellenarSelect($('#jugador1Pareja'), jugadores, true);
-                rellenarSelect($('#jugador2Pareja'), jugadores, true);
-                if (++completado === 2 && callback) callback();
-            }
-        });
-    }
-
-    function cargarParejas(){
-        $.ajax({
-            url: api_url+'/parejas',
-            type: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-            },
-            success: function(data){
-                tablaParejas.clear();
-                $.each(data, function(index, pareja){
-                    tablaParejas.row.add([
-                        pareja.parejaId,
-                        mapaDivisiones[pareja.divisionId] || 'División ' + pareja.divisionId,
-                        pareja.jugador1.nombre,
-                        pareja.jugador2.nombre,
-                        `<button class="editar-pareja"
-                            data-id="${pareja.parejaId}"
-                            data-division="${pareja.divisionId}"
-                            data-jugador1="${pareja.jugador1.id}"
-                            data-jugador2="${pareja.jugador2.id}">Editar</button>
-                         <button class="eliminar-pareja" data-id="${pareja.parejaId}">Eliminar</button>`
-                    ]);
-                });
-                tablaParejas.draw();
-            }
-        });
-    }
-
-    $('#form-pareja').submit(function(event){
-        event.preventDefault();
-        const id = $('#parejaId').val();
-        const divisionId = $('#divisionPareja').val();
-        const jugador1Id = $('#jugador1Pareja').val();
-        const jugador2Id = $('#jugador2Pareja').val();
-
-        if (jugador1Id === jugador2Id) {
-            alert("No se puede seleccionar el mismo jugador dos veces.");
-            return;
-        }
-
-        const payload = JSON.stringify({ divisionId, jugador1Id, jugador2Id });
-        const method = id ? 'PUT' : 'POST';
-        const url = id ? api_url + '/parejas/' + id : api_url + '/parejas';
-
-        $.ajax({
-            url: url,
-            type: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-            },
-            data: payload,
-            success: function(){
-                alert('Pareja ' + (id ? 'actualizada' : 'añadida') + ' correctamente');
-                $('#form-pareja')[0].reset();
-                $('#parejaId').val('');
-                $('#form-titulo').text("Añadir Nueva Pareja:");
-                $('#btn-guardar').text("Añadir Pareja");
-                $('#cancelar-edicion').hide();
-                cargarParejas();
-            },
-            error: function(xhr){
-                alert('Error: ' + xhr.responseText);
-            }
-        });
+    $.get({
+      url: api_url + '/jugadores',
+      headers: { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
+      success: function(data){
+        jugadores = data || [];
+        rellenarSelect($('#jugador1Pareja'), jugadores, true);
+        rellenarSelect($('#jugador2Pareja'), jugadores, true);
+        if (++completado === 2 && callback) callback();
+      },
+      error: function(xhr){ alert('Error cargando jugadores: ' + (xhr.responseText || xhr.statusText)); }
     });
+  }
 
-    $('#cancelar-edicion').click(function(){
+  function cargarParejas(){
+    $.ajax({
+      url: api_url + '/parejas',
+      type: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+      },
+      success: function(data){
+        parejasCache = Array.isArray(data) ? data : [];
+        tablaParejas.clear();
+
+        $.each(parejasCache, function(_, pareja){
+          const p1 = Number(pareja.puntosJugador1 || 0);
+          const p2 = Number(pareja.puntosJugador2 || 0);
+          const total = p1 + p2;
+
+          tablaParejas.row.add([
+            pareja.parejaId,
+            mapaDivisiones[pareja.divisionId] || ('División ' + pareja.divisionId),
+            pareja.jugador1?.nombre || '',
+            pareja.jugador2?.nombre || '',
+            p1,
+            p2,
+            total,
+            `<button class="editar-pareja"
+                data-id="${pareja.parejaId}"
+                data-division="${pareja.divisionId}"
+                data-jugador1="${pareja.jugador1?.id ?? pareja.jugador1?.jugadorId ?? ''}"
+                data-jugador2="${pareja.jugador2?.id ?? pareja.jugador2?.jugadorId ?? ''}">Editar</button>
+             <button class="eliminar-pareja" data-id="${pareja.parejaId}">Eliminar</button>`
+          ]);
+        });
+
+        tablaParejas.draw();
+      },
+      error: function(xhr){ alert('Error cargando parejas: ' + (xhr.responseText || xhr.statusText)); }
+    });
+  }
+
+  // Alta/edición de pareja
+  $('#form-pareja').submit(function(event){
+    event.preventDefault();
+    const id = $('#parejaId').val();
+    const divisionId = $('#divisionPareja').val();
+    const jugador1Id = $('#jugador1Pareja').val();
+    const jugador2Id = $('#jugador2Pareja').val();
+
+    if (jugador1Id === jugador2Id) { alert("No se puede seleccionar el mismo jugador dos veces."); return; }
+
+    const payload = JSON.stringify({ divisionId, jugador1Id, jugador2Id });
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? api_url + '/parejas/' + id : api_url + '/parejas';
+
+    $.ajax({
+      url: url,
+      type: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+      },
+      data: payload,
+      success: function(){
+        alert('Pareja ' + (id ? 'actualizada' : 'añadida') + ' correctamente');
         $('#form-pareja')[0].reset();
         $('#parejaId').val('');
         $('#form-titulo').text("Añadir Nueva Pareja:");
         $('#btn-guardar').text("Añadir Pareja");
         $('#cancelar-edicion').hide();
+        cargarParejas();
+      },
+      error: function(xhr){ alert('Error: ' + (xhr.responseText || xhr.statusText)); }
     });
+  });
 
-    $('#tabla-parejas tbody').on('click', '.editar-pareja', function(){
-        const id = $(this).data('id');
-        const division = $(this).data('division');
-        const jugador1 = $(this).data('jugador1');
-        const jugador2 = $(this).data('jugador2');
-        $('#parejaId').val(id);
-        $('#divisionPareja').val(division);
-        $('#jugador1Pareja').val(jugador1);
-        $('#jugador2Pareja').val(jugador2);
-        $('#form-titulo').text("Editar Pareja:");
-        $('#btn-guardar').text("Guardar Cambios");
-        $('#cancelar-edicion').show();
-        $('html, body').animate({ scrollTop: $("#form-pareja").offset().top }, 400);
-    });
+  $('#cancelar-edicion').click(function(){
+    $('#form-pareja')[0].reset();
+    $('#parejaId').val('');
+    $('#form-titulo').text("Añadir Nueva Pareja:");
+    $('#btn-guardar').text("Añadir Pareja");
+    $('#cancelar-edicion').hide();
+  });
 
-    $('#tabla-parejas tbody').on('click', '.eliminar-pareja', function(){
-        const id = $(this).data('id');
-        if (confirm(`¿Eliminar la pareja con ID ${id}?`)) {
-            $.ajax({
-                url: api_url + '/parejas/' + id,
-                type: 'DELETE',
-                headers: {
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                },
-                success: function(){
-                    alert('Pareja eliminada correctamente');
-                    cargarParejas();
-                }
-            });
-        }
-    });
+  $('#tabla-parejas tbody').on('click', '.editar-pareja', function(){
+    const id = $(this).data('id');
+    const division = $(this).data('division');
+    const jugador1 = $(this).data('jugador1');
+    const jugador2 = $(this).data('jugador2');
+    $('#parejaId').val(id);
+    $('#divisionPareja').val(division);
+    $('#jugador1Pareja').val(jugador1);
+    $('#jugador2Pareja').val(jugador2);
+    $('#form-titulo').text("Editar Pareja:");
+    $('#btn-guardar').text("Guardar Cambios");
+    $('#cancelar-edicion').show();
+    $('html, body').animate({ scrollTop: $("#form-pareja").offset().top }, 400);
+  });
 
-    cargarDivisionesYJugadores(cargarParejas);
+  $('#tabla-parejas tbody').on('click', '.eliminar-pareja', function(){
+    const id = $(this).data('id');
+    if (confirm(`¿Eliminar la pareja con ID ${id}?`)) {
+      $.ajax({
+        url: api_url + '/parejas/' + id,
+        type: 'DELETE',
+        headers: { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' },
+        success: function(){ alert('Pareja eliminada correctamente'); cargarParejas(); },
+        error: function(xhr){ alert('Error eliminando pareja: ' + (xhr.responseText || xhr.statusText)); }
+      });
+    }
+  });
 
-    $('#cargar-archivo').click(function(){
-        const file = $('#archivoParejas')[0].files[0];
-        if (!file) {
-            alert('Selecciona un archivo .txt');
-            return;
-        }
+  // Importar parejas desde .txt (Division|Jugador1|Jugador2)
+  $('#cargar-archivo').click(function(){
+    const file = $('#archivoParejas')[0].files[0];
+    if (!file) { alert('Selecciona un archivo .txt'); return; }
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const lines = e.target.result.split(/\r?\n/);
-            const errores = [];
-            const peticiones = [];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const lines = e.target.result.split(/\r?\n/);
+      const errores = [];
+      const peticiones = [];
 
-            $.each(lines, function(index, line){
-                if (!line.trim()) return;
-                const parts = line.split('|');
-                if (parts.length < 3) {
-                    errores.push('Línea ' + (index + 1) + ' mal formada');
-                    return;
-                }
+      $.each(lines, function(index, line){
+        if (!line.trim()) return;
+        const parts = line.split('|');
+        if (parts.length < 3) { errores.push('Línea ' + (index + 1) + ' mal formada'); return; }
 
-                const nombreDivision = parts[0].trim().toLowerCase();
-                const nombreJugador1 = parts[1].trim().toLowerCase();
-                const nombreJugador2 = parts[2].trim().toLowerCase();
+        const nombreDivision = parts[0].trim().toLowerCase();
+        const nombreJugador1 = parts[1].trim().toLowerCase();
+        const nombreJugador2 = parts[2].trim().toLowerCase();
 
-                const division = divisiones.find(d => d.nombre.toLowerCase() === nombreDivision);
-                const jugador1 = jugadores.find(j => j.nombre.toLowerCase() === nombreJugador1);
-                const jugador2 = jugadores.find(j => j.nombre.toLowerCase() === nombreJugador2);
+        const division = divisiones.find(d => (d.nombre || '').toLowerCase() === nombreDivision);
+        const jugador1 = jugadores.find(j => (j.nombre || '').toLowerCase() === nombreJugador1);
+        const jugador2 = jugadores.find(j => (j.nombre || '').toLowerCase() === nombreJugador2);
 
-                if (!division || !jugador1 || !jugador2) {
-                    errores.push('Línea ' + (index + 1) + ': datos no encontrados');
-                    return;
-                }
+        if (!division || !jugador1 || !jugador2) { errores.push('Línea ' + (index + 1) + ': datos no encontrados'); return; }
 
-                const payload = {
-                    divisionId: division.id,
-                    jugador1Id: jugador1.jugadorId,
-                    jugador2Id: jugador2.jugadorId
-                };
+        const payload = { divisionId: division.id, jugador1Id: jugador1.jugadorId, jugador2Id: jugador2.jugadorId };
 
-                const req = $.ajax({
-                    url: api_url + '/parejas',
-                    type: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                    },
-                    data: JSON.stringify(payload)
-                });
-                peticiones.push(req);
-            });
+        const req = $.ajax({
+          url: api_url + '/parejas',
+          type: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+          },
+          data: JSON.stringify(payload)
+        });
+        peticiones.push(req);
+      });
 
-            if (errores.length > 0) {
-                alert(errores.join('\n'));
-                return;
-            }
+      if (errores.length > 0) { alert(errores.join('\n')); return; }
 
-            if (peticiones.length > 0) {
-                $.when.apply($, peticiones).always(function(){
-                    alert('Carga finalizada');
-                    $('#archivoParejas').val('');
-                    cargarParejas();
-                });
-            } else {
-                alert('No se encontró ninguna pareja válida en el archivo');
-            }
+      if (peticiones.length > 0) {
+        $.when.apply($, peticiones).always(function(){
+          alert('Carga finalizada');
+          $('#archivoParejas').val('');
+          cargarParejas();
+        });
+      } else {
+        alert('No se encontró ninguna pareja válida en el archivo');
+      }
+    };
+
+    reader.readAsText(file);
+  });
+
+  // NUEVO: Importar puntos por pareja (jug1|jug2|p1|p2) y actualizar /parejas/{id}
+  $('#cargar-puntos').click(function(){
+    const file = $('#archivoPuntosParejas')[0].files[0];
+    if (!file) { alert('Selecciona un archivo .txt'); return; }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const lines = e.target.result.split(/\r?\n/);
+      const errores = [];
+      const peticiones = [];
+
+      // Busca una pareja por los nombres, sin importar el orden
+      function encontrarParejaPorNombres(n1, n2) {
+        const a = (n1 || '').toLowerCase();
+        const b = (n2 || '').toLowerCase();
+        return parejasCache.find(px => {
+          const j1 = (px.jugador1?.nombre || '').toLowerCase();
+          const j2 = (px.jugador2?.nombre || '').toLowerCase();
+          return (j1 === a && j2 === b) || (j1 === b && j2 === a);
+        }) || null;
+      }
+
+      $.each(lines, function(index, rawLine){
+        const raw = (rawLine || '').trim();
+        if (!raw) return;
+
+        const parts = raw.split('|');
+        if (parts.length < 4) { errores.push(`Línea ${index+1}: formato inválido`); return; }
+
+        const n1 = parts[0].trim();
+        const n2 = parts[1].trim();
+        const p1s = (parts[2] || '').trim().replace(',', '.');
+        const p2s = (parts[3] || '').trim().replace(',', '.');
+
+        const p1 = parseFloat(p1s);
+        const p2 = parseFloat(p2s);
+        if (isNaN(p1) || isNaN(p2)) { errores.push(`Línea ${index+1}: puntos no numéricos`); return; }
+
+        const pareja = encontrarParejaPorNombres(n1, n2);
+        if (!pareja) { errores.push(`Línea ${index+1}: pareja '${n1}' - '${n2}' no encontrada`); return; }
+
+        // Asignar a cada jugador sus puntos correctos, respetando el nombre
+        const j1Nombre = (pareja.jugador1?.nombre || '').toLowerCase();
+        const esMismoOrden = j1Nombre === (n1 || '').toLowerCase();
+        const puntosJugador1 = esMismoOrden ? p1 : p2;
+        const puntosJugador2 = esMismoOrden ? p2 : p1;
+
+        const body = {
+          divisionId: pareja.divisionId,
+          jugador1Id: pareja.jugador1?.id ?? pareja.jugador1?.jugadorId,
+          jugador2Id: pareja.jugador2?.id ?? pareja.jugador2?.jugadorId,
+          puntosJugador1: puntosJugador1,
+          puntosJugador2: puntosJugador2
         };
 
-        reader.readAsText(file);
-    });
+        peticiones.push($.ajax({
+          url: api_url + '/parejas/' + pareja.parejaId,
+          type: 'PUT',
+          headers: {
+            'Content-Type':'application/json',
+            'Authorization':'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+          },
+          contentType: 'application/json',
+          data: JSON.stringify(body)
+        }));
+      });
 
+      if (errores.length > 0) { alert(errores.join('\n')); return; }
+
+      if (peticiones.length > 0) {
+        $.when.apply($, peticiones).always(function(){
+          alert('Actualización de puntos finalizada');
+          $('#archivoPuntosParejas').val('');
+          cargarParejas();
+        });
+      } else {
+        alert('No se encontraron líneas válidas en el archivo');
+      }
+    };
+
+    reader.readAsText(file);
+  });
+
+  // Inicio
+  cargarDivisionesYJugadores(cargarParejas);
 });
 </script>
 
