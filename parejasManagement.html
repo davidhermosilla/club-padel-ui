@@ -11,6 +11,12 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 
+<!-- DataTables Buttons + JSZip (para Excel) -->
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 <title>Gestión de Parejas</title>
 </head>
 <body>
@@ -36,7 +42,7 @@
   <button type="button" id="cargar-archivo">Cargar Parejas</button>
 </form>
 
-<!-- NUEVO: Carga de puntos por pareja -->
+<!-- Carga de puntos por pareja -->
 <form id="form-cargar-puntos" style="margin-bottom: 30px;">
   <h2>Actualizar puntos por pareja desde archivo (.txt)</h2>
   <p style="margin:6px 0 12px 0; max-width:700px;">
@@ -72,9 +78,21 @@ var mapaDivisiones = {};
 var parejasCache = [];
 
 $(document).ready(function(){
-  // Tabla
+  // Tabla con botón de exportación a Excel
   var tablaParejas = $('#tabla-parejas').DataTable({
     language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
+    dom: 'Bfrtip',
+    buttons: [
+      {
+        extend: 'excelHtml5',
+        text: 'Exportar a Excel',
+        title: 'parejas_puntos',
+        exportOptions: {
+          // Exporta todas las columnas menos "Acciones"
+          columns: [0,1,2,3,4,5,6]
+        }
+      }
+    ],
     columns: [
       { title: "ID" },
       { title: "División" },
@@ -294,7 +312,7 @@ $(document).ready(function(){
     reader.readAsText(file);
   });
 
-  // NUEVO: Importar puntos por pareja (jug1|jug2|p1|p2) y actualizar /parejas/{id}
+  // Importar puntos por pareja (jug1|jug2|p1|p2) y actualizar /parejas/{id}
   $('#cargar-puntos').click(function(){
     const file = $('#archivoPuntosParejas')[0].files[0];
     if (!file) { alert('Selecciona un archivo .txt'); return; }
@@ -305,7 +323,6 @@ $(document).ready(function(){
       const errores = [];
       const peticiones = [];
 
-      // Busca una pareja por los nombres, sin importar el orden
       function encontrarParejaPorNombres(n1, n2) {
         const a = (n1 || '').toLowerCase();
         const b = (n2 || '').toLowerCase();
@@ -335,7 +352,6 @@ $(document).ready(function(){
         const pareja = encontrarParejaPorNombres(n1, n2);
         if (!pareja) { errores.push(`Línea ${index+1}: pareja '${n1}' - '${n2}' no encontrada`); return; }
 
-        // Asignar a cada jugador sus puntos correctos, respetando el nombre
         const j1Nombre = (pareja.jugador1?.nombre || '').toLowerCase();
         const esMismoOrden = j1Nombre === (n1 || '').toLowerCase();
         const puntosJugador1 = esMismoOrden ? p1 : p2;
