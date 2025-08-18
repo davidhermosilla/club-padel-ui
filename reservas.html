@@ -388,13 +388,6 @@ function getSelectedPaymentMethod() {
             return array.filter((item) => filterKeys.every((key) => (filters[key].indexOf(item[key]) !== -1)));
         }
         
-        function cancelamosOreservamos(text) {            
-            if (confirm(text) == true) {
-                return true;
-            } else {
-                return false;
-            }
-        }
 
         function ocultarPagos() {
             const paymentsContainer = document.getElementById('payments-container');
@@ -688,6 +681,10 @@ function getSelectedPaymentMethod() {
         }
         
         function anadirReserva(slot,username) {
+            const confirmMsg = "¿Desea realmente reservar la pista?";
+            if (!confirm(confirmMsg)) {
+                return;
+            }
             var arrayHoras =  slot.dataset.time.split('-');
             console.log(arrayHoras);
             var horaInicio = arrayHoras[0].trim();
@@ -925,7 +922,7 @@ function getSelectedPaymentMethod() {
         function manejarCancelacionReserva(timeSlot, username, rolename) {
             if (rolename !== 'administrador' && timeSlot.dataset.username === username) {
                 const text = "¿Desea realmente cancelar la pista?";
-                if (cancelamosOreservamos(text)) {
+                if (confirm(text)) {
                     cancelarReserva(timeSlot);
                 }
             }
@@ -933,19 +930,16 @@ function getSelectedPaymentMethod() {
 
 		let slotPendienteAdmin = null;
 
-		function manejarNuevaReserva(timeSlot, username) {
-			const rolename = document.getElementById('role-info').value;
+                function manejarNuevaReserva(timeSlot, username) {
+                        const rolename = document.getElementById('role-info').value;
 
-			if (rolename === 'administrador') {
-				slotPendienteAdmin = timeSlot;
-				document.getElementById('modal-reserva-admin').style.display = 'flex';
-			} else {
-				const confirmMsg = "¿Desea realmente reservar la pista?";
-				if (cancelamosOreservamos(confirmMsg)) {
-					anadirReserva(timeSlot, username);
-				}
-			}
-		}
+                        if (rolename === 'administrador') {
+                                slotPendienteAdmin = timeSlot;
+                                document.getElementById('modal-reserva-admin').style.display = 'flex';
+                        } else {
+                                anadirReserva(timeSlot, username);
+                        }
+                }
 
 
 
@@ -1147,14 +1141,14 @@ function getSelectedPaymentMethod() {
             cargarRolUsuario();
         });
 		
-		document.getElementById('confirmar-reserva-admin').addEventListener('click', () => {
-			const userTarget = document.getElementById('user-select-modal').value;
-			if (userTarget && slotPendienteAdmin) {
-				anadirReserva(slotPendienteAdmin, userTarget);
-				document.getElementById('modal-reserva-admin').style.display = 'none';
-				slotPendienteAdmin = null;
-			}
-		});
+                document.getElementById('confirmar-reserva-admin').addEventListener('click', () => {
+                        const userTarget = document.getElementById('user-select-modal').value;
+                        if (userTarget && slotPendienteAdmin) {
+                                anadirReserva(slotPendienteAdmin, userTarget);
+                                document.getElementById('modal-reserva-admin').style.display = 'none';
+                                slotPendienteAdmin = null;
+                        }
+                });
 
     
 document.getElementById('btn-detalle-tienda').addEventListener('click', () => {
