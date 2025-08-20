@@ -160,6 +160,16 @@
         min-width: 300px;
     }
 }
+
+#title-details {
+    background-color: #f0f8ff;  /* Fondo azul claro */
+    margin-top: 20px;
+}
+
+#title-details h2, h3 {
+	color: #1e73be;
+}
+
 </style>
 </head>
 <body>
@@ -185,6 +195,7 @@
 <div id="warning-message"></div>
 <center>
 <div class="schedule-wrapper"><div class="schedule-container" id="schedule-container"></div></div>
+<div id="title-details"></div>
 <!-- Contenedor de la tabla de pagos y el formulario -->
 <div class="container">
 <div class="columna" id="payments-container" style="display:none;">
@@ -246,7 +257,7 @@
 <h3>Añadir Gasto</h3>
 <form id="expense-form">
 <label for="expense-amount">Cantidad:</label>
-<input id="expense-amount" name="amount" required="" type="number"/><br/>
+<input id="expense-amount" name="amount" required="" step="0.1" type="number"/><br/>
 <label for="expense-method">Método de Pago:</label>
 <input id="expense-method" name="method" readonly="" type="text" value="CONTADO"/><br/>
 <label for="expense-detail">Detalle del Gasto:</label>
@@ -416,8 +427,19 @@ function getSelectedPaymentMethod() {
 			document.getElementById('payment-amount').value = '';
 			document.getElementById('payment-detail').value = '';
 			document.getElementById('payment-total').innerHTML = '';
+			document.getElementById('expense-amount').value = '';
+			document.getElementById('expense-detail').value = '';
 			document.getElementById('expenses-total').innerHTML = '';
 			document.getElementById('paymentandexpenses-total').innerHTML = '';
+			
+			const reservaSlot = datosReservas.find(r => r.reservaId == reservaId);
+			const reservaUser = reservaSlot ? reservaSlot.userName : '';
+
+			document.getElementById('title-details').innerHTML = `
+				<h2>Pista ${pistaNombre} - ${slotTime}</h2>
+				<h3>Reservada por ${reservaUser}</h3>
+			`;
+
 
 			// Mostrar concepto si eres administrador
 			if (document.getElementById('role-info').value === 'administrador') {
@@ -504,7 +526,7 @@ function getSelectedPaymentMethod() {
 							// Mostrar controles según pista
 							if (pistaNombre === 'BAR') {
 								document.getElementById('rapids-payments').style.display = 'none';
-								document.getElementById('payment-detail').value = 'BAR CONTADO';
+								document.getElementById('payment-detail').value = '';
 								document.getElementById('expense-detail').value = '';
 								document.getElementById('div-expenses').style.display = 'block';
 							} else {
@@ -1036,20 +1058,7 @@ function getSelectedPaymentMethod() {
                     eliminarGasto(reservaId, paymentId);
                 }
             }
-        });        
-
-        document.querySelectorAll('input[name="payment-method"]').forEach((radio) => {
-    radio.addEventListener('change', (event) => {
-        if (document.getElementById('pistaNombre').value === 'BAR') {
-            if (event.target.value === 'CONTADO') {
-                document.getElementById('payment-detail').value = 'BAR CONTADO';
-            } else {
-                document.getElementById('payment-detail').value = 'BAR TARJETA';
-            }
-        }
-    });
-});
-        
+        });               
 
         document.getElementById('reservation-date').addEventListener('change', (event) => {
             const selectedDate = new Date(event.target.value);
