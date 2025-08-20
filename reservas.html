@@ -434,10 +434,19 @@ function getSelectedPaymentMethod() {
 			
 			const reservaSlot = datosReservas.find(r => r.reservaId == reservaId);
 			const reservaUser = reservaSlot ? reservaSlot.userName : '';
-
+			
+			// 🔎 Localiza el DIV del slot que tiene el data-telefono
+			const selectedDate = new Date(document.getElementById('reservation-date').value);
+			const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+			const dd = String(selectedDate.getDate()).padStart(2, '0');
+			const yyyy = selectedDate.getFullYear();
+			const diaId = `${dd}/${mm}/${yyyy}`;
+			const slotEl = document.getElementById(`${pistaId}_${diaId}_${slotTime}`);
+			const telefono = (slotEl && slotEl.dataset && slotEl.dataset.telefono) ? slotEl.dataset.telefono : '';
+			
 			document.getElementById('title-details').innerHTML = `
 				<h2>Pista ${pistaNombre} - ${slotTime}</h2>
-				<h3>Reservada por ${reservaUser}</h3>
+				<h3>Reservada por ${reservaUser} con telefono ${telefono}</h3>
 			`;
 
 
@@ -911,6 +920,27 @@ function getSelectedPaymentMethod() {
 				timeSlot.dataset.estado = 'Reservada';
 				timeSlot.dataset.reserva = reserva.reservaId;
 				timeSlot.dataset.username = reserva.userName;
+				timeSlot.dataset.telefono = '';
+				// 1. Obtener el telefono del usuario
+				fetch(club_ajaxurl, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams({
+						action: 'obtener_email_usuario',
+						username: reserva.userName
+					})
+				})
+				.then(res => res.json())
+				.then(data => {
+					if (data.success) {
+						const telefono = data.data.telefono;
+						timeSlot.dataset.telefono=telefono;
+					}
+				})
+				.catch(error => {
+					console.error('Error al obtener el telefono:', error);
+				});
+				
 				timeSlot.className = esPasado ? 'time-slot-booked-past' : (username !== '' ? 'time-slot-booked' : 'time-slot-booked-no-user');
 			} else {
 				timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
