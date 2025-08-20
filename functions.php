@@ -368,5 +368,5 @@ function obtener_email_usuario() {
         wp_send_json_error('Usuario no encontrado');
     }
 
-    wp_send_json_success(['email' => $user->user_email, 'nombre' => $user->display_name]);
+    wp_send_json_success(['email' => $user->user_email, 'nombre' => $user->display_name, 'telefono' => get_user_meta( $user->ID, 'first_name', true )]);
 }
