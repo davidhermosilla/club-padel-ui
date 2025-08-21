@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mis Reservas</title>
+
+  <!-- Estilos base -->
+  <style>
+    :root{
+      --bg:#f7f9fc; --card:#fff; --ink:#0f172a; --muted:#64748b; --brand:#1e73be; --line:#e5e7eb;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--ink)}
+    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    h1{font-size:28px;margin:0 0 24px}
+    section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px}
+    .section-head h2{font-size:18px;margin:0}
+    .search{display:flex; gap:8px; align-items:center}
+    .search input{border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-width:220px; outline:none}
+    .search input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(30,115,190,.15)}
+    .badge{display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(30,115,190,.1); color:var(--brand); font-size:12px; font-weight:600}
+    .empty{padding:16px; color:var(--muted)}
+    table.dataTable thead th{background:#f2f5f8;}
+  </style>
+
+  <!-- jQuery (requerido por DataTables) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+  <!-- DataTables CSS/JS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+  <!-- Moment y plugin para ordenar fechas con formato personalizado -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <script src="https://cdn.datatables.net/plug-ins/1.13.8/sorting/datetime-moment.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Estos inputs existen globalmente en tu WP -->
+    <input id="user-info" type="hidden"/>
+    <input id="role-info" type="hidden"/>
+
+    <h1>Mis Reservas</h1>
+
+    <!-- Reservas Activas -->
+    <section id="sec-activas">
+      <div class="section-head">
+        <h2>Reservas Activas <span id="count-activas" class="badge">0</span></h2>
+        <div class="search"><input id="q-activas" type="search" placeholder="Buscar" /></div>
+      </div>
+      <table id="tabla-activas" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th>Fecha Creación</th>
+            <th>Fecha Reserva</th>
+            <th>Pista</th>
+            <th>Hora</th>
+            <th>Usuario</th>
+            <th>Concepto</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="empty-activas" class="empty" hidden>No hay reservas activas.</div>
+    </section>
+
+    <!-- Reservas Pasadas -->
+    <section id="sec-pasadas">
+      <div class="section-head">
+        <h2>Reservas Pasadas <span id="count-pasadas" class="badge">0</span></h2>
+        <div class="search"><input id="q-pasadas" type="search" placeholder="Buscar" /></div>
+      </div>
+      <table id="tabla-pasadas" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th>Fecha Creación</th>
+            <th>Fecha Reserva</th>
+            <th>Pista</th>
+            <th>Hora</th>
+            <th>Usuario</th>
+            <th>Concepto</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="empty-pasadas" class="empty" hidden>No hay reservas pasadas.</div>
+    </section>
+  </div>
+
+  <script>
+    const API_URL = "https://club-padel-api-12f28391bbbd.herokuapp.com";
+    const AUTH_HEADER = 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz';
+
+    // Espera a que #user-info tenga valor (evita carreras)
+    function waitForUserInfo({ timeout = 10000, pollMs = 200 } = {}) {
+      return new Promise((resolve) => {
+        const el = document.getElementById('user-info');
+        const done = (val) => { cleanup(); resolve(val || null); };
+        if (el && el.value) return resolve(el.value);
+        let toId, pollId, obs;
+        const check = () => { if (el && el.value) done(el.value); };
+        const onUserReady = () => check();
+        const cleanup = () => {
+          if (toId) clearTimeout(toId);
+          if (pollId) clearInterval(pollId);
+          if (obs) obs.disconnect();
+          el && el.removeEventListener('userReady', onUserReady);
+        };
+        el && el.addEventListener('userReady', onUserReady);
+        if (el) {
+          obs = new MutationObserver(check);
+          obs.observe(el, { attributes: true, attributeFilter: ['value'] });
+        }
+        pollId = setInterval(check, pollMs);
+        toId = setTimeout(() => done(null), timeout);
+      });
+    }
+
+    async function fetchReservas(username){
+      if(!username){
+        console.warn("No se encontró username en #user-info");
+        return {activas:[], pasadas:[]};
+      }
+      try {
+        const res = await fetch(`${API_URL}/reservas/usuario/${username}`, {
+          headers:{ 'Authorization': AUTH_HEADER, 'Content-Type':'application/json' }
+        });
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        const raw = await res.json();
+        return normalize(raw);
+      } catch(e){
+        console.error("Error al obtener reservas:", e);
+        return {activas:[], pasadas:[]};
+      }
+    }
+
+    // Mostramos fechas tal cual; solo calculamos startMs para separar activas/pasadas
+    function normalize(list){
+      const now = Date.now();
+      const activas=[]; const pasadas=[];
+      for(const r of list){
+        const creado   = r.fechaHoraCreacion || '-';  // dd/MM/yyyy HH:mm
+        const fecha    = r.fechaReserva || '-';       // dd/MM/yyyy
+        const inicio   = r.horaInicio || '';
+        const fin      = r.horaFin || '';
+        const pista    = r.pistaNombre || (r.pista && r.pista.nombre) || r.pista || '-';
+        const usuario  = r.usuario.username || '-';
+        const concepto = r.concepto || '';
+
+        // Para separar en activas/pasadas, usamos fecha+hora de inicio
+        let startMs = 0;
+        if (fecha && inicio) {
+          const parts = fecha.split('/');
+          if(parts.length===3){
+            const [dd,mm,yy]=parts;
+            const [h,m]=(inicio||'').split(':');
+            const H = parseInt(h||'0',10), M = parseInt(m||'0',10);
+            startMs = new Date(parseInt(yy,10), parseInt(mm,10)-1, parseInt(dd,10), H, M).getTime();
+          }
+        }
+
+        const row = {
+          creadoFmt: creado,
+          fechaReservaFmt: fecha,
+          horaFmt: (inicio && fin) ? `${inicio} - ${fin}` : (inicio || '-'),
+          horaInicioSolo: inicio || '',   // para orden adicional
+          pista, usuario, concepto
+        };
+        (startMs >= now ? activas : pasadas).push(row);
+      }
+      return {activas,pasadas};
+    }
+
+    // Registrar formatos de fecha para ordenación (no para mostrar)
+    function registerDateParsers(){
+      $.fn.dataTable.moment('DD/MM/YYYY');        // Fecha Reserva
+      $.fn.dataTable.moment('DD/MM/YYYY HH:mm');  // Fecha Creación
+    }
+
+    // Inicializa DataTables con:
+    // - lenguaje español
+    // - orden: Fecha Reserva desc (col 1), Hora asc (col 3) usando data-order = HH:mm
+    function initDataTable(tableSelector){
+      return $(tableSelector).DataTable({
+        language: { url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json" },
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        dom: "lrtip",
+        order: [[1, "desc"], [3, "asc"]],
+        createdRow: function(row, data) {
+          // data es el array que añadimos: [creado, fecha, pista, hora, usuario, concepto]
+          const hora = data[3] || ""; // "HH:mm - HH:mm"
+          const start = (hora.split('-')[0] || '').trim(); // "HH:mm"
+          // ponemos el valor HH:mm como clave de ordenación
+          $('td', row).eq(3).attr('data-order', start);
+        }
+      });
+    }
+
+    function fillTable(dt, rows){
+      // Convertimos a arrays por columna en el mismo orden del thead
+      const data = rows.map(r => [
+        r.creadoFmt,
+        r.fechaReservaFmt,
+        r.pista,
+        r.horaFmt,
+        r.usuario,
+        r.concepto
+      ]);
+      dt.clear();
+      dt.rows.add(data).draw();
+    }
+
+    (async function init(){
+      registerDateParsers();
+
+      // 1) Crear DataTables vacías
+      const dtActivas = initDataTable("#tabla-activas");
+      const dtPasadas = initDataTable("#tabla-pasadas");
+
+      // 2) Conectar inputs propios al search de DataTables
+      document.getElementById("q-activas").addEventListener("input", e => {
+        dtActivas.search(e.target.value).draw();
+      });
+      document.getElementById("q-pasadas").addEventListener("input", e => {
+        dtPasadas.search(e.target.value).draw();
+      });
+
+      // 3) Esperar username y cargar datos
+      const username = await waitForUserInfo();
+      const {activas, pasadas} = await fetchReservas(username);
+
+      // 4) Pintar
+      fillTable(dtActivas, activas);
+      fillTable(dtPasadas, pasadas);
+      document.getElementById("count-activas").textContent = activas.length;
+      document.getElementById("count-pasadas").textContent = pasadas.length;
+      document.getElementById("empty-activas").hidden = activas.length !== 0;
+      document.getElementById("empty-pasadas").hidden = pasadas.length !== 0;
+    })();
+  </script>
+</body>
+</html>
