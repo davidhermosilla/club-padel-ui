@@ -16,30 +16,47 @@
     .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
     h1{font-size:28px;margin:0 0 24px}
     section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
-    .section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px; flex-wrap:wrap}
     .section-head h2{font-size:18px;margin:0}
-    .search{display:flex; gap:8px; align-items:center}
+    .search{display:flex; gap:8px; align-items:center; margin-left:auto}
     .search input{border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-width:220px; outline:none}
     .search input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(30,115,190,.15)}
     .badge{display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(30,115,190,.1); color:var(--brand); font-size:12px; font-weight:600}
     .empty{padding:16px; color:var(--muted)}
     table.dataTable thead th{background:#f2f5f8;}
+    /* Contenedor para evitar desbordes en pantallas intermedias */
+    .table-wrap{width:100%}
+
+    /* Ajustes responsive */
+    @media (max-width: 720px){
+      .wrap{padding:0 10px}
+      h1{font-size:22px}
+      section{padding:14px}
+      .section-head{gap:10px}
+      .search{width:100%; margin:0}
+      .search input{width:100%; min-width:0}
+      table.dataTable tbody td{word-break:break-word}
+    }
   </style>
 
-  <!-- jQuery (requerido por DataTables) -->
+  <!-- jQuery -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
-  <!-- DataTables CSS/JS -->
+  <!-- DataTables core -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
   <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 
-  <!-- Moment y plugin para ordenar fechas con formato personalizado -->
+  <!-- DataTables Responsive -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+  <!-- Moment + plugin de orden por fecha/hora -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
   <script src="https://cdn.datatables.net/plug-ins/1.13.8/sorting/datetime-moment.js"></script>
 </head>
 <body>
   <div class="wrap">
-    <!-- Estos inputs existen globalmente en tu WP -->
+    <!-- Inputs globales en tu WP -->
     <input id="user-info" type="hidden"/>
     <input id="role-info" type="hidden"/>
 
@@ -51,19 +68,21 @@
         <h2>Reservas Activas <span id="count-activas" class="badge">0</span></h2>
         <div class="search"><input id="q-activas" type="search" placeholder="Buscar" /></div>
       </div>
-      <table id="tabla-activas" class="display" style="width:100%">
-        <thead>
-          <tr>
-            <th>Fecha Creación</th>
-            <th>Fecha Reserva</th>
-            <th>Pista</th>
-            <th>Hora</th>
-            <th>Usuario</th>
-            <th>Concepto</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="tabla-activas" class="display nowrap" style="width:100%">
+          <thead>
+            <tr>
+              <th>Fecha Creación</th>
+              <th>Fecha Reserva</th>
+              <th>Pista</th>
+              <th>Hora</th>
+              <th>Usuario</th>
+              <th>Concepto</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
       <div id="empty-activas" class="empty" hidden>No hay reservas activas.</div>
     </section>
 
@@ -73,19 +92,21 @@
         <h2>Reservas Pasadas <span id="count-pasadas" class="badge">0</span></h2>
         <div class="search"><input id="q-pasadas" type="search" placeholder="Buscar" /></div>
       </div>
-      <table id="tabla-pasadas" class="display" style="width:100%">
-        <thead>
-          <tr>
-            <th>Fecha Creación</th>
-            <th>Fecha Reserva</th>
-            <th>Pista</th>
-            <th>Hora</th>
-            <th>Usuario</th>
-            <th>Concepto</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="tabla-pasadas" class="display nowrap" style="width:100%">
+          <thead>
+            <tr>
+              <th>Fecha Creación</th>
+              <th>Fecha Reserva</th>
+              <th>Pista</th>
+              <th>Hora</th>
+              <th>Usuario</th>
+              <th>Concepto</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
       <div id="empty-pasadas" class="empty" hidden>No hay reservas pasadas.</div>
     </section>
   </div>
@@ -137,7 +158,7 @@
       }
     }
 
-    // Mostramos fechas tal cual; solo calculamos startMs para separar activas/pasadas
+    // Mostramos fechas tal cual; startMs solo separa activas/pasadas
     function normalize(list){
       const now = Date.now();
       const activas=[]; const pasadas=[];
@@ -146,11 +167,11 @@
         const fecha    = r.fechaReserva || '-';       // dd/MM/yyyy
         const inicio   = r.horaInicio || '';
         const fin      = r.horaFin || '';
-        const pista    = r.pistaNombre || (r.pista && r.pista.nombre) || r.pista || '-';
-        const usuario  = r.usuario.username || '-';
+        const pista    = (r.pista && (r.pista.nombre || r.pista)) || r.pistaNombre || '-';
+        const usuario  = (r.usuario && r.usuario.username) || r.username || '-';
         const concepto = r.concepto || '';
 
-        // Para separar en activas/pasadas, usamos fecha+hora de inicio
+        // Para separar en activas/pasadas
         let startMs = 0;
         if (fecha && inicio) {
           const parts = fecha.split('/');
@@ -174,34 +195,40 @@
       return {activas,pasadas};
     }
 
-    // Registrar formatos de fecha para ordenación (no para mostrar)
+    // Registrar formatos de fecha (para ordenar, no para mostrar)
     function registerDateParsers(){
       $.fn.dataTable.moment('DD/MM/YYYY');        // Fecha Reserva
       $.fn.dataTable.moment('DD/MM/YYYY HH:mm');  // Fecha Creación
     }
 
-    // Inicializa DataTables con:
-    // - lenguaje español
-    // - orden: Fecha Reserva desc (col 1), Hora asc (col 3) usando data-order = HH:mm
+    // DataTables: idioma ES + Responsive + orden inicial
     function initDataTable(tableSelector){
       return $(tableSelector).DataTable({
         language: { url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json" },
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
         dom: "lrtip",
+        responsive: true, // <— modo responsive
+        // Prioridades (0 = más importante). Si el espacio no cabe, se ocultan de menor prioridad
+        columnDefs: [
+          { responsivePriority: 1, targets: 1 }, // Fecha Reserva
+          { responsivePriority: 2, targets: 3 }, // Hora
+          { responsivePriority: 3, targets: 2 }, // Pista
+          { responsivePriority: 4, targets: 0 }, // Fecha Creación
+          { responsivePriority: 5, targets: 4 }, // Usuario
+          { responsivePriority: 6, targets: 5 }  // Concepto (menos prioritaria)
+        ],
         order: [[1, "desc"], [3, "asc"]],
         createdRow: function(row, data) {
-          // data es el array que añadimos: [creado, fecha, pista, hora, usuario, concepto]
-          const hora = data[3] || ""; // "HH:mm - HH:mm"
+          // data = [creado, fecha, pista, hora, usuario, concepto]
+          const hora = data[3] || "";
           const start = (hora.split('-')[0] || '').trim(); // "HH:mm"
-          // ponemos el valor HH:mm como clave de ordenación
           $('td', row).eq(3).attr('data-order', start);
         }
       });
     }
 
     function fillTable(dt, rows){
-      // Convertimos a arrays por columna en el mismo orden del thead
       const data = rows.map(r => [
         r.creadoFmt,
         r.fechaReservaFmt,
@@ -217,11 +244,11 @@
     (async function init(){
       registerDateParsers();
 
-      // 1) Crear DataTables vacías
+      // 1) Instanciar DataTables
       const dtActivas = initDataTable("#tabla-activas");
       const dtPasadas = initDataTable("#tabla-pasadas");
 
-      // 2) Conectar inputs propios al search de DataTables
+      // 2) Búsqueda por inputs propios
       document.getElementById("q-activas").addEventListener("input", e => {
         dtActivas.search(e.target.value).draw();
       });
@@ -229,11 +256,11 @@
         dtPasadas.search(e.target.value).draw();
       });
 
-      // 3) Esperar username y cargar datos
+      // 3) Esperar username y cargar
       const username = await waitForUserInfo();
       const {activas, pasadas} = await fetchReservas(username);
 
-      // 4) Pintar
+      // 4) Pintar + contadores/estados vacíos
       fillTable(dtActivas, activas);
       fillTable(dtPasadas, pasadas);
       document.getElementById("count-activas").textContent = activas.length;
