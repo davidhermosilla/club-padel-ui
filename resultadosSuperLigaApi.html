@@ -1,122 +1,278 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Resultados Super Liga</title>
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+
+  <!-- jQuery -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+  <!-- DataTables core -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+  <!-- DataTables Responsive -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    h2 { text-align: center; margin-bottom: 30px; }
-    #filtro-liga, #filtro-division { margin-bottom: 20px; margin-right: 10px; }
+    /* ---------- SCOPED (no toca el tema WP) ---------- */
+    .club-scope{
+      --bg:#f7f9fc; --card:#fff; --ink:#0f172a; --muted:#64748b; --brand:#1e73be; --line:#e5e7eb; --radius:14px;
+    }
+    .club-scope *{box-sizing:border-box}
+    .club-scope .club-wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .club-scope h2{font-size:28px;margin:0 0 24px; color:var(--ink)}
+    .club-scope section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
+    .club-scope .filters{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:12px}
+    .club-scope label{margin-right:6px}
+    .club-scope select{border:1px solid var(--line); border-radius:8px; padding:8px 10px}
+    .club-scope table.dataTable thead th{background:#f2f5f8;}
+    .club-scope #tabla-resultados td,
+    .club-scope #tabla-resultados th{white-space:normal; word-break:break-word;}
+
+    /* ======== MÓVIL ======== */
+    @media (max-width: 768px){
+      .club-scope #tabla-resultados thead{display:none;}
+
+      /* SOLO filas normales en grid; la fila child NO */
+      .club-scope #tabla-resultados tbody tr:not(.child){
+        display:grid;
+        grid-template-columns: 44px 1fr;
+        border:1px solid var(--line);
+        border-radius:12px;
+        margin-bottom:12px;
+        overflow:hidden;
+        background:#fff;
+      }
+
+      /* Fila child: que siga siendo table-row */
+      .club-scope #tabla-resultados tbody tr.child{
+        display:table-row;
+      }
+      .club-scope #tabla-resultados tbody tr.child td.child{
+        display:block; padding:0; background:#fcfdfd;
+      }
+
+      /* Columna control (zona clicable) */
+      .club-scope #tabla-resultados td.control{
+        grid-column:1;
+        grid-row:1 / span 3;
+        display:flex; align-items:center; justify-content:center;
+        border-right:1px solid var(--line);
+        background:#f9fbff;
+        cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+      }
+
+      /* División / P1 / P2 en tarjeta */
+      .club-scope #tabla-resultados td.col-division{
+        grid-column:2; font-weight:700; background:#f7fafc;
+        padding:12px 12px; border-bottom:1px solid var(--line);
+      }
+      .club-scope #tabla-resultados td.col-p1,
+      .club-scope #tabla-resultados td.col-p2{
+        grid-column:2; padding:12px 12px; border-bottom:1px solid var(--line);
+      }
+      .club-scope #tabla-resultados td.col-p2{ border-bottom:none; }
+
+      /* Ocultar sets en tarjeta (irán al detalle) */
+      .club-scope #tabla-resultados td.col-set{ display:none; }
+
+      /* Detalle bonito con cajitas */
+      .club-scope .sets-detail{ display:flex; gap:12px; padding:12px; }
+      .club-scope .set-box{
+        border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:#fff;
+      }
+      .club-scope .set-box .label{font-weight:700; display:block; margin-bottom:4px; white-space:nowrap;}
+    }
+
+    /* ======== ESCRITORIO ======== */
+    @media (min-width: 769px){
+      .club-scope #tabla-resultados td.control,
+      .club-scope #tabla-resultados th.control{ display:none; }
+      .club-scope #tabla-resultados thead{display:table-header-group;}
+      .club-scope #tabla-resultados tbody tr{ display:table-row; }
+      .club-scope #tabla-resultados td{ display:table-cell; }
+      .club-scope #tabla-resultados td.col-set{ display:table-cell; }
+    }
   </style>
 </head>
 <body>
+<div class="club-scope">
+  <div class="club-wrap">
+    <h2>RESULTADOS SUPER LIGA</h2>
 
-  <h2>RESULTADOS SUPER LIGA</h2>
+    <section>
+      <div class="filters">
+        <div>
+          <label for="filtro-liga">Liga:</label>
+          <select id="filtro-liga"><option value="">Cargando ligas...</option></select>
+        </div>
+        <div>
+          <label for="filtro-division">División:</label>
+          <select id="filtro-division"><option value="">Todas</option></select>
+        </div>
+      </div>
 
-  <label for="filtro-liga">Filtrar por Liga:</label>
-  <select id="filtro-liga"><option value="">Cargando ligas...</option></select>
+      <!-- Orden: 0 control | 1 División | 2 P1 | 3 P2 | 4 Set1 | 5 Set2 | 6 Set3 -->
+      <table id="tabla-resultados" class="display" style="width:100%">
+        <thead>
+          <tr>
+            <th class="control"></th>
+            <th>División</th>
+            <th>Pareja 1</th>
+            <th>Pareja 2</th>
+            <th>Set 1</th>
+            <th>Set 2</th>
+            <th>Set 3</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+</div>
 
-  <label for="filtro-division">Filtrar por División:</label>
-  <select id="filtro-division"><option value="">Todas</option></select>
+<script>
+  const API_BASE = 'https://club-padel-api-12f28391bbbd.herokuapp.com';
+  const AUTH_HEADER = { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' };
 
-  <table id="tabla-resultados" class="display" style="width:100%">
-    <thead>
-      <tr>
-        <th>División</th>
-        <th>Pareja 1</th>
-        <th>Pareja 2</th>
-        <th>Set 1</th>
-        <th>Set 2</th>
-        <th>Set 3</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  let divisionMap = {};
+  let dataTable;
+  let ligaActualId = null;
 
-  <script>
-    const API_BASE = 'https://club-padel-api-12f28391bbbd.herokuapp.com';
-    const AUTH_HEADER = { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz' };
-
-    let divisionMap = {};
-    let dataTable;
-    let ligaActualId = null;
-
-    function cargarLigas() {
-      $.ajax({
-        url: `${API_BASE}/ligas`,
-        headers: AUTH_HEADER,
-        success: function(ligas) {
-          const select = $('#filtro-liga');
-          select.empty();
-          ligas.forEach(l => {
-            select.append(`<option value="${l.id}" ${l.current ? 'selected' : ''}>${l.nombre}</option>`);
-            if (l.current) ligaActualId = l.id;
-          });
-          cargarDivisiones();
-          cargarResultados(ligaActualId);
-        }
-      });
-
-      $('#filtro-liga').on('change', function() {
-        ligaActualId = $(this).val();
+  function cargarLigas() {
+    $.ajax({
+      url: `${API_BASE}/ligas`,
+      headers: AUTH_HEADER,
+      success: function(ligas) {
+        const select = $('#filtro-liga');
+        select.empty();
+        ligas.forEach(l => {
+          select.append(`<option value="${l.id}" ${l.current ? 'selected' : ''}>${l.nombre}</option>`);
+          if (l.current) ligaActualId = l.id;
+        });
+        cargarDivisiones();
         cargarResultados(ligaActualId);
-      });
-    }
-
-    function cargarDivisiones() {
-      $.ajax({
-        url: `${API_BASE}/divisiones`,
-        headers: AUTH_HEADER,
-        success: function(divisiones) {
-          const select = $('#filtro-division');
-          select.empty().append('<option value="">Todas</option>');
-          divisiones.forEach(d => {
-            divisionMap[d.id] = d.nombre;
-            select.append(`<option value="${d.id}">${d.nombre}</option>`);
-          });
-        }
-      });
-
-      $('#filtro-division').on('change', function () {
-        cargarResultados(ligaActualId);
-      });
-    }
-
-    function cargarResultados(ligaId) {
-      if (!ligaId) return;
-
-      $.ajax({
-        url: `${API_BASE}/resultados/liga/${ligaId}`,
-        headers: AUTH_HEADER,
-        success: function(resultados) {
-          const filtroDivision = $('#filtro-division').val();
-          const filtrados = filtroDivision ? resultados.filter(r => r.division.id == filtroDivision) : resultados;
-
-          const datos = filtrados.map(r => [
-            divisionMap[r.division.id] || `División ${r.division.id}`,
-            `${r.pareja1.jugador1.nombre} / ${r.pareja1.jugador2.nombre}`,
-            `${r.pareja2.jugador1.nombre} / ${r.pareja2.jugador2.nombre}`,
-            `${r.set1P1} - ${r.set1P2}`,
-            `${r.set2P1} - ${r.set2P2}`,
-            `${r.set3P1} - ${r.set3P2}`
-          ]);
-
-          dataTable.clear().rows.add(datos).draw();
-        }
-      });
-    }
-
-    $(document).ready(function () {
-      dataTable = $('#tabla-resultados').DataTable({
-        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
-      });
-
-      cargarLigas();
+      }
     });
-  </script>
 
+    $('#filtro-liga').on('change', function() {
+      ligaActualId = $(this).val();
+      cargarResultados(ligaActualId);
+    });
+  }
+
+  function cargarDivisiones() {
+    $.ajax({
+      url: `${API_BASE}/divisiones`,
+      headers: AUTH_HEADER,
+      success: function(divisiones) {
+        const select = $('#filtro-division');
+        select.empty().append('<option value="">Todas</option>');
+        divisiones.forEach(d => {
+          divisionMap[d.id] = d.nombre;
+          select.append(`<option value="${d.id}">${d.nombre}</option>`);
+        });
+      }
+    });
+
+    $('#filtro-division').on('change', function () {
+      cargarResultados(ligaActualId);
+    });
+  }
+
+  function cargarResultados(ligaId) {
+    if (!ligaId) return;
+
+    $.ajax({
+      url: `${API_BASE}/resultados/liga/${ligaId}`,
+      headers: AUTH_HEADER,
+      success: function(resultados) {
+        const filtroDivision = $('#filtro-division').val();
+        const filtrados = filtroDivision ? resultados.filter(r => r.division.id == filtroDivision) : resultados;
+
+        const datos = filtrados.map(r => {
+          const divisionTexto = divisionMap[r.division.id] || `División ${r.division.id}`;
+          const p1 = `${r.pareja1.jugador1.nombre} / ${r.pareja1.jugador2.nombre}`;
+          const p2 = `${r.pareja2.jugador1.nombre} / ${r.pareja2.jugador2.nombre}`;
+          const s1 = `${r.set1P1} - ${r.set1P2}`;
+          const s2 = `${r.set2P1} - ${r.set2P2}`;
+          const s3 = `${(r.set3P1 ?? '-') } - ${(r.set3P2 ?? '-') }`;
+
+          return ['', divisionTexto, p1, p2, s1, s2, s3];
+        });
+
+        dataTable.clear().rows.add(datos).draw();
+      }
+    });
+  }
+
+  $(document).ready(function () {
+    dataTable = $('#tabla-resultados').DataTable({
+      language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+      responsive: {
+        // Seguimos usando Responsive solo para ocultar columnas según breakpoint
+        breakpoints: [
+          { name: 'desktop', width: Infinity },
+          { name: 'tablet',  width: 992 },
+          { name: 'phone',   width: 768 }
+        ],
+        details: false  // desactivamos el manejador interno; usaremos nuestro fallback manual
+      },
+      autoWidth: false,
+      pageLength: 10,
+      lengthMenu: [10, 25, 50, 100],
+      columnDefs: [
+        { targets: 0, className: 'control', orderable: false },
+
+        { targets: 1, className: 'col-division' }, // División (cabecera tarjeta)
+        { targets: 2, className: 'col-p1' },       // Pareja 1
+        { targets: 3, className: 'col-p2' },       // Pareja 2
+        { targets: [4,5,6], className: 'col-set' },// Sets (ocultos en tarjeta)
+
+        // Prioridades responsive: mantén visibles 1,2,3 en móvil; oculta sets primero
+        { responsivePriority: 1, targets: 1 },
+        { responsivePriority: 2, targets: 2 },
+        { responsivePriority: 3, targets: 3 },
+        { responsivePriority: 10, targets: 4 },
+        { responsivePriority: 11, targets: 5 },
+        { responsivePriority: 12, targets: 6 }
+      ],
+      order: [[1, 'asc'], [2, 'asc']]
+    });
+
+    // --- Fallback robusto para móviles: toggle SOLO al tocar la columna 0 (control) ---
+    $('#tabla-resultados tbody').on('click', 'td.control', function (e) {
+      e.preventDefault();
+      const tr  = $(this).closest('tr');
+      const row = dataTable.row(tr);
+
+      if (row.child.isShown()) {
+        row.child.hide();
+        tr.removeClass('parent');
+        return;
+      }
+
+      const data = row.data(); // ['', División, P1, P2, Set1, Set2, Set3]
+      const set1 = data?.[4] ?? '-';
+      const set2 = data?.[5] ?? '-';
+      const set3 = data?.[6] ?? '-';
+
+      const html =
+        '<div class="sets-detail">' +
+          '<div class="set-box"><span class="label">Set 1</span><div>' + set1 + '</div></div>' +
+          '<div class="set-box"><span class="label">Set 2</span><div>' + set2 + '</div></div>' +
+          '<div class="set-box"><span class="label">Set 3</span><div>' + set3 + '</div></div>' +
+        '</div>';
+
+      row.child(html).show();
+      tr.addClass('parent');
+    });
+
+    cargarLigas();
+  });
+</script>
 </body>
 </html>
