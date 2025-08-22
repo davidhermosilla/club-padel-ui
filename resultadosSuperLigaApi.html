@@ -17,55 +17,50 @@
   <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
   <style>
-    /* ---------- SCOPED (no toca el tema WP) ---------- */
     .club-scope{
-      --bg:#f7f9fc; --card:#fff; --ink:#0f172a; --muted:#64748b; --brand:#1e73be; --line:#e5e7eb; --radius:14px;
+      --bg:#f7f9fc; --card:#fff; --ink:#0f172a; --muted:#64748b;
+      --brand:#1e73be; --line:#e5e7eb; --radius:14px;
     }
     .club-scope *{box-sizing:border-box}
     .club-scope .club-wrap{max-width:1100px;margin:32px auto;padding:0 16px}
     .club-scope h2{font-size:28px;margin:0 0 24px; color:var(--ink)}
-    .club-scope section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
+    .club-scope section{background:var(--card); border:1px solid var(--line);
+      border-radius:var(--radius); padding:18px; margin-bottom:28px;
+      box-shadow:0 1px 0 rgba(0,0,0,.03)}
     .club-scope .filters{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:12px}
     .club-scope label{margin-right:6px}
     .club-scope select{border:1px solid var(--line); border-radius:8px; padding:8px 10px}
     .club-scope table.dataTable thead th{background:#f2f5f8;}
-    .club-scope #tabla-resultados td,
-    .club-scope #tabla-resultados th{white-space:normal; word-break:break-word;}
 
     /* ======== MÓVIL ======== */
     @media (max-width: 768px){
       .club-scope #tabla-resultados thead{display:none;}
-
-      /* SOLO filas normales en grid; la fila child NO */
       .club-scope #tabla-resultados tbody tr:not(.child){
-        display:grid;
-        grid-template-columns: 44px 1fr;
-        border:1px solid var(--line);
-        border-radius:12px;
-        margin-bottom:12px;
-        overflow:hidden;
-        background:#fff;
+        display:grid; grid-template-columns:44px 1fr;
+        border:1px solid var(--line); border-radius:12px; margin-bottom:12px;
+        overflow:hidden; background:#fff;
       }
-
-      /* Fila child: que siga siendo table-row */
-      .club-scope #tabla-resultados tbody tr.child{
-        display:table-row;
-      }
+      .club-scope #tabla-resultados tbody tr.child{ display:table-row; }
       .club-scope #tabla-resultados tbody tr.child td.child{
         display:block; padding:0; background:#fcfdfd;
       }
-
-      /* Columna control (zona clicable) */
+      /* Botón de control */
       .club-scope #tabla-resultados td.control{
-        grid-column:1;
-        grid-row:1 / span 3;
-        display:flex; align-items:center; justify-content:center;
-        border-right:1px solid var(--line);
-        background:#f9fbff;
-        cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+        grid-column:1; grid-row:1 / span 3; display:flex;
+        align-items:center; justify-content:center;
+        border-right:1px solid var(--line); background:#f9fbff;
+        cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent;
+        touch-action:manipulation;
+        font-size:20px; color:var(--brand); font-weight:bold;
+      }
+      /* Rotación al abrir */
+      .club-scope #tabla-resultados tr.parent td.control::after{
+        content:"▼"; transition:transform .2s;
+      }
+      .club-scope #tabla-resultados tr:not(.parent) td.control::after{
+        content:"▶"; transition:transform .2s;
       }
 
-      /* División / P1 / P2 en tarjeta */
       .club-scope #tabla-resultados td.col-division{
         grid-column:2; font-weight:700; background:#f7fafc;
         padding:12px 12px; border-bottom:1px solid var(--line);
@@ -75,14 +70,17 @@
         grid-column:2; padding:12px 12px; border-bottom:1px solid var(--line);
       }
       .club-scope #tabla-resultados td.col-p2{ border-bottom:none; }
-
-      /* Ocultar sets en tarjeta (irán al detalle) */
       .club-scope #tabla-resultados td.col-set{ display:none; }
 
-      /* Detalle bonito con cajitas */
+      .club-scope #tabla-resultados td.dataTables_empty{
+        grid-column:1 / -1 !important; text-align:center !important;
+        font-weight:600; font-size:15px; color:var(--muted);
+        padding:16px; background:#fff;
+      }
       .club-scope .sets-detail{ display:flex; gap:12px; padding:12px; }
       .club-scope .set-box{
-        border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:#fff;
+        border:1px solid var(--line); border-radius:10px;
+        padding:8px 10px; background:#fff;
       }
       .club-scope .set-box .label{font-weight:700; display:block; margin-bottom:4px; white-space:nowrap;}
     }
@@ -115,7 +113,6 @@
         </div>
       </div>
 
-      <!-- Orden: 0 control | 1 División | 2 P1 | 3 P2 | 4 Set1 | 5 Set2 | 6 Set3 -->
       <table id="tabla-resultados" class="display" style="width:100%">
         <thead>
           <tr>
@@ -211,28 +208,27 @@
 
   $(document).ready(function () {
     dataTable = $('#tabla-resultados').DataTable({
-      language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+      language: {
+        url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json',
+        emptyTable: 'No se encontraron resultados'
+      },
       responsive: {
-        // Seguimos usando Responsive solo para ocultar columnas según breakpoint
         breakpoints: [
           { name: 'desktop', width: Infinity },
           { name: 'tablet',  width: 992 },
           { name: 'phone',   width: 768 }
         ],
-        details: false  // desactivamos el manejador interno; usaremos nuestro fallback manual
+        details: false
       },
       autoWidth: false,
       pageLength: 10,
       lengthMenu: [10, 25, 50, 100],
       columnDefs: [
         { targets: 0, className: 'control', orderable: false },
-
-        { targets: 1, className: 'col-division' }, // División (cabecera tarjeta)
-        { targets: 2, className: 'col-p1' },       // Pareja 1
-        { targets: 3, className: 'col-p2' },       // Pareja 2
-        { targets: [4,5,6], className: 'col-set' },// Sets (ocultos en tarjeta)
-
-        // Prioridades responsive: mantén visibles 1,2,3 en móvil; oculta sets primero
+        { targets: 1, className: 'col-division' },
+        { targets: 2, className: 'col-p1' },
+        { targets: 3, className: 'col-p2' },
+        { targets: [4,5,6], className: 'col-set' },
         { responsivePriority: 1, targets: 1 },
         { responsivePriority: 2, targets: 2 },
         { responsivePriority: 3, targets: 3 },
@@ -243,7 +239,6 @@
       order: [[1, 'asc'], [2, 'asc']]
     });
 
-    // --- Fallback robusto para móviles: toggle SOLO al tocar la columna 0 (control) ---
     $('#tabla-resultados tbody').on('click', 'td.control', function (e) {
       e.preventDefault();
       const tr  = $(this).closest('tr');
@@ -255,7 +250,7 @@
         return;
       }
 
-      const data = row.data(); // ['', División, P1, P2, Set1, Set2, Set3]
+      const data = row.data();
       const set1 = data?.[4] ?? '-';
       const set2 = data?.[5] ?? '-';
       const set3 = data?.[6] ?? '-';
