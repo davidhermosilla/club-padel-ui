@@ -5,35 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Buscar Reservas</title>
 
-  <style>
-    :root{
+  <style>    
+    *{box-sizing:border-box}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--ink)}
+    .club-scope{
       --bg:#f7f9fc; --card:#fff; --ink:#0f172a; --muted:#64748b; --brand:#1e73be; --line:#e5e7eb;
       --radius:14px;
     }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--ink)}
-    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
-    h1{font-size:28px;margin:0 0 24px}
-    section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
-    .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px}
-    .controls input[type="date"], .search input{border:1px solid var(--line); border-radius:10px; padding:10px 12px}
-    .btn{appearance:none; border:none; border-radius:10px; padding:10px 14px; background:var(--brand); color:#fff; cursor:pointer}
-    .btn.secondary{background:#475569}
-    .btn:disabled{opacity:.6; cursor:not-allowed}
-    .badge{display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(30,115,190,.1); color:var(--brand); font-size:12px; font-weight:600}
-    .empty{padding:16px; color:var(--muted)}
-    table.dataTable thead th{background:#f2f5f8;}
-    .loading{color:var(--muted); font-size:14px; margin:6px 0}
-    .bar-top{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:10px}
-    .search{display:flex; align-items:center; margin-left:auto}
+    .club-scope .club-wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .club-scope h1{font-size:28px;margin:0 0 24px}
+    .club-scope section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
+    .club-scope .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px}
+    .club-scope .controls input[type="date"], .search input{border:1px solid var(--line); border-radius:10px; padding:10px 12px}
+    .club-scope .btn{appearance:none; border:none; border-radius:10px; padding:10px 14px; background:var(--brand); color:#fff; cursor:pointer}
+    .club-scope .btn.secondary{background:#475569}
+    .club-scope .btn:disabled{opacity:.6; cursor:not-allowed}
+    .club-scope .badge{display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(30,115,190,.1); color:var(--brand); font-size:12px; font-weight:600}
+    .club-scope .empty{padding:16px; color:var(--muted)}
+    .club-scope table.dataTable thead th{background:#f2f5f8;}
+    .club-scope .loading{color:var(--muted); font-size:14px; margin:6px 0}
+    .club-scope .bar-top{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin-bottom:10px}
+    .club-scope .search{display:flex; align-items:center; margin-left:auto}
     @media (max-width: 720px){
-      h1{font-size:22px}
-      section{padding:14px}
-      .controls{gap:8px}
-      .controls input[type="date"]{flex:1}
+      .club-scope h1{font-size:22px}
+      .club-scope section{padding:14px}
+      .club-scope .controls{gap:8px}
+      .club-scope .controls input[type="date"]{flex:1}
       .controls .btn{flex:1}
-      .search{width:100%; margin:0}
-      .search input{width:100%}
+      .club-scope .search{width:100%; margin:0}
+      .club-scope .search input{width:100%}
     }
   </style>
 
@@ -53,45 +53,47 @@
   <script src="https://cdn.datatables.net/plug-ins/1.13.8/sorting/datetime-moment.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <input id="user-info" type="hidden"/>
-    <input id="role-info" type="hidden"/>
-
-    <h1>Buscar Reservas</h1>
-
-    <section>
-      <div class="controls">
-        <label for="fecha">Fecha:</label>
-        <input type="date" id="fecha" />
-        <button class="btn" id="btn-buscar">Buscar</button>
-        <button class="btn secondary" id="btn-hoy" type="button">Hoy</button>
-        <button class="btn secondary" id="btn-manana" type="button">Mañana</button>
-        <span id="count" class="badge">0 resultados</span>
-
-        <!-- 🔎 Buscador propio enlazado a DataTables -->
-        <div class="search" style="margin-left:auto;">
-          <input id="q" type="search" placeholder="Buscar en la tabla" />
+  <div class="club-scope">
+    <div class="club-wrap">
+      <input id="user-info" type="hidden"/>
+      <input id="role-info" type="hidden"/>
+  
+      <h1>Buscar Reservas</h1>
+  
+      <section>
+        <div class="controls">
+          <label for="fecha">Fecha:</label>
+          <input type="date" id="fecha" />
+          <button class="btn" id="btn-buscar">Buscar</button>
+          <button class="btn secondary" id="btn-hoy" type="button">Hoy</button>
+          <button class="btn secondary" id="btn-manana" type="button">Mañana</button>
+          <span id="count" class="badge">0 resultados</span>
+  
+          <!-- 🔎 Buscador propio enlazado a DataTables -->
+          <div class="search" style="margin-left:auto;">
+            <input id="q" type="search" placeholder="Buscar en la tabla" />
+          </div>
         </div>
-      </div>
-
-      <div id="loading" class="loading" style="display:none;">Cargando reservas...</div>
-
-      <table id="tabla-reservas" class="display nowrap" style="width:100%">
-        <thead>
-          <tr>
-            <th>Fecha Creación</th>  <!-- dd/MM/yyyy HH:mm -->
-            <th>Fecha Reserva</th>    <!-- dd/MM/yyyy -->
-            <th>Pista</th>
-            <th>Hora</th>             <!-- HH:mm - HH:mm -->
-            <th>Usuario</th>
-            <th>Concepto</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-
-      <div id="empty" class="empty" hidden>No hay reservas para la fecha seleccionada.</div>
-    </section>
+  
+        <div id="loading" class="loading" style="display:none;">Cargando reservas...</div>
+  
+        <table id="tabla-reservas" class="display nowrap" style="width:100%">
+          <thead>
+            <tr>
+              <th>Fecha Creación</th>  <!-- dd/MM/yyyy HH:mm -->
+              <th>Fecha Reserva</th>    <!-- dd/MM/yyyy -->
+              <th>Pista</th>
+              <th>Hora</th>             <!-- HH:mm - HH:mm -->
+              <th>Usuario</th>
+              <th>Concepto</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+  
+        <div id="empty" class="empty" hidden>No hay reservas para la fecha seleccionada.</div>
+      </section>
+    </div>
   </div>
 
   <script>
