@@ -7,35 +7,35 @@
 
   <!-- Estilos base -->
   <style>
-    :root{
+    *{box-sizing:border-box}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--ink)}
+    .club-scope{
       --bg:#f7f9fc; --card:#fff; --ink:#0f172a; --muted:#64748b; --brand:#1e73be; --line:#e5e7eb;
       --radius:14px;
     }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--ink)}
-    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
-    h1{font-size:28px;margin:0 0 24px}
-    section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
-    .section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px; flex-wrap:wrap}
-    .section-head h2{font-size:18px;margin:0}
-    .search{display:flex; gap:8px; align-items:center; margin-left:auto}
-    .search input{border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-width:220px; outline:none}
-    .search input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(30,115,190,.15)}
-    .badge{display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(30,115,190,.1); color:var(--brand); font-size:12px; font-weight:600}
-    .empty{padding:16px; color:var(--muted)}
-    table.dataTable thead th{background:#f2f5f8;}
+    .club-scope .club-wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .club-scope h1{font-size:28px;margin:0 0 24px}
+    .club-scope section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
+    .club-scope .section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px; flex-wrap:wrap}
+    .club-scope .section-head h2{font-size:18px;margin:0}
+    .club-scope .search{display:flex; gap:8px; align-items:center; margin-left:auto}
+    .club-scope .search input{border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-width:220px; outline:none}
+    .club-scope .search input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(30,115,190,.15)}
+    .club-scope .badge{display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(30,115,190,.1); color:var(--brand); font-size:12px; font-weight:600}
+    .club-scope .empty{padding:16px; color:var(--muted)}
+    .club-scope table.dataTable thead th{background:#f2f5f8;}
     /* Contenedor para evitar desbordes en pantallas intermedias */
-    .table-wrap{width:100%}
+    .club-scope .table-wrap{width:100%}
 
     /* Ajustes responsive */
     @media (max-width: 720px){
-      .wrap{padding:0 10px}
-      h1{font-size:22px}
-      section{padding:14px}
-      .section-head{gap:10px}
-      .search{width:100%; margin:0}
-      .search input{width:100%; min-width:0}
-      table.dataTable tbody td{word-break:break-word}
+      .club-scope .club-wrap{padding:0 10px}
+      .club-scope h1{font-size:22px}
+      .club-scope section{padding:14px}
+      .club-scope .section-head{gap:10px}
+      .club-scope .search{width:100%; margin:0}
+      .club-scope .search input{width:100%; min-width:0}
+      .club-scope table.dataTable tbody td{word-break:break-word}
     }
   </style>
 
@@ -55,62 +55,63 @@
   <script src="https://cdn.datatables.net/plug-ins/1.13.8/sorting/datetime-moment.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <!-- Inputs globales en tu WP -->
-    <input id="user-info" type="hidden"/>
-    <input id="role-info" type="hidden"/>
-
-    <h1>Mis Reservas</h1>
-
-    <!-- Reservas Activas -->
-    <section id="sec-activas">
-      <div class="section-head">
-        <h2>Reservas Activas <span id="count-activas" class="badge">0</span></h2>
-        <div class="search"><input id="q-activas" type="search" placeholder="Buscar" /></div>
-      </div>
-      <div class="table-wrap">
-        <table id="tabla-activas" class="display nowrap" style="width:100%">
-          <thead>
-            <tr>
-              <th>Fecha Creación</th>
-              <th>Fecha Reserva</th>
-              <th>Pista</th>
-              <th>Hora</th>
-              <th>Usuario</th>
-              <th>Concepto</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div id="empty-activas" class="empty" hidden>No hay reservas activas.</div>
-    </section>
-
-    <!-- Reservas Pasadas -->
-    <section id="sec-pasadas">
-      <div class="section-head">
-        <h2>Reservas Pasadas <span id="count-pasadas" class="badge">0</span></h2>
-        <div class="search"><input id="q-pasadas" type="search" placeholder="Buscar" /></div>
-      </div>
-      <div class="table-wrap">
-        <table id="tabla-pasadas" class="display nowrap" style="width:100%">
-          <thead>
-            <tr>
-              <th>Fecha Creación</th>
-              <th>Fecha Reserva</th>
-              <th>Pista</th>
-              <th>Hora</th>
-              <th>Usuario</th>
-              <th>Concepto</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div id="empty-pasadas" class="empty" hidden>No hay reservas pasadas.</div>
-    </section>
+  <div class="club-scope">
+    <div class="club-wrap">
+      <!-- Inputs globales en tu WP -->
+      <input id="user-info" type="hidden"/>
+      <input id="role-info" type="hidden"/>
+  
+      <h1>Mis Reservas</h1>
+  
+      <!-- Reservas Activas -->
+      <section id="sec-activas">
+        <div class="section-head">
+          <h2>Reservas Activas <span id="count-activas" class="badge">0</span></h2>
+          <div class="search"><input id="q-activas" type="search" placeholder="Buscar" /></div>
+        </div>
+        <div class="table-wrap">
+          <table id="tabla-activas" class="display nowrap" style="width:100%">
+            <thead>
+              <tr>
+                <th>Fecha Creación</th>
+                <th>Fecha Reserva</th>
+                <th>Pista</th>
+                <th>Hora</th>
+                <th>Usuario</th>
+                <th>Concepto</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="empty-activas" class="empty" hidden>No hay reservas activas.</div>
+      </section>
+  
+      <!-- Reservas Pasadas -->
+      <section id="sec-pasadas">
+        <div class="section-head">
+          <h2>Reservas Pasadas <span id="count-pasadas" class="badge">0</span></h2>
+          <div class="search"><input id="q-pasadas" type="search" placeholder="Buscar" /></div>
+        </div>
+        <div class="table-wrap">
+          <table id="tabla-pasadas" class="display nowrap" style="width:100%">
+            <thead>
+              <tr>
+                <th>Fecha Creación</th>
+                <th>Fecha Reserva</th>
+                <th>Pista</th>
+                <th>Hora</th>
+                <th>Usuario</th>
+                <th>Concepto</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="empty-pasadas" class="empty" hidden>No hay reservas pasadas.</div>
+      </section>
+    </div>
   </div>
-
   <script>
     const API_URL = "https://club-padel-api-12f28391bbbd.herokuapp.com";
     const AUTH_HEADER = 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz';
