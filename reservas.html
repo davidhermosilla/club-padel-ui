@@ -650,10 +650,11 @@ function getSelectedPaymentMethod() {
                 success: function() {
 					slot.className = 'time-slot';
 					slot.innerHTML = '<span>Disponible</span></br><span></span>';
-					slot.dataset.estado = 'Disponible';
-					const username = slot.dataset.username;
-					slot.dataset.username = '';
-					slot.dataset.reserva = '';
+                                        slot.dataset.estado = 'Disponible';
+                                        const username = slot.dataset.username;
+                                        slot.dataset.username = '';
+                                        slot.dataset.reserva = '';
+                                        slot.dataset.concepto = '';
 
 					if (document.getElementById('role-info').value === 'administrador') {
 						ocultarPagos();
@@ -752,10 +753,11 @@ function getSelectedPaymentMethod() {
 
     // 🔄 Actualizar UI como antes
     slot.className = 'time-slot-booked';
-    slot.innerHTML = '<span>Reservada</span></br><span>' + username + '</span>';
-    slot.dataset.estado = 'Reservada'; 
+    slot.innerHTML = '<span>Reservada</span></br><span>' + username + '</span>' + (concepto ? '<br><span>' + concepto + '</span>' : '');
+    slot.dataset.estado = 'Reservada';
     slot.dataset.reserva = dataResponse.id;
     slot.dataset.username = username;
+    slot.dataset.concepto = concepto;
 
     if (document.getElementById('role-info').value === 'administrador') {
         mostrarPagos(slot.dataset.reserva, slot.dataset.pista, slot.dataset.pistaNombre, slot.dataset.time);
@@ -914,12 +916,13 @@ function getSelectedPaymentMethod() {
 			const ahora = new Date();
 			const esPasado = slotDate.getTime() < ahora.getTime();
 
-			if (reserva) {
-				timeSlot.innerHTML = `<span>Reservada</span><br><span>${reserva.userName}</span>`;
-				timeSlot.dataset.estado = 'Reservada';
-				timeSlot.dataset.reserva = reserva.reservaId;
-				timeSlot.dataset.username = reserva.userName;
-				timeSlot.dataset.telefono = '';
+                        if (reserva) {
+                                timeSlot.innerHTML = `<span>Reservada</span><br><span>${reserva.userName}</span>${reserva.concepto ? `<br><span>${reserva.concepto}</span>` : ''}`;
+                                timeSlot.dataset.estado = 'Reservada';
+                                timeSlot.dataset.reserva = reserva.reservaId;
+                                timeSlot.dataset.username = reserva.userName;
+                                timeSlot.dataset.concepto = reserva.concepto || '';
+                                timeSlot.dataset.telefono = '';
 				// 1. Obtener el telefono del usuario
 				fetch(club_ajaxurl, {
 					method: 'POST',
@@ -941,11 +944,12 @@ function getSelectedPaymentMethod() {
 				});
 				
 				timeSlot.className = esPasado ? 'time-slot-booked-past' : (username !== '' ? 'time-slot-booked' : 'time-slot-booked-no-user');
-			} else {
-				timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
-				timeSlot.dataset.estado = 'Disponible';
-				timeSlot.className = esPasado ? 'time-slot-past' : (username !== '' ? 'time-slot' : 'time-slot-no-user');
-			}
+                        } else {
+                                timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
+                                timeSlot.dataset.estado = 'Disponible';
+                                timeSlot.dataset.concepto = '';
+                                timeSlot.className = esPasado ? 'time-slot-past' : (username !== '' ? 'time-slot' : 'time-slot-no-user');
+                        }
 
 			// Solo bloqueamos clics si es pasado Y no es administrador
 			if (esPasado && rolename !== 'administrador') {
