@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reservar / Liberar Pistas por Slots (Administrador)</title>
+
+  <!-- jQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+  <style>
+    .club-scope{
+      --bg:#f7f9fc; --card:#fff; --ink:#0f172a; --muted:#64748b;
+      --brand:#1e73be; --line:#e5e7eb; --danger:#b91c1c; --ok:#065f46; --warn:#b45309;
+      --radius:14px; --badge:#e2e8f0;
+    }
+    .club-scope *{box-sizing:border-box}
+    .club-scope .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .club-scope h1{font-size:28px;margin:0 0 16px;color:var(--ink)}
+    .club-scope p{margin:0 0 12px}
+    .club-scope section{
+      background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+      padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)
+    }
+    .club-scope .row{display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin-bottom:12px}
+    .club-scope .field{display:flex; flex-direction:column; gap:6px; min-width:180px}
+    .club-scope label{font-size:12px; color:var(--muted)}
+    .club-scope input[type="date"], .club-scope input[type="text"]{
+      border:1px solid var(--line); border-radius:10px; padding:10px 12px; outline:none
+    }
+    .club-scope input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(30,115,190,.15)}
+    .club-scope .btn{
+      appearance:none; border:none; border-radius:10px; padding:10px 14px; background:var(--brand);
+      color:#fff; cursor:pointer; font-weight:600
+    }
+    .club-scope .btn:disabled{opacity:.6; cursor:not-allowed}
+    .club-scope .btn.secondary{background:#475569}
+    .club-scope .alert{
+      padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--ink)
+    }
+    .club-scope .alert.error{border-color:#fecaca; background:#fff1f2; color:var(--danger)}
+    .club-scope .alert.warn{border-color:#fde68a; background:#fffbeb; color:var(--warn)}
+    .club-scope .alert.ok{border-color:#bbf7d0; background:#ecfdf5; color:var(--ok)}
+    .club-scope .grid{display:grid; gap:12px}
+    .club-scope .grid.pistas{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+    .club-scope .grid.slots{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+    .club-scope .item{display:flex; gap:10px; align-items:center; border:1px solid var(--line);
+      border-radius:10px; padding:8px 10px; background:#fff}
+    .club-scope .muted{color:var(--muted)}
+    .club-scope .progress{height:10px;background:#eef2ff;border-radius:999px;overflow:hidden}
+    .club-scope .progress > div{height:100%; background:var(--brand); width:0%}
+    .club-scope .badge{
+      display:inline-block; font-size:11px; background:var(--badge); color:#0f172a; padding:2px 8px; border-radius:999px;
+    }
+    .club-scope .badge.ocupado{ background:#fee2e2; color:#991b1b; }
+    .club-scope .radio-group{display:flex; gap:10px; align-items:center; padding:6px 8px; border:1px solid var(--line); border-radius:12px; background:#fff}
+    .club-scope table{width:100%; border-collapse:separate; border-spacing:0}
+    .club-scope thead th{background:#f2f5f8; text-align:left; font-weight:600; font-size:13px; padding:10px; border:1px solid var(--line)}
+    .club-scope tbody td{font-size:14px; padding:10px; border:1px solid var(--line)}
+    .club-scope .status-ok{color:var(--ok); font-weight:600}
+    .club-scope .status-ko{color:var(--danger); font-weight:600}
+    @media (max-width:760px){
+      .club-scope .row{flex-direction:column; align-items:stretch}
+      .club-scope .field{min-width:unset}
+    }
+  </style>
+</head>
+<body>
+<div class="club-scope">
+  <div class="wrap">
+    <!-- Inputs globales de WP -->
+    <input id="user-info" type="hidden"/>
+    <input id="role-info" type="hidden"/>
+
+    <h1>Reservar / Liberar pistas</h1>
+    <p class="muted">Elige fecha y combina <strong>pistas</strong> y <strong>slots</strong> para crear reservas o liberar (cancelar) las existentes. Solo disponible para administradores.</p>
+
+    <section id="guard">
+      <div id="guard-msg" class="alert warn">Comprobando permisos…</div>
+    </section>
+
+    <section id="form-sec" style="display:none;">
+      <div class="row">
+        <div class="field">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" />
+        </div>
+        <div class="field" style="flex:1;">
+          <label for="concepto">Concepto (solo al reservar)</label>
+          <input type="text" id="concepto" placeholder="p.ej. Torneo interno, mantenimiento…"/>
+        </div>
+        <div class="field">
+          <label>Acción</label>
+          <div class="radio-group">
+            <label><input type="radio" name="accion" value="reservar" checked> Reservar</label>
+            <label><input type="radio" name="accion" value="liberar"> Liberar</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pistas -->
+      <div class="alert" style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div>
+            <strong>Pistas</strong>
+            <div class="muted">Selecciona las pistas a procesar. (Por defecto se excluye “BAR”)</div>
+          </div>
+          <label class="item" style="border:none;padding-right:0;">
+            <input type="checkbox" id="chk-all-pistas" checked /> Seleccionar todas
+          </label>
+        </div>
+        <div id="pistas-grid" class="grid pistas" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- Slots -->
+      <div class="alert" style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div>
+            <strong>Slots del día</strong>
+            <div class="muted">Marca uno o varios. Los <span class="badge ocupado">ocupados</span> se detectan por la fecha.</div>
+          </div>
+          <label class="item" style="border:none;padding-right:0;">
+            <input type="checkbox" id="chk-all-slots" /> Seleccionar todos
+          </label>
+        </div>
+        <div id="slots-grid" class="grid slots" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="row" style="justify-content:flex-end; margin-top:12px;">
+        <button class="btn" id="btn-ejecutar" disabled>Ejecutar</button>
+      </div>
+
+      <div id="progress-wrap" class="alert" style="display:none; margin-top:12px;">
+        <div class="muted" id="progress-text">Procesando…</div>
+        <div class="progress" style="margin-top:8px;"><div id="progress-bar"></div></div>
+      </div>
+    </section>
+
+    <section id="result-sec" style="display:none;">
+      <h2 style="font-size:18px; margin:0 0 10px;">Resultado</h2>
+      <div id="summary" class="alert" style="display:none;"></div>
+      <div class="alert" style="margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Acción</th>
+              <th>Pista</th>
+              <th>Ubicación</th>
+              <th>Slot</th>
+              <th>Estado</th>
+              <th>Mensaje</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-resultados"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // ================== Config ==================
+  const API_URL = "https://club-padel-api-12f28391bbbd.herokuapp.com";
+  const AUTH_HEADER = 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz';
+
+  const weekdaySlots = ['16:30 - 18:00','18:00 - 19:30','19:30 - 21:00','21:00 - 22:30'];
+  const weekendSlots = ['09:00 - 10:30','10:30 - 12:00','12:00 - 13:30','16:30 - 18:00','18:00 - 19:30','19:30 - 21:00'];
+
+  // ================== Normalización / claves ==================
+  function normId(v){ return Number(String(v).trim()); }
+  function normTime(v){ return String(v || '').trim(); }
+  function keyFor(pistaId, hi, hf){
+    return `${normId(pistaId)}|${normTime(hi)}|${normTime(hf)}`;
+  }
+
+  // ================== Utils ==================
+  function ddmmyyyy(dateISO){
+    if(!dateISO) return '';
+    const [y,m,d] = dateISO.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  function parseSlot(slot){
+    const [a,b] = slot.split('-').map(s=>s.trim());
+    return {hi:a, hf:b};
+  }
+  function waitForUserInfo({ timeout=10000, pollMs=200 } = {}){
+    return new Promise((resolve)=>{
+      const el = document.getElementById('user-info');
+      const done = (val)=>{ cleanup(); resolve(val || null); };
+      if (el && el.value) return resolve(el.value);
+      let toId, pollId, obs;
+      const check = ()=>{ if(el && el.value) done(el.value); };
+      const onUserReady = ()=>check();
+      const cleanup = ()=>{
+        if (toId) clearTimeout(toId);
+        if (pollId) clearInterval(pollId);
+        if (obs) obs.disconnect();
+        el && el.removeEventListener('userReady', onUserReady);
+      };
+      el && el.addEventListener('userReady', onUserReady);
+      if (el) {
+        obs = new MutationObserver(check);
+        obs.observe(el,{attributes:true,attributeFilter:['value']});
+      }
+      pollId = setInterval(check, pollMs);
+      toId = setTimeout(()=>done(null), timeout);
+    });
+  }
+
+  // ================== Estado ==================
+  let PISTAS = [];
+  let SELECTED_PISTAS = new Set();
+  let SELECTED_SLOTS  = new Set();
+  let reservasIndex   = new Map(); // key -> { id }
+
+  // ================== API ==================
+  async function getUserRole(username){
+    try{
+      const res = await fetch(`${API_URL}/usuarios/buscar?username=${encodeURIComponent(username)}`, {
+        headers:{ 'Authorization': AUTH_HEADER, 'Content-Type':'application/json' }
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      return (data.rolName || data.rol?.nombre || '').toLowerCase();
+    }catch(e){
+      console.error('Error rol:', e);
+      return '';
+    }
+  }
+
+  async function loadPistas(){
+    const res = await fetch(`${API_URL}/pistas`, {
+      headers:{ 'Authorization': AUTH_HEADER, 'Content-Type':'application/json' }
+    });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    // Excluye BAR por defecto
+    PISTAS = data.filter(p => (p.nombre || '').toUpperCase() !== 'BAR')
+                 .sort((a,b)=> (a.orden??999) - (b.orden??999));
+  }
+
+  async function crearReserva({username, pistaId, fechaReserva, horaInicio, horaFin, concepto}){
+    const body = { username, pistaId, fechaReserva, horaInicio, horaFin, concepto };
+    const res = await fetch(`${API_URL}/reservas`, {
+      method:'POST',
+      headers:{ 'Authorization': AUTH_HEADER, 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok){
+      let msg = 'Error';
+      try{ msg = (await res.json())?.message || msg; }catch(_){}
+      throw new Error(msg);
+    }
+    return await res.json(); // ← puede devolver {id} o {reservaId}
+  }
+
+  async function cancelarReserva(reservaId){
+    const res = await fetch(`${API_URL}/reservas/${reservaId}?skipValidation=true`, {
+      method:'DELETE',
+      headers:{ 'Authorization': AUTH_HEADER }
+    });
+    if (!res.ok){
+      let msg = 'Error';
+      try{ msg = (await res.json())?.message || msg; }catch(_){}
+      throw new Error(msg);
+    }
+    return true;
+  }
+
+  // === Carga reservas del día UNA VEZ y construye índice pista|inicio|fin -> {id} ===
+  async function cargarReservasPorFecha(fechaDDMMYYYY){
+    reservasIndex.clear();
+    if(!fechaDDMMYYYY) return;
+    try{
+      const res = await fetch(`${API_URL}/reservas/buscar?fecha=${encodeURIComponent(fechaDDMMYYYY)}`, {
+        headers:{ 'Authorization': AUTH_HEADER, 'Content-Type':'application/json' }
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+
+      data.forEach(r=>{
+        // el API devuelve reservaId / pistaId / slotTime ("HH:mm - HH:mm") y horaInicio
+        const id  = (r.id ?? r.reservaId);
+        const pid = (r.pista?.id ?? r.pistaId);
+        const start = (r.horaInicio != null ? String(r.horaInicio).trim() : (r.slotTime||'').split('-')[0]?.trim() || '');
+        const end   = ((r.horaFin   != null ? String(r.horaFin).trim()    : (r.slotTime||'').split('-')[1]?.trim() || ''));
+
+        if (id != null && pid != null && start && end){
+          reservasIndex.set(keyFor(pid, start, end), { id: Number(id) });
+        }
+      });
+
+      // console.debug('Index reservas:', Array.from(reservasIndex.entries()));
+    }catch(e){
+      console.error('Error al cargar reservas del día:', e);
+    }
+  }
+
+  // ================== UI helpers ==================
+  function setGuardMessage(type,text){
+    const el = document.getElementById('guard-msg');
+    el.className = 'alert ' + (type || '');
+    el.textContent = text;
+  }
+
+  function renderPistas(){
+    const grid = document.getElementById('pistas-grid');
+    grid.innerHTML = '';
+    SELECTED_PISTAS.clear();
+    PISTAS.forEach(p=>{
+      SELECTED_PISTAS.add(p.id);
+      const id = `p_${p.id}`;
+      const item = document.createElement('label');
+      item.className = 'item';
+      item.innerHTML = `
+        <input type="checkbox" id="${id}" data-id="${p.id}" checked />
+        <div>
+          <div><strong>${p.nombre}</strong></div>
+          <div class="muted">${p.ubicacion || ''}</div>
+        </div>`;
+      grid.appendChild(item);
+    });
+    document.getElementById('btn-ejecutar').disabled = PISTAS.length===0;
+
+    grid.addEventListener('change',(e)=>{
+      if (e.target && e.target.matches('input[type="checkbox"][data-id]')){
+        const pid = Number(e.target.getAttribute('data-id'));
+        if (e.target.checked) SELECTED_PISTAS.add(pid); else SELECTED_PISTAS.delete(pid);
+        const allChecked = PISTAS.every(p=> SELECTED_PISTAS.has(p.id));
+        document.getElementById('chk-all-pistas').checked = allChecked;
+        const fechaISO = document.getElementById('fecha').value;
+        if (fechaISO) renderSlotsForDate(fechaISO);
+        toggleExecuteBtn();
+      }
+    });
+  }
+
+  function renderSlotsForDate(dateISO){
+    const container = document.getElementById('slots-grid');
+    container.innerHTML = '';
+    SELECTED_SLOTS.clear();
+    if(!dateISO) { toggleExecuteBtn(); return; }
+
+    const d = new Date(dateISO);
+    const day = d.getDay(); // 0=Dom, 6=Sab
+    const slots = (day===0 || day===6) ? weekendSlots : weekdaySlots;
+
+    slots.forEach((s, idx)=>{
+      const {hi, hf} = parseSlot(s);
+      // Ocupación solo entre pistas seleccionadas
+      let ocupadas = 0;
+      for (const p of PISTAS){
+        if (!SELECTED_PISTAS.has(p.id)) continue;
+        if (reservasIndex.has(keyFor(p.id, hi, hf))) ocupadas++;
+      }
+      const id = `s_${idx}`;
+      const item = document.createElement('label');
+      item.className = 'item';
+      item.innerHTML = `
+        <input type="checkbox" id="${id}" data-slot="${s}" />
+        <div><strong>${s}</strong> ${ocupadas>0 ? `<span class="badge ocupado">${ocupadas} ocup.</span>`:''}</div>`;
+      container.appendChild(item);
+    });
+
+    document.getElementById('chk-all-slots').checked = false;
+
+    container.addEventListener('change', (e)=>{
+      if (e.target && e.target.matches('input[type="checkbox"][data-slot]')){
+        const sl = e.target.getAttribute('data-slot');
+        if (e.target.checked) SELECTED_SLOTS.add(sl); else SELECTED_SLOTS.delete(sl);
+        const allSlotsInputs = container.querySelectorAll('input[type="checkbox"][data-slot]');
+        const allChecked = Array.from(allSlotsInputs).every(i=>i.checked);
+        document.getElementById('chk-all-slots').checked = allChecked;
+        toggleExecuteBtn();
+      }
+    });
+    toggleExecuteBtn();
+  }
+
+  function bindSelectAll(){
+    document.getElementById('chk-all-pistas').addEventListener('change',(e)=>{
+      const checked = e.target.checked;
+      SELECTED_PISTAS.clear();
+      PISTAS.forEach(p=>{ if(checked) SELECTED_PISTAS.add(p.id); });
+      PISTAS.forEach(p=>{
+        const cb = document.getElementById(`p_${p.id}`);
+        if (cb) cb.checked = checked;
+      });
+      const fechaISO = document.getElementById('fecha').value;
+      if (fechaISO) renderSlotsForDate(fechaISO);
+      toggleExecuteBtn();
+    });
+    document.getElementById('chk-all-slots').addEventListener('change',(e)=>{
+      const checked = e.target.checked;
+      SELECTED_SLOTS.clear();
+      const inputs = document.querySelectorAll('#slots-grid input[type="checkbox"][data-slot]');
+      inputs.forEach(i=>{
+        i.checked = checked;
+        if (checked) SELECTED_SLOTS.add(i.getAttribute('data-slot'));
+      });
+      toggleExecuteBtn();
+    });
+  }
+
+  function toggleExecuteBtn(){
+    const enabled = (SELECTED_PISTAS.size>0) && (SELECTED_SLOTS.size>0) && !!document.getElementById('fecha').value;
+    document.getElementById('btn-ejecutar').disabled = !enabled;
+  }
+
+  function setProgress(current,total){
+    const bar = document.getElementById('progress-bar');
+    const txt = document.getElementById('progress-text');
+    const pct = total ? Math.round((current/total)*100) : 0;
+    bar.style.width = pct + '%';
+    txt.textContent = `Procesando ${current} de ${total}… (${pct}%)`;
+  }
+
+  function appendResultadoRow({accion, pista, slot, ok, msg}){
+    const tb = document.getElementById('tbody-resultados');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${accion}</td>
+      <td>${pista.nombre}</td>
+      <td>${pista.ubicacion || ''}</td>
+      <td>${slot}</td>
+      <td class="${ok?'status-ok':'status-ko'}">${ok ? 'OK' : 'ERROR'}</td>
+      <td>${msg || ''}</td>`;
+    tb.appendChild(tr);
+  }
+
+  function showResultsSummary(okCount, koCount, accion){
+    const sum = document.getElementById('summary');
+    sum.style.display = 'block';
+    if (koCount === 0){
+      sum.className = 'alert ok';
+      sum.textContent = `¡Listo! ${okCount} ${accion === 'reservar' ? 'reserva(s) creada(s)' : 'reserva(s) liberada(s)'} correctamente.`;
+    } else if (okCount === 0){
+      sum.className = 'alert error';
+      sum.textContent = `No se pudo completar la acción de ${accion}. Revisa los mensajes.`;
+    } else {
+      sum.className = 'alert warn';
+      sum.textContent = `Parcial: ${okCount} OK, ${koCount} con error al ${accion}. Revisa los mensajes.`;
+    }
+  }
+
+  // ================== Init ==================
+  (async function init(){
+    // Fecha hoy
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    document.getElementById('fecha').value = `${yyyy}-${mm}-${dd}`;
+
+    // Carga UNA vez por cambio de fecha
+    document.getElementById('fecha').addEventListener('change', async (e)=>{
+      const fechaISO = e.target.value;
+      const fechaDDMMYYYY = ddmmyyyy(fechaISO);
+      await cargarReservasPorFecha(fechaDDMMYYYY);
+      renderSlotsForDate(fechaISO);
+    });
+
+    const USER = await waitForUserInfo();
+    if (!USER){
+      setGuardMessage('error','No se pudo detectar el usuario. Vuelve a la página estando logueado.');
+      return;
+    }
+    const role = await getUserRole(USER);
+    if ((role || '') !== 'administrador'){
+      setGuardMessage('error','Acceso restringido. Solo los usuarios con rol administrador pueden realizar esta acción.');
+      return;
+    }
+    setGuardMessage('ok',`Acceso concedido. Usuario "${USER}" con rol administrador.`);
+    document.getElementById('form-sec').style.display = 'block';
+
+    try{
+      await loadPistas();
+      renderPistas();
+      bindSelectAll();
+      const fechaISO = document.getElementById('fecha').value;
+      await cargarReservasPorFecha(ddmmyyyy(fechaISO));  // inicial
+      renderSlotsForDate(fechaISO);
+    }catch(e){
+      console.error(e);
+      setGuardMessage('error','No se pudieron cargar pistas o slots.');
+      return;
+    }
+
+    document.getElementById('btn-ejecutar').addEventListener('click', async ()=>{
+      const fechaISO = document.getElementById('fecha').value;
+      if (!fechaISO){ alert('Selecciona una fecha.'); return; }
+
+      const fechaReserva = ddmmyyyy(fechaISO);
+      const concepto = document.getElementById('concepto').value || '';
+      const accion = document.querySelector('input[name="accion"]:checked').value;
+
+      const pistasSel = PISTAS.filter(p=> SELECTED_PISTAS.has(p.id));
+      const slotsSel  = Array.from(SELECTED_SLOTS);
+
+      if (pistasSel.length===0 || slotsSel.length===0){
+        alert('Selecciona al menos una pista y un slot.');
+        return;
+      }
+
+      const listaP = pistasSel.map(p=>p.nombre).join(', ');
+      const listaS = slotsSel.join(' | ');
+      const textoConf = `¿Confirmas ${accion}?\n\nPistas: ${listaP}\nSlots: ${listaS}\nFecha: ${fechaReserva}${(accion==='reservar' && concepto) ? `\nConcepto: ${concepto}`:''}`;
+      if (!confirm(textoConf)) return;
+
+      // Si LIBERAR: refresca índice UNA vez antes del bucle
+      if (accion === 'liberar'){
+        await cargarReservasPorFecha(fechaReserva);
+      }
+
+      document.getElementById('result-sec').style.display = 'block';
+      document.getElementById('tbody-resultados').innerHTML = '';
+      const sum = document.getElementById('summary'); sum.style.display='none';
+      const progressWrap = document.getElementById('progress-wrap');
+      progressWrap.style.display = 'block';
+      setProgress(0, pistasSel.length * slotsSel.length);
+
+      let done=0, okCount=0, koCount=0;
+
+      for (const pista of pistasSel){
+        for (const slot of slotsSel){
+          const {hi, hf} = parseSlot(slot);
+          try{
+            if (accion === 'reservar'){
+              const resp = await crearReserva({
+                username: USER,
+                pistaId: pista.id,
+                fechaReserva,
+                horaInicio: hi,
+                horaFin: hf,
+                concepto
+              });
+              appendResultadoRow({accion:'Reservar', pista, slot, ok:true, msg:'Creada'});
+              // Guardar id real (soporta {id} o {reservaId})
+              reservasIndex.set(keyFor(pista.id, hi, hf), { id: (resp?.id ?? resp?.reservaId) });
+              okCount++;
+            } else {
+              const clave = keyFor(pista.id, hi, hf);
+              // console.debug('Buscando clave', clave, 'en', Array.from(reservasIndex.keys()));
+              const r = reservasIndex.get(clave);
+              if (!r || !r.id){
+                appendResultadoRow({accion:'Liberar', pista, slot, ok:false, msg:'No hay reserva que cancelar'});
+                koCount++;
+              } else {
+                await cancelarReserva(r.id);
+                appendResultadoRow({accion:'Liberar', pista, slot, ok:true, msg:'Cancelada'});
+                reservasIndex.delete(clave);
+                okCount++;
+              }
+            }
+          }catch(err){
+            appendResultadoRow({accion:(accion==='reservar'?'Reservar':'Liberar'), pista, slot, ok:false, msg:(err?.message || 'Error')});
+            koCount++;
+          }finally{
+            done++; setProgress(done, pistasSel.length * slotsSel.length);
+          }
+        }
+      }
+
+      showResultsSummary(okCount, koCount, accion);
+      setTimeout(()=>{ progressWrap.style.display = 'none'; }, 400);
+
+      // refrescar badges de ocupación (con índice en memoria ya actualizado)
+      renderSlotsForDate(fechaISO);
+    });
+  })();
+</script>
+</body>
+</html>
