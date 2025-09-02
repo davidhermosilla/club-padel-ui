@@ -103,7 +103,8 @@
         }
 
         function removePayment(button,cuotaId) {
-            const tr = button.parentElement.parentElement;
+            const td = button.parentElement;
+            const tr = td.parentElement;
             var userId = tr.dataset.userId;
 
              $.ajax({
@@ -115,7 +116,15 @@
                                 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
                         },
                 success: function(data) {
-                    cargarUsuarios(document.getElementById('year-select'));                    
+                    td.classList.remove('paid');
+                    td.classList.add('not-paid');
+                    delete td.dataset.cuotaId;
+                    const mesanopago = td.dataset.mesanopago;
+                    td.innerHTML = `<select>
+                                        <option value="CONTADO">Contado</option>
+                                        <option value="TARJETA">Tarjeta</option>
+                                    </select>
+                                    <button onclick="markPaid(this,'${mesanopago}')">Pagar</button>`;
                 },
                 error: function(xhr, status, error) {
                     console.error('Error al eliminar el pago:', error);
@@ -154,10 +163,14 @@
                                 'Content-Type' : 'application/json',
                                 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
                         },
-                data: JSON.stringify({ "cantidad": cuotaMensual , "detalle" : detalle , "metodoPago" : metodoPago , "fechaPago" : diaPago, "mesPagoCuota" : mesanopago}),            
+                data: JSON.stringify({ "cantidad": cuotaMensual , "detalle" : detalle , "metodoPago" : metodoPago , "fechaPago" : diaPago, "mesPagoCuota" : mesanopago}),
                 success: function(data) {
-                    // Si la solicitud es exitosa, recargar la tabla de roles
-                    cargarUsuarios(document.getElementById('year-select'));                    
+                    td.classList.remove('not-paid');
+                    td.classList.add('paid');
+                    td.dataset.cuotaId = data.id;
+                    td.dataset.mesanopago = mesanopago;
+                    td.innerHTML = `Pagado (${metodoPago})</br>${diaPago}</br>${mesanopago}</br>
+                                    <button onclick="removePayment(this,'${data.id}')">Eliminar Pago</button>`;
                 },
                 error: function(xhr, status, error) {
                     console.error('Error al añadir la cuota de pago:', error);
@@ -197,12 +210,14 @@
                     const td = document.createElement('td');
                     td.classList.add('paid');
                     td.dataset.cuotaId = cuotaPagada.id;
-                    td.innerHTML = `Pagado (${cuotaPagada.metodoPago})</br>${cuotaPagada.fechaPago}</br>${cuotaPagada.mesPagoCuota}</br>            
+                    td.dataset.mesanopago = mes.numero+'/'+year;
+                    td.innerHTML = `Pagado (${cuotaPagada.metodoPago})</br>${cuotaPagada.fechaPago}</br>${cuotaPagada.mesPagoCuota}</br>
                                     <button onclick="removePayment(this,'${cuotaPagada.id}')">Eliminar Pago</button>`;
                     row.appendChild(td);
                 } else {
                     const td = document.createElement('td');
                     td.classList.add('not-paid');
+                    td.dataset.mesanopago = mes.numero+'/'+year;
                     td.innerHTML = `<select>
                                         <option value="CONTADO">Contado</option>
                                         <option value="TARJETA">Tarjeta</option>
