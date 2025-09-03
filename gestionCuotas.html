@@ -37,8 +37,6 @@
         <label for="role-select">Rol:</label>
         <select id="role-select" onchange="filterData()">
             <option value="all">Todos</option>
-            <option value="socio propietario">Socio Propietario</option>
-            <option value="socio deportista">Socio Deportista</option>
         </select>
         <label for="user-filter">Usuario:</label>
         <input type="text" id="user-filter" onkeyup="filterByUser()" placeholder="Buscar por nombre de usuario">
@@ -81,8 +79,38 @@
             { mes: 'Septiembre', numero: '09' },
             { mes: 'Octubre', numero: '10' },
             { mes: 'Noviembre', numero: '11' },
-            { mes: 'Diciembre', numero: '12' }            
-        ]; 
+            { mes: 'Diciembre', numero: '12' }
+        ];
+
+        var rolesList = [];
+
+        function cargarRoles() {
+            $.ajax({
+                url: api_url+'/roles',
+                type: 'GET',
+                contentType: 'application/json',
+                headers: {
+                                'Content-Type' : 'application/json',
+                                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                        },
+                success: function(data) {
+                    const roleSelect = document.getElementById('role-select');
+                    roleSelect.innerHTML = '<option value="all">Todos</option>';
+                    rolesList = [];
+                    $.each(data, function(index, rol) {
+                        rolesList.push(rol.nombre);
+                        const option = document.createElement('option');
+                        option.value = rol.nombre;
+                        option.text = rol.nombre;
+                        roleSelect.appendChild(option);
+                    });
+                    cargarUsuarios(document.getElementById('year-select'));
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al cargar roles:', error);
+                }
+            });
+        }
         function filterByUser() {
             const input = document.getElementById('user-filter');
             const filter = input.value.toLowerCase();
@@ -229,11 +257,13 @@
         }
 
         function cargarUsuarios(yearSelect) {
-            const tbody = document.getElementById('cuotas-table-body').innerHTML = '';
+            const tbody = document.getElementById('cuotas-table-body');
+            tbody.innerHTML = '';
             const year = yearSelect.value;
-            
+            const rolesParam = rolesList.map(role => encodeURIComponent(role)).join(',');
+
             $.ajax({
-                url: api_url+'/usuarios/buscar-por-roles?roles=socio propietario,socio deportista',
+                url: api_url+'/usuarios/buscar-por-roles?roles='+rolesParam,
                 type: 'GET',
                 contentType: 'application/json',
                 headers: {
@@ -270,7 +300,7 @@
 
         }
 
-        cargarUsuarios(document.getElementById('year-select'));
+        cargarRoles();
 
     </script>
 
