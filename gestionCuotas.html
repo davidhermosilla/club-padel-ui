@@ -98,6 +98,10 @@
                     roleSelect.innerHTML = '<option value="all">Todos</option>';
                     rolesList = [];
                     $.each(data, function(index, rol) {
+                        // Excluir el rol "deportista" de la lista de opciones y de la carga de usuarios
+                        if (rol.nombre && rol.nombre.toLowerCase() === 'deportista') {
+                            return; // Saltar este rol
+                        }
                         rolesList.push(rol.nombre);
                         const option = document.createElement('option');
                         option.value = rol.nombre;
