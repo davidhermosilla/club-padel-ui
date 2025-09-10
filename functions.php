@@ -133,22 +133,6 @@ function usernametojavascript() {
 }
 add_action('wp_enqueue_scripts', 'usernametojavascript');
 
-function encolar_wpforms_dynamic_script() {
-    // Encola el archivo JavaScript personalizado.
-    wp_enqueue_script(
-        'wpforms-dynamic-script', // Identificador único.
-        get_template_directory_uri() . '/js/wpforms-dynamic.js', // Ruta al archivo JavaScript.
-        array( 'jquery' ), // Dependencias (asegúrate de incluir jQuery).
-        null, // Versión del script (opcional).
-        true // Carga el script en el footer.
-    );
-
-    // Proporciona la URL AJAX a JavaScript.
-    wp_localize_script( 'wpforms-dynamic-script', 'ajaxurl', array('ajaxurl' => admin_url( 'admin-ajax.php' ),
-    ));
-}
-add_action( 'wp_enqueue_scripts', 'encolar_wpforms_dynamic_script' );
-
 function encolar_inscripcion_torneo_script() {
     // Encola el archivo JavaScript personalizado.
     wp_enqueue_script(
@@ -169,9 +153,9 @@ function encolar_apuntar_resultados_liga_script() {
     // Encola el archivo JavaScript personalizado.
     wp_enqueue_script(
         'apuntar-resultados', // Identificador único.
-        get_template_directory_uri() . '/js/apuntar-resultados.js', // Ruta al archivo JavaScript.
+        get_template_directory_uri() . '/js/apuntar-resultados-api.js', // Ruta al archivo JavaScript.
         array( 'jquery' ), // Dependencias (asegúrate de incluir jQuery).
-        filemtime(get_template_directory() . '/js/apuntar-resultados.js'), // Versión del script (opcional).
+        filemtime(get_template_directory() . '/js/apuntar-resultados-api.js'), // Versión del script (opcional).
         true // Carga el script en el footer.
     );
 
@@ -370,3 +354,18 @@ function obtener_email_usuario() {
 
     wp_send_json_success(['email' => $user->user_email, 'nombre' => $user->display_name, 'telefono' => get_user_meta( $user->ID, 'first_name', true )]);
 }
+
+// functions.php de tu tema hijo
+function incluir_html_desde_fichero($atts) {
+    $atts = shortcode_atts(
+        array('file' => ''), 
+        $atts
+    );
+
+    $ruta = get_stylesheet_directory() . '/' . $atts['file']; // dentro del tema hijo
+    if (file_exists($ruta)) {
+        return file_get_contents($ruta);
+    }
+    return '<!-- No se encontró el archivo HTML -->';
+}
+add_shortcode('incluir_html', 'incluir_html_desde_fichero');
