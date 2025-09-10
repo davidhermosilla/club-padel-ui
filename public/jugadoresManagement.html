@@ -3,255 +3,250 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- jQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<!-- DataTables -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
 <title>Gestión de Jugadores</title>
 </head>
 <body>
 
 <div class="wp-block-columns is-layout-flex wp-container-core-columns-is-layout-1 wp-block-columns-is-layout-flex">
+  <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+
+  <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:80%">
     <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
-
     <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:80%">
-        <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
-        <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:80%">
 
-            <!-- Formulario para añadir nuevo jugador -->
-            <form id="form-nuevo-jugador">
-                <center><h2>Gestión de Jugadores</h2></center>
-                <h3><label>Nombre del Jugador</label></h3><br>
-                <input type="text" id="nombreJugador" name="nombreJugador" required><br>
-                <h3><label>Puntos</label></h3><br>
-                <input type="number" step="0.01" id="puntosJugador" name="puntosJugador"><br>
-                <button type="submit" id="añadir-jugador" class="wpforms" aria-live="assertive">Añadir Nuevo Jugador</button>
-            </form>
+      <!-- Formulario: nuevo jugador (solo nombre) -->
+      <form id="form-nuevo-jugador">
+        <center><h2>Gestión de Jugadores</h2></center>
+        <h3><label for="nombreJugador">Nombre del Jugador</label></h3><br>
+        <input type="text" id="nombreJugador" name="nombreJugador" required><br>
+        <button type="submit" id="añadir-jugador" class="wpforms" aria-live="assertive">Añadir Nuevo Jugador</button>
+      </form>
 
-            <!-- Formulario para cargar jugadores desde un archivo -->
-            <form id="form-cargar-archivo">
-                <h3>Cargar jugadores desde archivo (.txt)</h3><br>
-                <input type="file" id="archivoJugadores" accept=".txt"><br>
-                <button type="button" id="cargar-archivo" class="wpforms" aria-live="assertive">Cargar Jugadores</button>
-            </form>
+      <!-- Cargar desde archivo (.txt): una línea por jugador, solo el nombre -->
+      <form id="form-cargar-archivo" style="margin-top:20px;">
+        <h3>Cargar jugadores desde archivo (.txt)</h3><br>
+        <input type="file" id="archivoJugadores" accept=".txt"><br>
+        <button type="button" id="cargar-archivo" class="wpforms" aria-live="assertive">Cargar Jugadores</button>
+      </form>
 
-            <!-- Formulario para editar jugador existente -->
-            <form id="form-editar-jugador" style="display:none;">
-                <h2>Editar Jugador:</h2>
-                <input type="hidden" id="editJugadorId" name="editJugadorId">
-                <label>Nombre del Jugador</label><input type="text" id="editNombreJugador" name="editNombreJugador" required>
-                <label>Puntos</label><input type="number" step="0.01" id="editPuntosJugador" name="editPuntosJugador" required>
-                <button type="submit" id="guardar-cambios-jugador" class="wpforms" aria-live="assertive">Guardar Cambios</button>
-                <button type="button" id="cancelar-edicion" class="wpforms">Cancelar</button>
-            </form>
+      <!-- Formulario: editar jugador (solo nombre) -->
+      <form id="form-editar-jugador" style="display:none; margin-top:20px;">
+        <h2>Editar Jugador</h2>
+        <input type="hidden" id="editJugadorId" name="editJugadorId">
+        <label for="editNombreJugador">Nombre del Jugador</label>
+        <input type="text" id="editNombreJugador" name="editNombreJugador" required>
+        <button type="submit" id="guardar-cambios-jugador" class="wpforms" aria-live="assertive">Guardar Cambios</button>
+        <button type="button" id="cancelar-edicion" class="wpforms">Cancelar</button>
+      </form>
 
-            <figure class="wp-block-table is-style-stripes">
-                <table id="tabla-jugadores" class="has-text-color has-link-color" style="color:#1e73be">
-                    <thead>
-                        <tr>
-                            <th class="has-text-align-center" data-align="center">ID</th>
-                            <th class="has-text-align-center" data-align="center">Nombre</th>
-                            <th class="has-text-align-center" data-align="center">Puntos</th>
-                            <th class="has-text-align-center" data-align="center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-                <figcaption class="wp-element-caption">Tabla de jugadores</figcaption>
-            </figure>
-        </div>
-        <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+      <!-- Tabla: ID, Nombre, Acciones -->
+      <figure class="wp-block-table is-style-stripes" style="margin-top:20px;">
+        <table id="tabla-jugadores" class="has-text-color has-link-color" style="color:#1e73be; width:100%;">
+          <thead>
+            <tr>
+              <th class="has-text-align-center" data-align="center">ID</th>
+              <th class="has-text-align-center" data-align="center">Nombre</th>
+              <th class="has-text-align-center" data-align="center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <figcaption class="wp-element-caption">Tabla de jugadores</figcaption>
+      </figure>
+
     </div>
+    <div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:10%"></div>
+  </div>
 </div>
 
 <script>
 var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
+
 $(document).ready(function(){
-    // Inicializar DataTable con paginado y buscador en español
-    var tablaJugadores = $('#tabla-jugadores').DataTable({
-        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
+  // DataTable en español
+  var tablaJugadores = $('#tabla-jugadores').DataTable({
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
+  });
+
+  // Alta de jugador (solo nombre)
+  $('#form-nuevo-jugador').on('submit', function(e) {
+    e.preventDefault();
+    var nombre = $('#nombreJugador').val().trim();
+    if (!nombre) return;
+
+    $.ajax({
+      url: api_url + '/jugadores',
+      type: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+      },
+      contentType: 'application/json',
+      data: JSON.stringify({ nombre: nombre }),
+      success: function() {
+        $('#nombreJugador').val('');
+        cargarJugadores();
+      },
+      error: function(xhr) {
+        console.error('Error al añadir jugador:', xhr.responseText || xhr.statusText);
+        alert('No se pudo añadir el jugador.');
+      }
     });
+  });
 
-    // Función para manejar el envío del formulario de nuevo jugador
-    $('#form-nuevo-jugador').submit(function(event) {
-        event.preventDefault();
+  // Editar jugador (solo nombre)
+  $('#form-editar-jugador').on('submit', function(e) {
+    e.preventDefault();
+    var jugadorId = $('#editJugadorId').val();
+    var nombre = $('#editNombreJugador').val().trim();
+    if (!jugadorId || !nombre) return;
 
-        var nombre = $('#nombreJugador').val();
-        var puntos = $('#puntosJugador').val();
-        puntos = puntos ? parseFloat(puntos.replace(',', '.')) : 0;
-
-        $.ajax({
-            url: api_url+'/jugadores',
-            type: 'POST',
-            headers: {
-                'Content-Type' : 'application/json',
-                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-            },
-            contentType: 'application/json',
-            data: JSON.stringify({ "nombre": nombre, "puntos": puntos }),
-            success: function(data) {
-                $('#nombreJugador').val('');
-                $('#puntosJugador').val('');
-                cargarJugadores();
-            },
-            error: function(xhr, status, error) {
-                console.error('Error al añadir un nuevo jugador:', error);
-            }
-        });
-    });
-
-    // Función para manejar el envío del formulario de edición de jugador
-    $('#form-editar-jugador').submit(function(event) {
-        event.preventDefault();
-
-        var jugadorId = $('#editJugadorId').val();
-        var nombre = $('#editNombreJugador').val();
-        var puntos = $('#editPuntosJugador').val();
-        puntos = puntos ? parseFloat(puntos.replace(',', '.')) : 0;
-
-        $.ajax({
-            url: api_url+'/jugadores/' + jugadorId,
-            type: 'PUT',
-            headers: {
-                'Content-Type' : 'application/json',
-                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-            },
-            contentType: 'application/json',
-            data: JSON.stringify({ "nombre": nombre, "puntos": puntos }),
-            success: function(data) {
-                cargarJugadores();
-                $('#form-editar-jugador').hide();
-                $('#form-nuevo-jugador').show();
-            },
-            error: function(xhr, status, error) {
-                console.error('Error al actualizar el jugador:', error);
-            }
-        });
-    });
-
-    // Cancelar la edición
-    $('#cancelar-edicion').click(function() {
+    $.ajax({
+      url: api_url + '/jugadores/' + jugadorId,
+      type: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+      },
+      contentType: 'application/json',
+      data: JSON.stringify({ nombre: nombre }),
+      success: function() {
         $('#form-editar-jugador').hide();
         $('#form-nuevo-jugador').show();
+        cargarJugadores();
+      },
+      error: function(xhr) {
+        console.error('Error al actualizar jugador:', xhr.responseText || xhr.statusText);
+        alert('No se pudo actualizar el jugador.');
+      }
     });
+  });
 
-    // Cargar jugadores desde archivo
-    $('#cargar-archivo').click(function() {
-        var file = $('#archivoJugadores')[0].files[0];
-        if(!file){
-            alert('Seleccione un fichero .txt');
-            return;
-        }
+  // Cancelar edición
+  $('#cancelar-edicion').on('click', function() {
+    $('#form-editar-jugador').hide();
+    $('#form-nuevo-jugador').show();
+  });
 
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var lines = e.target.result.split(/\r?\n/);
-            var requests = [];
-
-            $.each(lines, function(index, line){
-                if(!line.trim()) return;
-                var parts = line.split('|');
-                if(parts.length < 2) return;
-
-                var nombre = parts[0].trim();
-                var puntosStr = parts[1].trim().replace(',', '.');
-                var puntos = parseFloat(puntosStr);
-                puntos = isNaN(puntos) ? 0 : puntos;
-
-                var request = $.ajax({
-                    url: api_url+'/jugadores',
-                    type: 'POST',
-                    headers: {
-                        'Content-Type' : 'application/json',
-                        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                    },
-                    contentType: 'application/json',
-                    data: JSON.stringify({ "nombre": nombre, "puntos": puntos })
-                });
-                requests.push(request);
-            });
-
-            if(requests.length === 0){
-                $('#archivoJugadores').val('');
-                cargarJugadores();
-            }else{
-                $.when.apply($, requests).always(function(){
-                    $('#archivoJugadores').val('');
-                    cargarJugadores();
-                });
-            }
-        };
-
-        reader.readAsText(file);
-    });
-
-    // Función para cargar los jugadores y actualizar la tabla
-    function cargarJugadores() {
-        $.ajax({
-            url: api_url+'/jugadores',
-            type: 'GET',
-            dataType: 'json',
-            headers: {
-                'Content-Type' : 'application/json',
-                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-            },
-            success: function(data) {
-                tablaJugadores.clear();
-
-                $.each(data, function(index, jugador) {
-                    tablaJugadores.row.add([
-                        jugador.jugadorId,
-                        jugador.nombre,
-                        jugador.puntos,
-                        `<button class="editar-jugador" data-id="${jugador.jugadorId}" data-nombre="${jugador.nombre}" data-puntos="${jugador.puntos}">Editar</button>` +
-                        ` <button class="eliminar-jugador" data-id="${jugador.jugadorId}">Eliminar</button>`
-                    ]);
-                });
-                tablaJugadores.draw();
-            },
-            error: function(xhr, status, error) {
-                console.error('Error al obtener datos de la API:', error);
-            }
-        });
+  // Cargar jugadores desde .txt: una línea por jugador (solo nombre).
+  // Si la línea contiene "Nombre|..." se usará solo la primera parte.
+  $('#cargar-archivo').on('click', function() {
+    var file = $('#archivoJugadores')[0].files[0];
+    if (!file) {
+      alert('Seleccione un fichero .txt');
+      return;
     }
 
-    // Evento para editar un jugador al hacer clic en el botón "Editar"
-    $('#tabla-jugadores').on('click', '.editar-jugador', function() {
-        var jugadorId = $(this).data('id');
-        var nombre = $(this).data('nombre');
-        var puntos = $(this).data('puntos');
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var lines = e.target.result.split(/\r?\n/);
+      var requests = [];
 
-        $('#editJugadorId').val(jugadorId);
-        $('#editNombreJugador').val(nombre);
-        $('#editPuntosJugador').val(puntos);
+      $.each(lines, function(_, line){
+        var raw = line.trim();
+        if (!raw) return;
 
-        $('#form-nuevo-jugador').hide();
-        $('#form-editar-jugador').show();
-    });
+        // Permite líneas "Nombre" o "Nombre|cualquiercosa"
+        var nombre = raw.split('|')[0].trim();
+        if (!nombre) return;
 
-    // Evento para eliminar un jugador al hacer clic en el botón "Eliminar"
-    $('#tabla-jugadores').on('click', '.eliminar-jugador', function() {
-        var jugadorId = $(this).data('id');
+        requests.push($.ajax({
+          url: api_url + '/jugadores',
+          type: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+          },
+          contentType: 'application/json',
+          data: JSON.stringify({ nombre: nombre })
+        }));
+      });
 
-        $.ajax({
-            url: api_url+'/jugadores/' + jugadorId,
-            type: 'DELETE',
-            headers: {
-                'Content-Type' : 'application/json',
-                'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-            },
-            success: function(data) {
-                cargarJugadores();
-            },
-            error: function(xhr, status, error) {
-                alert('El borrado ha fallado. Contacte con el administrador de la aplicación.');
-                console.error('Error al eliminar el jugador:', error);
-            }
+      if (requests.length === 0) {
+        $('#archivoJugadores').val('');
+        cargarJugadores();
+      } else {
+        $.when.apply($, requests).always(function(){
+          $('#archivoJugadores').val('');
+          cargarJugadores();
         });
-    });
+      }
+    };
 
-    // Cargar jugadores al cargar la página
-    cargarJugadores();
+    reader.readAsText(file);
+  });
+
+  // Cargar y pintar jugadores
+  function cargarJugadores() {
+    $.ajax({
+      url: api_url + '/jugadores',
+      type: 'GET',
+      dataType: 'json',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+      },
+      success: function(data) {
+        tablaJugadores.clear();
+        $.each(data, function(_, jugador) {
+          tablaJugadores.row.add([
+            jugador.jugadorId,
+            jugador.nombre,
+            `<button class="editar-jugador" data-id="${jugador.jugadorId}" data-nombre="${jugador.nombre}">Editar</button>
+             <button class="eliminar-jugador" data-id="${jugador.jugadorId}">Eliminar</button>`
+          ]);
+        });
+        tablaJugadores.draw();
+      },
+      error: function(xhr) {
+        console.error('Error al obtener jugadores:', xhr.responseText || xhr.statusText);
+        alert('No se pudieron cargar los jugadores.');
+      }
+    });
+  }
+
+  // Click en Editar
+  $('#tabla-jugadores').on('click', '.editar-jugador', function() {
+    var jugadorId = $(this).data('id');
+    var nombre = $(this).data('nombre');
+
+    $('#editJugadorId').val(jugadorId);
+    $('#editNombreJugador').val(nombre);
+
+    $('#form-nuevo-jugador').hide();
+    $('#form-editar-jugador').show();
+  });
+
+  // Click en Eliminar
+  $('#tabla-jugadores').on('click', '.eliminar-jugador', function() {
+    var jugadorId = $(this).data('id');
+    if (!confirm('¿Eliminar el jugador con ID ' + jugadorId + '?')) return;
+
+    $.ajax({
+      url: api_url + '/jugadores/' + jugadorId,
+      type: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+      },
+      success: function() { cargarJugadores(); },
+      error: function(xhr) {
+        console.error('Error al eliminar jugador:', xhr.responseText || xhr.statusText);
+        alert('El borrado ha fallado. Contacte con el administrador de la aplicación.');
+      }
+    });
+  });
+
+  // Inicial
+  cargarJugadores();
 });
 </script>
 
