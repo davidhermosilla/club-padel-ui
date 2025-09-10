@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'public/**'
+      - 'js/**'                 # 👈 también dispara si cambias JS
   workflow_dispatch:
 
 permissions:
@@ -14,19 +15,32 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: hostinger   # 👈 Aquí vinculas el job con el environment
+    environment: hostinger      # 👈 usa los environment secrets de "hostinger"
     steps:
       - uses: actions/checkout@v4
 
-      - name: FTP Deploy
+      - name: FTP Deploy (HTML)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          protocol: ftps         # 👈 prueba FTPS; si tu hosting solo admite FTP, cambia a ftp
           local-dir: public/
           server-dir: /domains/clubpadelandujar.com/public_html/wp-content/themes/inspiro/
+          exclude: |
+            **/.git*
+            **/.github/**
+
+      - name: FTP Deploy (JS)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: js/
+          server-dir: /domains/clubpadelandujar.com/public_html/wp-content/themes/inspiro/js/
           exclude: |
             **/.git*
             **/.github/**
