@@ -1,0 +1,27 @@
+# .github/workflows/deploy-ftp.yml
+name: Deploy static HTML via FTP
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'public/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: public
+          server-dir: /public_html/wp-content/themes/inspiro
+          exclude: |
+            **/.git*
+            **/.github/**
