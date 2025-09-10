@@ -26,7 +26,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           local-dir: public/
-          server-dir: /public_html/wp-content/themes/inspiro/
+          server-dir: /domains/clubpadelandujar.com/public_html/wp-content/themes/inspiro
           exclude: |
             **/.git*
             **/.github/**
