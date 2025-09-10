@@ -8,9 +8,13 @@ on:
       - 'public/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: hostinger   # 👈 Aquí vinculas el job con el environment
     steps:
       - uses: actions/checkout@v4
 
@@ -20,8 +24,9 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: public
-          server-dir: /public_html/wp-content/themes/inspiro
+          protocol: ftp
+          local-dir: public/
+          server-dir: /public_html/wp-content/themes/inspiro/
           exclude: |
             **/.git*
             **/.github/**
