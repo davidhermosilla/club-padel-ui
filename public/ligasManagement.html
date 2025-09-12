@@ -62,6 +62,7 @@
       <th>DIF SET</th>
       <th>DIF JG</th>
       <th>PTS LIGA</th>
+      <th>Acciones</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -150,7 +151,8 @@ $(document).ready(function(){
             `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pnj" value="${c.noJugados ?? ''}" style="width:50px">`,
             `<input type="number" class="edit-clas" data-id="${c.id}" data-field="difSet" value="${c.diferenciaSets ?? ''}" style="width:50px">`,
             `<input type="number" class="edit-clas" data-id="${c.id}" data-field="difJuegos" value="${c.diferenciaJuegos ?? ''}" style="width:50px">`,
-            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pts" value="${c.puntos ?? ''}" style="width:50px">`
+            `<input type="number" class="edit-clas" data-id="${c.id}" data-field="pts" value="${c.puntos ?? ''}" style="width:50px">`,
+            parejaId ? `<button class="eliminar-pareja" data-pareja-id="${parejaId}" data-liga-id="${ligaId}">Eliminar</button>` : ''
           ]);
         });
         tablaClasificacion.draw();
@@ -192,6 +194,25 @@ $(document).ready(function(){
         alert('Error al actualizar clasificación: ' + xhr.responseText);
       }
     });
+  });
+
+  $('#tabla-clasificacion').on('click', '.eliminar-pareja', function(){
+    const parejaId = $(this).data('pareja-id');
+    const ligaId = $(this).data('liga-id');
+    const nombreLiga = $('#nombre-liga-seleccionada').text();
+    if (confirm('¿Eliminar esta pareja de la liga?')) {
+      $.ajax({
+        url: `${api_url}/ligas/${ligaId}/parejas/${parejaId}`,
+        type: 'DELETE',
+        headers,
+        success: function(){
+          cargarClasificacion(ligaId, nombreLiga);
+        },
+        error: function(xhr){
+          alert('Error al eliminar pareja: ' + xhr.responseText);
+        }
+      });
+    }
   });
 
   $('#filtroDivision').on('change', function(){
