@@ -17,6 +17,10 @@
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+<!-- Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <title>Gestión de Parejas</title>
 </head>
 <body>
@@ -105,15 +109,30 @@ $(document).ready(function(){
     ]
   });
 
+  $('#jugador1Pareja, #jugador2Pareja').select2({ width: '100%' });
+
   function rellenarSelect(select, data, esJugador){
     select.empty();
-    $.each(data, function(_, item){
+
+    const ordenados = (data || []).slice().sort(function(a, b){
+      const nombreA = (a.nombre || '').toString().toLowerCase();
+      const nombreB = (b.nombre || '').toString().toLowerCase();
+      return nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base' });
+    });
+
+    $.each(ordenados, function(_, item){
       if (esJugador) {
         select.append($('<option>', { value: item.jugadorId, text: item.nombre }));
       } else {
         select.append($('<option>', { value: item.id, text: item.nombre }));
       }
     });
+
+    if (esJugador) {
+      if (select.data('select2')) {
+        select.trigger('change');
+      }
+    }
   }
 
   function cargarDivisionesYJugadores(callback){
@@ -210,6 +229,8 @@ $(document).ready(function(){
       success: function(){
         alert('Pareja ' + (id ? 'actualizada' : 'añadida') + ' correctamente');
         $('#form-pareja')[0].reset();
+        $('#jugador1Pareja').val($('#jugador1Pareja option:first').val()).trigger('change');
+        $('#jugador2Pareja').val($('#jugador2Pareja option:first').val()).trigger('change');
         $('#parejaId').val('');
         $('#form-titulo').text("Añadir Nueva Pareja:");
         $('#btn-guardar').text("Añadir Pareja");
@@ -222,6 +243,8 @@ $(document).ready(function(){
 
   $('#cancelar-edicion').click(function(){
     $('#form-pareja')[0].reset();
+    $('#jugador1Pareja').val($('#jugador1Pareja option:first').val()).trigger('change');
+    $('#jugador2Pareja').val($('#jugador2Pareja option:first').val()).trigger('change');
     $('#parejaId').val('');
     $('#form-titulo').text("Añadir Nueva Pareja:");
     $('#btn-guardar').text("Añadir Pareja");
@@ -235,8 +258,8 @@ $(document).ready(function(){
     const jugador2 = $(this).data('jugador2');
     $('#parejaId').val(id);
     $('#divisionPareja').val(division);
-    $('#jugador1Pareja').val(jugador1);
-    $('#jugador2Pareja').val(jugador2);
+    $('#jugador1Pareja').val(jugador1).trigger('change');
+    $('#jugador2Pareja').val(jugador2).trigger('change');
     $('#form-titulo').text("Editar Pareja:");
     $('#btn-guardar').text("Guardar Cambios");
     $('#cancelar-edicion').show();
