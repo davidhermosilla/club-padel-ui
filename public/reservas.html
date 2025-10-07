@@ -1113,7 +1113,7 @@ function getSelectedPaymentMethod() {
                 datosReservas = data;
                 console.log(datosReservas);
                 
-                if (day === 6 || day === 0) { // Sábado (6) o Domingo (0)
+                if (day === 6 || day === 0 || selectedFormatedDate === '13/10/2025') { // Sábado (6) o Domingo (0)
                     procesarTablaReservas(datosPista,weekendSlots,selectedFormatedDate,datosReservas);
                 } else {
                     procesarTablaReservas(datosPista,timeSlots,selectedFormatedDate,datosReservas);
@@ -1169,7 +1169,7 @@ function getSelectedPaymentMethod() {
                             datosPista = datosPista.filter(p => p.nombre !== 'BAR');
                         }
                         // Renderizar las horas por defecto
-                        if (todayDay === 6 || todayDay === 0) { // S�bado (6) o Domingo (0)
+                        if (todayDay === 6 || todayDay === 0 || currentDate === '13/10/2025') { // S�bado (6) o Domingo (0)
                             procesarTablaReservas(datosPista,weekendSlots,currentDate,datosReservas);
                         } else {
                             procesarTablaReservas(datosPista,timeSlots,currentDate,datosReservas);
@@ -1216,5 +1216,6 @@ document.getElementById('btn-detalle-pista').addEventListener('click', () => {
 </script>
 </body>
 </html>
+
 
 
