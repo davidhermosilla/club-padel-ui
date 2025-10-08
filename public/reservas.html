@@ -10,7 +10,22 @@
         .calendar-container {
             display: flex;
             justify-content: center;
+            align-items: center;
+            gap: 12px;
             margin-bottom: 40px;
+        }
+
+        .calendar-action-button {
+            padding: 10px 16px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .calendar-action-button:hover {
+            background-color: #0056b3;
         }
 
         .schedule-container {
@@ -189,6 +204,7 @@
 <input id="role-info" type="hidden"/>
 <!-- Contenedor del calendario -->
 <div class="calendar-container">
+<button id="go-today" class="calendar-action-button" type="button">Hoy</button>
 <label for="reservation-date">Selecciona una fecha:</label>
 <input id="reservation-date" placeholder="DD/MM/YYYY" type="date"/>
 <svg id="refresh-reservas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" aria-label="Refrescar tabla" title="Refrescar tabla" style="cursor:pointer;margin-left:8px;">
@@ -1128,6 +1144,13 @@ function getSelectedPaymentMethod() {
 
         document.getElementById('refresh-reservas').addEventListener('click', () => {
             document.getElementById('reservation-date').dispatchEvent(new Event('change'));
+        });
+
+        document.getElementById('go-today').addEventListener('click', () => {
+            const todayDate = new Date();
+            const reservationDateInput = document.getElementById('reservation-date');
+            reservationDateInput.valueAsDate = todayDate;
+            reservationDateInput.dispatchEvent(new Event('change'));
         });
 
         function cargaPrincipal() {
