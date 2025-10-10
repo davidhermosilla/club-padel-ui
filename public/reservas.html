@@ -193,7 +193,8 @@
 <div style="background:white; padding:20px; border-radius:10px; text-align:center; min-width:300px;">
 <h3>Reservar pista para otro usuario</h3>
 <label for="user-select-modal">Selecciona el usuario:</label><br/>
-<select id="user-select-modal" style="margin:10px 0;"></select><br/>
+<input id="user-select-modal" list="user-select-modal-options" placeholder="Escribe un nombre" style="width:90%; margin:10px 0;" type="text"/><br/>
+<datalist id="user-select-modal-options"></datalist><br/>
 <label for="concepto-admin">Concepto:</label><br/>
 <input id="concepto-admin" style="width: 90%; margin-bottom: 10px;" type="text"/><br/>
 <button id="confirmar-reserva-admin">Confirmar</button>
@@ -341,6 +342,35 @@ function getSelectedPaymentMethod() {
         let firstSlotTime = '';
 		let usuariosDisponibles = [];
 
+		function renderUsuariosCombo() {
+			const input = document.getElementById('user-select-modal');
+			const dataList = document.getElementById('user-select-modal-options');
+			if (!input || !dataList) {
+				return;
+			}
+
+			const seleccionAnterior = input.value;
+			dataList.innerHTML = '';
+
+			usuariosDisponibles.forEach(usuario => {
+				const option = document.createElement('option');
+				option.value = usuario.username;
+				option.label = usuario.username;
+				option.textContent = usuario.username;
+				dataList.appendChild(option);
+			});
+
+			if (seleccionAnterior && usuariosDisponibles.some(usuario => usuario.username === seleccionAnterior)) {
+				input.value = seleccionAnterior;
+			} else if (usuariosDisponibles.length > 0) {
+				input.value = usuariosDisponibles[0].username;
+			} else {
+				input.value = '';
+			}
+
+			input.disabled = usuariosDisponibles.length === 0;
+		}
+
 		function cargarUsuariosCombo() {
 			$.ajax({
 				url: api_url + '/usuarios',
@@ -349,15 +379,20 @@ function getSelectedPaymentMethod() {
 					'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
 				},
 				success: function(usuarios) {
-					usuariosDisponibles = usuarios;
-					const select = document.getElementById('user-select-modal');
-					select.innerHTML = '';
-					usuarios.forEach(usuario => {
-						const option = document.createElement('option');
-						option.value = usuario.username;
-						option.textContent = usuario.username;
-						select.appendChild(option);
-					});
+					usuariosDisponibles = (usuarios || [])
+						.map(function(usuario) {
+							if (typeof usuario === 'string') {
+								return { username: usuario };
+							}
+							return { username: usuario && usuario.username ? usuario.username : '' };
+						})
+						.filter(function(usuario) {
+							return usuario.username;
+						})
+						.sort(function(a, b) {
+							return a.username.localeCompare(b.username, 'es', { sensitivity: 'base' });
+						});
+					renderUsuariosCombo();
 				},
 				error: function(err) {
 					console.error('Error al cargar usuarios:', err);
@@ -1214,13 +1249,16 @@ function getSelectedPaymentMethod() {
             cargarRolUsuario();
         });
 		
-                document.getElementById('confirmar-reserva-admin').addEventListener('click', () => {
+				document.getElementById('confirmar-reserva-admin').addEventListener('click', () => {
                         const userTarget = document.getElementById('user-select-modal').value;
-                        if (userTarget && slotPendienteAdmin) {
+						const usuarioValido = usuariosDisponibles.some(usuario => usuario.username === userTarget);
+                        if (usuarioValido && slotPendienteAdmin) {
                                 anadirReserva(slotPendienteAdmin, userTarget);
                                 document.getElementById('modal-reserva-admin').style.display = 'none';
                                 slotPendienteAdmin = null;
-                        }
+                        } else if (!usuarioValido) {
+							alert('Selecciona un usuario válido.');
+						}
                 });
 
     
