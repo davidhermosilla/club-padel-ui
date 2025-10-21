@@ -59,7 +59,7 @@ jQuery(document).ready(function ($) {
 
 			enviarDatos().then(() => {
 				// Redirección solo después de completar
-				window.location.href = "https://clubpadelandujar.com/inscritos-torneo-junio-2025/";
+				window.location.href = "https://clubpadelandujar.com/inscritos-torneo-noviembre-2025/";
 			});
 		});
 	}
