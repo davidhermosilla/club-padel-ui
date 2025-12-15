@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Parejas y Puntos</title>
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- DataTables -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"
+    />
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+    <!-- DataTables Buttons + JSZip (para Excel) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css"
+    />
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        margin: 20px;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      input[type="text"],
+      textarea {
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px;
+        border: 1px solid #e6e6e6;
+        text-align: left;
+      }
+      th {
+        background: #f6f8fa;
+        cursor: pointer;
+        user-select: none;
+      }
+      th.sort-asc::after {
+        content: " ▲";
+      }
+      th.sort-desc::after {
+        content: " ▼";
+      }
+      tr.hidden {
+        display: none;
+      }
+      .help {
+        font-size: 0.9rem;
+        color: #555;
+      }
+      .small {
+        font-size: 0.9rem;
+      }
+      .textarea-wrap {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Parejas y Puntos</h1>
+
+    <div class="controls">
+      <div class="small help">
+        El listado se carga desde el endpoint de parejas; si la API no responde,
+        la página intentará cargar archivos locales de prueba en
+        <code>/sources/</code>. El filtrado y ordenación los proporciona la
+        propia tabla.
+      </div>
+    </div>
+
+    <div class="textarea-wrap" style="display: none">
+      <label class="small">Pegar datos (cada pareja una línea):</label>
+      <textarea
+        id="dataInput"
+        rows="6"
+        style="width: 100%"
+        placeholder="Formato esperado: jugador1, puntos1, jugador2, puntos2, puntos_pareja[, división]"
+      ></textarea>
+      <div style="margin-top: 6px">
+        <button id="applyPaste">Aplicar datos pegados</button>
+      </div>
+    </div>
+
+    <table id="tabla" class="display" style="width: 100%">
+      <thead>
+        <tr>
+          <th data-key="division">División</th>
+          <th data-key="jugador1">Jugador 1</th>
+          <th data-key="puntos1">Puntos J1</th>
+          <th data-key="jugador2">Jugador 2</th>
+          <th data-key="puntos2">Puntos J2</th>
+          <th data-key="puntos_pareja">Puntos Pareja</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      const table = document.getElementById("tabla");
+      const tbody = table.querySelector("tbody");
+      const dataInput = document.getElementById("dataInput");
+      const applyPaste = document.getElementById("applyPaste");
+      const textareaWrap = document.querySelector(".textarea-wrap");
+
+      let rows = [];
+
+      function detectDelimiter(line) {
+        if (line.includes("|")) return "|";
+        if (line.includes(";")) return ";";
+        if (line.includes(",")) return ",";
+        if (line.split("\t").length > 1) return "\t";
+        return /\s{2,}/.test(line) ? /\s{2,}/ : " ";
+      }
+
+      function parseTextToRows(text) {
+        const out = [];
+        const lines = text
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean);
+        for (const line of lines) {
+          const d = detectDelimiter(line);
+          const parts =
+            typeof d === "string"
+              ? line.split(d).map((p) => p.trim())
+              : line.split(d).map((p) => p.trim());
+          // Support optional division as a 6th field: jugador1, puntos1, jugador2, puntos2, puntos_pareja[, division]
+          if (parts.length >= 6) {
+            out.push({
+              jugador1: parts[0],
+              puntos1: parts[1],
+              jugador2: parts[2],
+              puntos2: parts[3],
+              puntos_pareja: parts[4],
+              division: parts[5],
+            });
+          } else if (parts.length === 5) {
+            out.push({
+              jugador1: parts[0],
+              puntos1: parts[1],
+              jugador2: parts[2],
+              puntos2: parts[3],
+              puntos_pareja: parts[4],
+              division: "",
+            });
+          } else if (parts.length === 4) {
+            out.push({
+              jugador1: parts[0],
+              puntos1: parts[1],
+              jugador2: parts[2],
+              puntos2: parts[3],
+              puntos_pareja: Number(parts[1]) + Number(parts[3]),
+              division: "",
+            });
+          } else if (parts.length === 2) {
+            const p = parts[0].split(/\s*-\s*|\s*\/\s*/);
+            const j1 = p[0] || "";
+            const j2 = p[1] || "";
+            out.push({
+              jugador1: j1,
+              puntos1: "",
+              jugador2: j2,
+              puntos2: "",
+              puntos_pareja: parts[1],
+              division: "",
+            });
+          } else {
+            const p2 = line.split(",").map((p) => p.trim());
+            if (p2.length >= 5)
+              out.push({
+                jugador1: p2[0],
+                puntos1: p2[1],
+                jugador2: p2[2],
+                puntos2: p2[3],
+                puntos_pareja: p2[4],
+                division: p2[5] || "",
+              });
+          }
+        }
+        return out;
+      }
+
+      // Inicializar DataTable
+      let dt = null;
+      function initDataTable() {
+        if (window.jQuery && $.fn.dataTable && !dt) {
+          dt = $("#tabla").DataTable({
+            language: {
+              url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json",
+            },
+            dom: "Bfrtip",
+            buttons: [
+              {
+                extend: "excelHtml5",
+                text: "Exportar a Excel",
+                title: "parejas_puntos",
+                exportOptions: { columns: [0, 1, 2, 3, 4, 5] },
+              },
+            ],
+            columns: [
+              { title: "División" },
+              { title: "Jugador 1" },
+              { title: "Puntos J1" },
+              { title: "Jugador 2" },
+              { title: "Puntos J2" },
+              { title: "Puntos Pareja" },
+            ],
+            order: [[0, "asc"]],
+          });
+        }
+      }
+
+      function render() {
+        initDataTable();
+        if (!dt) return;
+        dt.clear();
+        for (const r of rows) {
+          dt.row.add([
+            r.division || "",
+            r.jugador1 || "",
+            r.puntos1 === undefined || r.puntos1 === null ? "" : r.puntos1,
+            r.jugador2 || "",
+            r.puntos2 === undefined || r.puntos2 === null ? "" : r.puntos2,
+            r.puntos_pareja === undefined || r.puntos_pareja === null
+              ? ""
+              : r.puntos_pareja,
+          ]);
+        }
+        dt.draw();
+      }
+
+      applyPaste.addEventListener("click", () => {
+        rows = parseTextToRows(dataInput.value || "");
+        render();
+      });
+
+      async function tryFetch(path) {
+        try {
+          const res = await fetch(path, { cache: "no-store" });
+          if (!res.ok) return null;
+          const txt = await res.text();
+          return txt;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function loadDefaultFiles() {
+        const api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
+        const authHeader = "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz";
+        try {
+          // intentar cargar divisiones para mostrar nombre de división
+          let mapaDivisiones = {};
+          try {
+            const dres = await fetch(api_url + "/divisiones", {
+              headers: { Authorization: authHeader },
+            });
+            if (dres.ok) {
+              const divs = await dres.json();
+              (divs || []).forEach((d) => (mapaDivisiones[d.id] = d.nombre));
+            }
+          } catch (e) {
+            /* ignore */
+          }
+
+          const res = await fetch(api_url + "/parejas", {
+            headers: { Authorization: authHeader },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const lista = Array.isArray(data) ? data : [];
+            rows = lista.map((p) => ({
+              jugador1: p.jugador1?.nombre || "",
+              puntos1: p.puntosJugador1 ?? "",
+              jugador2: p.jugador2?.nombre || "",
+              puntos2: p.puntosJugador2 ?? "",
+              puntos_pareja:
+                Number(p.puntosJugador1 || 0) + Number(p.puntosJugador2 || 0),
+              division:
+                mapaDivisiones[p.divisionId] ||
+                (p.divisionId ? "División " + p.divisionId : ""),
+            }));
+            // Si la API responde, ocultar el área de pegado (solo uso en fallback)
+            if (textareaWrap) textareaWrap.style.display = "none";
+            render();
+            return;
+          }
+        } catch (e) {
+          // fallthrough to local file loading
+        }
+
+        // Fallback: intentar cargar archivos locales si el endpoint no responde
+        const candidates = [
+          "/sources/parejas_puntos.txt",
+          "/sources/parejas_carga.txt",
+          "../sources/parejas_puntos.txt",
+          "../sources/parejas_carga.txt",
+          "sources/parejas_puntos.txt",
+          "sources/parejas_carga.txt",
+        ];
+        let content = null;
+        for (const p of candidates) {
+          content = await tryFetch(p);
+          if (content) break;
+        }
+        if (!content) {
+          rows = [];
+          // mostrar el area de pegado para poder añadir datos manuales
+          if (textareaWrap) textareaWrap.style.display = "";
+          render();
+          return;
+        }
+        rows = parseTextToRows(content);
+        if (textareaWrap) textareaWrap.style.display = "";
+        render();
+      }
+
+      loadDefaultFiles();
+    </script>
+  </body>
+</html>
