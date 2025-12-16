@@ -1,1282 +1,1590 @@
 <!DOCTYPE html>
 
 <html lang="es">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, user-scalable=yes" name="viewport"/>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<title>Reserva de Pistas</title>
-<style>
-        .calendar-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 40px;
-        }
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1.0, user-scalable=yes"
+      name="viewport"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Reserva de Pistas</title>
+    <style>
+      .calendar-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 40px;
+      }
 
-        .calendar-action-button {
-            padding: 10px 16px;
-            background-color: #007BFF;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+      .calendar-action-button {
+        padding: 10px 16px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
 
-        .calendar-action-button:hover {
-            background-color: #0056b3;
-        }
+      .calendar-action-button:hover {
+        background-color: #0056b3;
+      }
 
-        .schedule-container {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr); /* 5 pistas + 1 columna para las horas */
-            gap: 10px;
-            width: 100%;
-            min-width: 720px;
-            max-width: 1500px;
-            margin-bottom: 100px;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+      .schedule-container {
+        display: grid;
+        grid-template-columns: repeat(
+          6,
+          1fr
+        ); /* 5 pistas + 1 columna para las horas */
+        gap: 10px;
+        width: 100%;
+        min-width: 720px;
+        max-width: 1500px;
+        margin-bottom: 100px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
 
-        .pista-header, .time-slot,.time-slot-no-user {
-            background-color: #007BFF;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-        }
-        
-        .time-slot-booked,.time-slot-booked-no-user {
-            background-color: #d32f2f;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-        }                
+      .pista-header,
+      .time-slot,
+      .time-slot-no-user {
+        background-color: #007bff;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        border-radius: 5px;
+      }
 
-        .pista-header {
-            background-color: #0056b3;
-            font-weight: bold;
-        }
+      .time-slot-booked,
+      .time-slot-booked-no-user {
+        background-color: #d32f2f;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        border-radius: 5px;
+      }
 
-        .pista-header-admin {
-            background-color: #0056b3;
-            font-weight: bold;
-        }
+      .pista-header {
+        background-color: #0056b3;
+        font-weight: bold;
+      }
 
-        .time-slot-no-user:hover {
-            background-color: #007BFF;
-        }
+      .pista-header-admin {
+        background-color: #0056b3;
+        font-weight: bold;
+      }
 
-        .time-slot:hover {
-            background-color: #003f7f;
-            cursor: pointer;
-        }
-        
-        .time-slot-booked-no-user:hover {
-            background-color: #d32f2f;
-        }
+      .time-slot-no-user:hover {
+        background-color: #007bff;
+      }
 
-        .time-slot-booked:hover {
-            background-color: #ba1717;
-            cursor: pointer;
-        }
-		
-		.time-slot-past {
-			background-color: #d3d3d3; /* gris claro para disponibles pasados */
-			color: #888;
-			cursor: default;
-		}
+      .time-slot:hover {
+        background-color: #003f7f;
+        cursor: pointer;
+      }
 
-        .time-slot-booked-past {
-            background-color: #a9a9a9; /* gris más oscuro para reservadas pasadas */
-            color: #fff;
-            cursor: default;
-        }
+      .time-slot-booked-no-user:hover {
+        background-color: #d32f2f;
+      }
 
-        .time-slot-disabled {
-            background-color: #cccccc;
-            color: #666666;
-            padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-            pointer-events: none;
-        }
-		
-        .time-label {
-            background-color: #555;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-        }
-        .contenedor-centrado {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            /*min-height: 100vh;  Opcional: Para centrar verticalmente en la página */
-        }
+      .time-slot-booked:hover {
+        background-color: #ba1717;
+        cursor: pointer;
+      }
 
-        .contenedor {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 2px; /* Espacio entre cada .contenedor */
-        }
-        .container {
-            display: flex;
-        }
-        .columna {
-            flex: 1; /* Ocupa el mismo espacio cada columna */
-            padding: 10px;
-            margin: 5px;
-        }
-        .botones {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px; /* Espacio entre los botones */
-        }
-    
+      .time-slot-past {
+        background-color: #d3d3d3; /* gris claro para disponibles pasados */
+        color: #888;
+        cursor: default;
+      }
 
-.schedule-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
+      .time-slot-booked-past {
+        background-color: #a9a9a9; /* gris más oscuro para reservadas pasadas */
+        color: #fff;
+        cursor: default;
+      }
 
-.schedule-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 6px;
-    min-width: 300px;
-    max-width: 100%;
-    margin-bottom: 100px;
-}
+      .time-slot-disabled {
+        background-color: #cccccc;
+        color: #666666;
+        padding: 15px;
+        text-align: center;
+        border-radius: 5px;
+        pointer-events: none;
+      }
 
-.schedule-container > div {
-    min-width: 80px;
-    font-size: 12px;
-    padding: 6px;
-}
+      .time-label {
+        background-color: #555;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        border-radius: 5px;
+      }
+      .contenedor-centrado {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        /*min-height: 100vh;  Opcional: Para centrar verticalmente en la página */
+      }
 
-.time-label {
-    min-width: 60px;
-    font-size: 11px;
-    padding: 6px;
-}
+      .contenedor {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 2px; /* Espacio entre cada .contenedor */
+      }
+      .container {
+        display: flex;
+      }
+      .columna {
+        flex: 1; /* Ocupa el mismo espacio cada columna */
+        padding: 10px;
+        margin: 5px;
+      }
+      .botones {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px; /* Espacio entre los botones */
+      }
 
-@media (max-width: 768px) {
-    .schedule-container {
+      .schedule-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .schedule-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 6px;
         min-width: 300px;
-    }
-}
+        max-width: 100%;
+        margin-bottom: 100px;
+      }
 
-#title-details {
-    background-color: #f0f8ff;  /* Fondo azul claro */
-    margin-top: 20px;
-}
+      .schedule-container > div {
+        min-width: 80px;
+        font-size: 12px;
+        padding: 6px;
+      }
 
-#title-details h2, h3 {
-	color: #1e73be;
-}
+      .time-label {
+        min-width: 60px;
+        font-size: 11px;
+        padding: 6px;
+      }
 
-</style>
-</head>
-<body>
-<center><h1>Reserva de Pistas</h1></center>
-<div id="modal-reserva-admin" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:9999;">
-<div style="background:white; padding:20px; border-radius:10px; text-align:center; min-width:300px;">
-<h3>Reservar pista para otro usuario</h3>
-<label for="user-select-modal">Selecciona el usuario:</label><br/>
-<input id="user-select-modal" list="user-select-modal-options" placeholder="Escribe un nombre" style="width:90%; margin:10px 0;" type="text"/><br/>
-<datalist id="user-select-modal-options"></datalist><br/>
-<label for="concepto-admin">Concepto:</label><br/>
-<input id="concepto-admin" style="width: 90%; margin-bottom: 10px;" type="text"/><br/>
-<button id="confirmar-reserva-admin">Confirmar</button>
-<button onclick="document.getElementById('modal-reserva-admin').style.display='none'">Cancelar</button>
-</div>
-</div>
-<input id="user-info" type="hidden"/>
-<input id="role-info" type="hidden"/>
-<!-- Contenedor del calendario -->
-<div class="calendar-container">
-<button id="go-today" class="calendar-action-button" type="button">Hoy</button>
-<label for="reservation-date">Selecciona una fecha:</label>
-<input id="reservation-date" placeholder="DD/MM/YYYY" type="date"/>
-<svg id="refresh-reservas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" aria-label="Refrescar tabla" title="Refrescar tabla" style="cursor:pointer;margin-left:8px;">
-  <path d="M17.65 6.35A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24l-2.29 2.29H20V4l-2.35 2.35z"/>
-</svg>
-</div>
-<div id="warning-message"></div>
-<center>
-<div class="schedule-wrapper"><div class="schedule-container" id="schedule-container"></div></div>
-<div id="title-details"></div>
-<!-- Contenedor de la tabla de pagos y el formulario -->
-<div class="container">
-<div class="columna" id="payments-container" style="display:none;">
-<div id="concepto-reserva-admin" style="display:none; margin-bottom:10px;">
-<h3 for="concepto-text">Concepto de la reserva:</h3><br/>
-<input id="concepto-text" readonly="" style="width:100%;" type="text"/>
-</div>
-<button id="cancelar-reserva-button" type="submit">Cancelar Reserva</button>
-<div class="contenedor-centrado" id="rapids-payments">
-<div class="contenedor">
-<h3>CONTADO</h3>
-<div class="botones">
-<button id="socio-propietario-contado-btn" type="submit">Pista Socio P.(2.5€)</button>
-<button id="socio-deportista-contado-btn" type="submit">Pista Socio D.(3.5€)</button>
-<button id="deportista-contado-btn" type="submit">Pista Deportista(5.5€)</button>
-</div>
-</div>
-<div class="contenedor">
-<h3>TARJETA</h3>
-<div class="botones">
-<button id="socio-propietario-tarjeta-btn" type="submit">Pista Socio P.(2.5€)</button>
-<button id="socio-deportista-tarjeta-btn" type="submit">Pista Socio D.(3.5€)</button>
-<button id="deportista-tarjeta-btn" type="submit">Pista Deportista(5.5)</button>
-</div>
-</div>
-</div>
-<div class="contenedor">
-<h3>Conceptos rápidos</h3>
-<div class="botones" style="display: flex; flex-direction: row; gap: 10px;">
-<button id="btn-detalle-tienda" type="button">TIENDA</button>
-<button id="btn-detalle-bar" type="button">BAR</button>
-<button id="btn-detalle-pista" type="button">PISTA</button>
-</div>
-</div>
-<label for="payment-detail">Detalle:</label>
-<input id="payment-detail" type="text"/><br/>
-<h3>Añadir Pago</h3>
-<form id="add-payment-form">
-<input id="reservaIdPago" type="hidden"/>
-<input id="pistaIdPago" type="hidden"/>
-<input id="pistaNombre" type="hidden"/>
-<input id="slotTimePago" type="hidden"/>
-<label for="payment-amount">Cantidad:</label>
-<div style="display: flex; flex-direction: row; gap: 10px;">
-<input id="payment-amount" required="" step="0.1" type="number"/><button type="submit">Añadir Pago</button><br/>
-</div>
-<div class="contenedor">
-<h3>Método de Pago</h3>
-<div class="botones" style="display: flex; flex-direction: row; gap: 10px;">
-<input checked="" id="metodo-contado" name="payment-method" type="radio" value="CONTADO"/>
-<label for="metodo-contado">Contado</label>
-<input id="metodo-tarjeta" name="payment-method" type="radio" value="TARJETA"/>
-<label for="metodo-tarjeta">Tarjeta</label>
-</div></div>
-<br/>
-</form>
-<br/>
-<div id="div-expenses" style="display:none;">
-<h3>Añadir Gasto</h3>
-<form id="expense-form">
-<label for="expense-amount">Cantidad:</label>
-<input id="expense-amount" name="amount" required="" step="0.1" type="number"/><br/>
-<label for="expense-method">Método de Pago:</label>
-<input id="expense-method" name="method" readonly="" type="text" value="CONTADO"/><br/>
-<label for="expense-detail">Detalle del Gasto:</label>
-<textarea id="expense-detail" name="detail" required=""></textarea><br/>
-<button type="submit">Añadir Gasto</button>
-</form>
-</div>
-</div>
-<div class="columna" id="payments-table-div" style="display:none;">
-<h3>Pagos asociados a la reserva</h3>
-<table id="payments-table">
-<thead>
-<tr>
-<th>Cantidad</th>
-<th>Método de Pago</th>
-<th>Detalle</th>
-<th>Acciones</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-<h3 id="payment-total"></h3>
-<h3 id="expenses-total"></h3>
-<h3 id="paymentandexpenses-total"></h3>
-</div>
-</div>
-</center>
-<script>
-// Obtener el método de pago desde radio buttons
-function getSelectedPaymentMethod() {
-    const radios = document.getElementsByName('payment-method');
-    for (const radio of radios) {
-        if (radio.checked) {
+      @media (max-width: 768px) {
+        .schedule-container {
+          min-width: 300px;
+        }
+      }
+
+      #title-details {
+        background-color: #f0f8ff; /* Fondo azul claro */
+        margin-top: 20px;
+      }
+
+      #title-details h2,
+      h3 {
+        color: #1e73be;
+      }
+    </style>
+  </head>
+  <body>
+    <center><h1>Reserva de Pistas</h1></center>
+    <div
+      id="modal-reserva-admin"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      "
+    >
+      <div
+        style="
+          background: white;
+          padding: 20px;
+          border-radius: 10px;
+          text-align: center;
+          min-width: 300px;
+        "
+      >
+        <h3>Reservar pista para otro usuario</h3>
+        <label for="user-select-modal">Selecciona el usuario:</label><br />
+        <input
+          id="user-select-modal"
+          list="user-select-modal-options"
+          placeholder="Escribe un nombre"
+          style="width: 90%; margin: 10px 0"
+          type="text"
+        /><br />
+        <datalist id="user-select-modal-options"></datalist><br />
+        <label for="concepto-admin">Concepto:</label><br />
+        <input
+          id="concepto-admin"
+          style="width: 90%; margin-bottom: 10px"
+          type="text"
+        /><br />
+        <button id="confirmar-reserva-admin">Confirmar</button>
+        <button
+          onclick="document.getElementById('modal-reserva-admin').style.display='none'"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+    <input id="user-info" type="hidden" />
+    <input id="role-info" type="hidden" />
+    <!-- Contenedor del calendario -->
+    <div class="calendar-container">
+      <button id="go-today" class="calendar-action-button" type="button">
+        Hoy
+      </button>
+      <label for="reservation-date">Selecciona una fecha:</label>
+      <input id="reservation-date" placeholder="DD/MM/YYYY" type="date" />
+      <svg
+        id="refresh-reservas"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        width="48"
+        height="48"
+        aria-label="Refrescar tabla"
+        title="Refrescar tabla"
+        style="cursor: pointer; margin-left: 8px"
+      >
+        <path
+          d="M17.65 6.35A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24l-2.29 2.29H20V4l-2.35 2.35z"
+        />
+      </svg>
+    </div>
+    <div id="warning-message"></div>
+    <center>
+      <div class="schedule-wrapper">
+        <div class="schedule-container" id="schedule-container"></div>
+      </div>
+      <div id="title-details"></div>
+      <!-- Contenedor de la tabla de pagos y el formulario -->
+      <div class="container">
+        <div class="columna" id="payments-container" style="display: none">
+          <div
+            id="concepto-reserva-admin"
+            style="display: none; margin-bottom: 10px"
+          >
+            <h3 for="concepto-text">Concepto de la reserva:</h3>
+            <br />
+            <input
+              id="concepto-text"
+              readonly=""
+              style="width: 100%"
+              type="text"
+            />
+          </div>
+          <button id="cancelar-reserva-button" type="submit">
+            Cancelar Reserva
+          </button>
+          <div class="contenedor-centrado" id="rapids-payments">
+            <div class="contenedor">
+              <h3>CONTADO</h3>
+              <div class="botones">
+                <button id="socio-propietario-contado-btn" type="submit">
+                  Pista Socio P.(2.5€)
+                </button>
+                <button id="socio-deportista-contado-btn" type="submit">
+                  Pista Socio D.(3.5€)
+                </button>
+                <button id="deportista-contado-btn" type="submit">
+                  Pista Deportista(5.5€)
+                </button>
+              </div>
+            </div>
+            <div class="contenedor">
+              <h3>TARJETA</h3>
+              <div class="botones">
+                <button id="socio-propietario-tarjeta-btn" type="submit">
+                  Pista Socio P.(2.5€)
+                </button>
+                <button id="socio-deportista-tarjeta-btn" type="submit">
+                  Pista Socio D.(3.5€)
+                </button>
+                <button id="deportista-tarjeta-btn" type="submit">
+                  Pista Deportista(5.5)
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="contenedor">
+            <h3>Conceptos rápidos</h3>
+            <div
+              class="botones"
+              style="display: flex; flex-direction: row; gap: 10px"
+            >
+              <button id="btn-detalle-tienda" type="button">TIENDA</button>
+              <button id="btn-detalle-bar" type="button">BAR</button>
+              <button id="btn-detalle-pista" type="button">PISTA</button>
+            </div>
+          </div>
+          <label for="payment-detail">Detalle:</label>
+          <input id="payment-detail" type="text" /><br />
+          <h3>Añadir Pago</h3>
+          <form id="add-payment-form">
+            <input id="reservaIdPago" type="hidden" />
+            <input id="pistaIdPago" type="hidden" />
+            <input id="pistaNombre" type="hidden" />
+            <input id="slotTimePago" type="hidden" />
+            <label for="payment-amount">Cantidad:</label>
+            <div style="display: flex; flex-direction: row; gap: 10px">
+              <input
+                id="payment-amount"
+                required=""
+                step="0.1"
+                type="number"
+              /><button type="submit">Añadir Pago</button><br />
+            </div>
+            <div class="contenedor">
+              <h3>Método de Pago</h3>
+              <div
+                class="botones"
+                style="display: flex; flex-direction: row; gap: 10px"
+              >
+                <input
+                  checked=""
+                  id="metodo-contado"
+                  name="payment-method"
+                  type="radio"
+                  value="CONTADO"
+                />
+                <label for="metodo-contado">Contado</label>
+                <input
+                  id="metodo-tarjeta"
+                  name="payment-method"
+                  type="radio"
+                  value="TARJETA"
+                />
+                <label for="metodo-tarjeta">Tarjeta</label>
+              </div>
+            </div>
+            <br />
+          </form>
+          <br />
+          <div id="div-expenses" style="display: none">
+            <h3>Añadir Gasto</h3>
+            <form id="expense-form">
+              <label for="expense-amount">Cantidad:</label>
+              <input
+                id="expense-amount"
+                name="amount"
+                required=""
+                step="0.1"
+                type="number"
+              /><br />
+              <label for="expense-method">Método de Pago:</label>
+              <input
+                id="expense-method"
+                name="method"
+                readonly=""
+                type="text"
+                value="CONTADO"
+              /><br />
+              <label for="expense-detail">Detalle del Gasto:</label>
+              <textarea id="expense-detail" name="detail" required=""></textarea
+              ><br />
+              <button type="submit">Añadir Gasto</button>
+            </form>
+          </div>
+        </div>
+        <div class="columna" id="payments-table-div" style="display: none">
+          <h3>Pagos asociados a la reserva</h3>
+          <table id="payments-table">
+            <thead>
+              <tr>
+                <th>Cantidad</th>
+                <th>Método de Pago</th>
+                <th>Detalle</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <h3 id="payment-total"></h3>
+          <h3 id="expenses-total"></h3>
+          <h3 id="paymentandexpenses-total"></h3>
+        </div>
+      </div>
+    </center>
+    <script>
+      // Obtener el método de pago desde radio buttons
+      function getSelectedPaymentMethod() {
+        const radios = document.getElementsByName("payment-method");
+        for (const radio of radios) {
+          if (radio.checked) {
             return radio.value;
+          }
         }
-    }
-    return null;
-}
+        return null;
+      }
 
+      var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
+      const scheduleContainer = document.getElementById("schedule-container");
+      const timeSlots = [
+        { time: "16:30 - 18:00" },
+        { time: "18:00 - 19:30" },
+        { time: "19:30 - 21:00" },
+        { time: "21:00 - 22:30" },
+      ];
 
-        var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
-        const scheduleContainer = document.getElementById('schedule-container');
-        const timeSlots = [
-            { time: '16:30 - 18:00'},
-            { time: '18:00 - 19:30'},
-            { time: '19:30 - 21:00'},
-            { time: '21:00 - 22:30'}
-        ];                         
-                                   
-        const weekendSlots = [     
-            { time: '09:00 - 10:30'},
-            { time: '10:30 - 12:00'},
-            { time: '12:00 - 13:30'},
-            { time: '16:30 - 18:00'},
-            { time: '18:00 - 19:30'},
-            { time: '19:30 - 21:00'}
-        ];
-        
-        let datosPista;
-        let datosReservas;
-        let firstSlotTime = '';
-		let usuariosDisponibles = [];
+      const weekendSlots = [
+        { time: "09:00 - 10:30" },
+        { time: "10:30 - 12:00" },
+        { time: "12:00 - 13:30" },
+        { time: "16:30 - 18:00" },
+        { time: "18:00 - 19:30" },
+        { time: "19:30 - 21:00" },
+      ];
 
-		function renderUsuariosCombo() {
-			const input = document.getElementById('user-select-modal');
-			const dataList = document.getElementById('user-select-modal-options');
-			if (!input || !dataList) {
-				return;
-			}
+      let datosPista;
+      let datosReservas;
+      let firstSlotTime = "";
+      let usuariosDisponibles = [];
 
-			const seleccionAnterior = input.value;
-			dataList.innerHTML = '';
+      function renderUsuariosCombo() {
+        const input = document.getElementById("user-select-modal");
+        const dataList = document.getElementById("user-select-modal-options");
+        if (!input || !dataList) {
+          return;
+        }
 
-			usuariosDisponibles.forEach(usuario => {
-				const option = document.createElement('option');
-				option.value = usuario.username;
-				option.label = usuario.username;
-				option.textContent = usuario.username;
-				dataList.appendChild(option);
-			});
+        const seleccionAnterior = input.value;
+        dataList.innerHTML = "";
 
-			if (seleccionAnterior && usuariosDisponibles.some(usuario => usuario.username === seleccionAnterior)) {
-				input.value = seleccionAnterior;
-			} else if (usuariosDisponibles.length > 0) {
-				input.value = usuariosDisponibles[0].username;
-			} else {
-				input.value = '';
-			}
+        usuariosDisponibles.forEach((usuario) => {
+          const option = document.createElement("option");
+          option.value = usuario.username;
+          option.label = usuario.username;
+          option.textContent = usuario.username;
+          dataList.appendChild(option);
+        });
 
-			input.disabled = usuariosDisponibles.length === 0;
-		}
+        if (
+          seleccionAnterior &&
+          usuariosDisponibles.some(
+            (usuario) => usuario.username === seleccionAnterior
+          )
+        ) {
+          input.value = seleccionAnterior;
+        } else if (usuariosDisponibles.length > 0) {
+          input.value = usuariosDisponibles[0].username;
+        } else {
+          input.value = "";
+        }
 
-		function cargarUsuariosCombo() {
-			$.ajax({
-				url: api_url + '/usuarios',
-				type: 'GET',
-				headers: {
-					'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-				},
-				success: function(usuarios) {
-					usuariosDisponibles = (usuarios || [])
-						.map(function(usuario) {
-							if (typeof usuario === 'string') {
-								return { username: usuario };
-							}
-							return { username: usuario && usuario.username ? usuario.username : '' };
-						})
-						.filter(function(usuario) {
-							return usuario.username;
-						})
-						.sort(function(a, b) {
-							return a.username.localeCompare(b.username, 'es', { sensitivity: 'base' });
-						});
-					renderUsuariosCombo();
-				},
-				error: function(err) {
-					console.error('Error al cargar usuarios:', err);
-				}
-			});
-		}
+        input.disabled = usuariosDisponibles.length === 0;
+      }
 
-        async function cargarRolUsuario() {
-            var username = document.getElementById('user-info').value;
-            $.ajax({
-                url: api_url+'/usuarios/buscar?username='+username,
-                type: 'GET',
-                headers: {
-                    'Content-Type' : 'application/json',
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                },
-                dataType: 'json',
-                success: function(data) {
-                    // Limpiar el input hidden de roleName
-                    $('#role-info').empty();
-                    document.getElementById('role-info').setAttribute('value', data.rolName);
-					if (data.rolName === 'administrador') {
-						cargarUsuariosCombo();
-					}
-
-                    cargaPrincipal();
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error al obtener datos de la API:', error);
-                    cargaPrincipal();
+      function cargarUsuariosCombo() {
+        $.ajax({
+          url: api_url + "/usuarios",
+          type: "GET",
+          headers: {
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          success: function (usuarios) {
+            usuariosDisponibles = (usuarios || [])
+              .map(function (usuario) {
+                if (typeof usuario === "string") {
+                  return { username: usuario };
                 }
-            });
-        };
-
-        function obtenerReservas(todayDay) { 
-            return new Promise((resolve, reject) => {
-                $.ajax({
-                    url: api_url+'/reservas/buscar?fecha='+todayDay,
-                    type: 'GET',
-                    headers: {
-                        'Content-Type' : 'application/json',
-                        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                    },
-                    dataType: 'json',
-                    success: function(data) {
-                        resolve(data);                    
-                    },
-                    error: function(xhr, status, error) {
-                        reject(error);
-                    }
+                return {
+                  username: usuario && usuario.username ? usuario.username : "",
+                };
+              })
+              .filter(function (usuario) {
+                return usuario.username;
+              })
+              .sort(function (a, b) {
+                return a.username.localeCompare(b.username, "es", {
+                  sensitivity: "base",
                 });
-            });        
-        }
-        
-        function multiFilter(array, filters) {
-            let filterKeys = Object.keys(filters);
-            return array.filter((item) => filterKeys.every((key) => (filters[key].indexOf(item[key]) !== -1)));
-        }
-        
+              });
+            renderUsuariosCombo();
+          },
+          error: function (err) {
+            console.error("Error al cargar usuarios:", err);
+          },
+        });
+      }
 
-        function ocultarPagos() {
-            const paymentsContainer = document.getElementById('payments-container');
-            paymentsContainer.style.display = 'none';
-            const paymentsTable = document.getElementById('payments-table-div');
-            paymentsTable.style.display = 'none';
-        }
+      async function cargarRolUsuario() {
+        var username = document.getElementById("user-info").value;
+        $.ajax({
+          url: api_url + "/usuarios/buscar?username=" + username,
+          type: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          dataType: "json",
+          success: function (data) {
+            // Limpiar el input hidden de roleName
+            $("#role-info").empty();
+            document
+              .getElementById("role-info")
+              .setAttribute("value", data.rolName);
+            if (data.rolName === "administrador") {
+              cargarUsuariosCombo();
+            }
 
-        // Lógica para mostrar pagos y gestionar acciones
-		function mostrarPagos(reservaId, pistaId, pistaNombre, slotTime) {
-			const paymentsContainer = document.getElementById('payments-container');
-			paymentsContainer.style.display = 'block';
-			const paymentsTableDiv = document.getElementById('payments-table-div');
-			paymentsTableDiv.style.display = 'block';
+            cargaPrincipal();
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al obtener datos de la API:", error);
+            cargaPrincipal();
+          },
+        });
+      }
 
-			// Set hidden fields
-			document.getElementById('reservaIdPago').value = reservaId;
-			document.getElementById('pistaIdPago').value = pistaId;
-			document.getElementById('pistaNombre').value = pistaNombre;
-			document.getElementById('slotTimePago').value = slotTime;
+      function obtenerReservas(todayDay) {
+        return new Promise((resolve, reject) => {
+          $.ajax({
+            url: api_url + "/reservas/buscar?fecha=" + todayDay,
+            type: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+            dataType: "json",
+            success: function (data) {
+              resolve(data);
+            },
+            error: function (xhr, status, error) {
+              reject(error);
+            },
+          });
+        });
+      }
 
-			const paymentsTable = document.getElementById('payments-table').querySelector('tbody');
-			paymentsTable.innerHTML = '';
+      function multiFilter(array, filters) {
+        let filterKeys = Object.keys(filters);
+        return array.filter((item) =>
+          filterKeys.every((key) => filters[key].indexOf(item[key]) !== -1)
+        );
+      }
 
-			// Limpiar campos de pago
-			document.getElementById('payment-amount').value = '';
-			document.getElementById('payment-detail').value = '';
-			document.getElementById('payment-total').innerHTML = '';
-			document.getElementById('expense-amount').value = '';
-			document.getElementById('expense-detail').value = '';
-			document.getElementById('expenses-total').innerHTML = '';
-			document.getElementById('paymentandexpenses-total').innerHTML = '';
-			
-			const reservaSlot = datosReservas.find(r => r.reservaId == reservaId);
-			const reservaUser = reservaSlot ? reservaSlot.userName : '';
-			
-			// 🔎 Localiza el DIV del slot que tiene el data-telefono
-			const selectedDate = new Date(document.getElementById('reservation-date').value);
-			const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
-			const dd = String(selectedDate.getDate()).padStart(2, '0');
-			const yyyy = selectedDate.getFullYear();
-			const diaId = `${dd}/${mm}/${yyyy}`;
-			const slotEl = document.getElementById(`${pistaId}_${diaId}_${slotTime}`);
-			const telefono = (slotEl && slotEl.dataset && slotEl.dataset.telefono) ? slotEl.dataset.telefono : '';
-			
-			document.getElementById('title-details').innerHTML = `
+      function ocultarPagos() {
+        const paymentsContainer = document.getElementById("payments-container");
+        paymentsContainer.style.display = "none";
+        const paymentsTable = document.getElementById("payments-table-div");
+        paymentsTable.style.display = "none";
+      }
+
+      // Lógica para mostrar pagos y gestionar acciones
+      function mostrarPagos(reservaId, pistaId, pistaNombre, slotTime) {
+        const paymentsContainer = document.getElementById("payments-container");
+        paymentsContainer.style.display = "block";
+        const paymentsTableDiv = document.getElementById("payments-table-div");
+        paymentsTableDiv.style.display = "block";
+
+        // Set hidden fields
+        document.getElementById("reservaIdPago").value = reservaId;
+        document.getElementById("pistaIdPago").value = pistaId;
+        document.getElementById("pistaNombre").value = pistaNombre;
+        document.getElementById("slotTimePago").value = slotTime;
+
+        const paymentsTable = document
+          .getElementById("payments-table")
+          .querySelector("tbody");
+        paymentsTable.innerHTML = "";
+
+        // Limpiar campos de pago
+        document.getElementById("payment-amount").value = "";
+        document.getElementById("payment-detail").value = "";
+        document.getElementById("payment-total").innerHTML = "";
+        document.getElementById("expense-amount").value = "";
+        document.getElementById("expense-detail").value = "";
+        document.getElementById("expenses-total").innerHTML = "";
+        document.getElementById("paymentandexpenses-total").innerHTML = "";
+
+        const reservaSlot = datosReservas.find((r) => r.reservaId == reservaId);
+        const reservaUser = reservaSlot ? reservaSlot.userName : "";
+
+        // 🔎 Localiza el DIV del slot que tiene el data-telefono
+        const selectedDate = new Date(
+          document.getElementById("reservation-date").value
+        );
+        const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
+        const dd = String(selectedDate.getDate()).padStart(2, "0");
+        const yyyy = selectedDate.getFullYear();
+        const diaId = `${dd}/${mm}/${yyyy}`;
+        const slotEl = document.getElementById(
+          `${pistaId}_${diaId}_${slotTime}`
+        );
+        const telefono =
+          slotEl && slotEl.dataset && slotEl.dataset.telefono
+            ? slotEl.dataset.telefono
+            : "";
+
+        document.getElementById("title-details").innerHTML = `
 				<h2>Pista ${pistaNombre} - ${slotTime}</h2>
 				<h3>Reservada por ${reservaUser} con telefono ${telefono}</h3>
 			`;
 
+        // Mostrar concepto si eres administrador
+        if (document.getElementById("role-info").value === "administrador") {
+          $.ajax({
+            url: api_url + "/reservas/" + reservaId,
+            type: "GET",
+            headers: {
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+            success: function (reservaData) {
+              const conceptoDiv = document.getElementById(
+                "concepto-reserva-admin"
+              );
+              const conceptoInput = document.getElementById("concepto-text");
+              conceptoDiv.style.display = "block";
+              conceptoInput.value = reservaData.concepto || "";
+            },
+            error: function (error) {
+              console.error(
+                "Error al obtener el concepto de la reserva:",
+                error
+              );
+            },
+          });
+        }
 
-			// Mostrar concepto si eres administrador
-			if (document.getElementById('role-info').value === 'administrador') {
-				$.ajax({
-					url: api_url + '/reservas/' + reservaId,
-					type: 'GET',
-					headers: {
-						'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-					},
-					success: function (reservaData) {
-						const conceptoDiv = document.getElementById('concepto-reserva-admin');
-						const conceptoInput = document.getElementById('concepto-text');
-						conceptoDiv.style.display = 'block';
-						conceptoInput.value = reservaData.concepto || '';
-					},
-					error: function (error) {
-						console.error('Error al obtener el concepto de la reserva:', error);
-					}
-				});
-			}
-
-			// Obtener pagos
-			$.ajax({
-				url: api_url + '/reservas/' + reservaId + '/pagos',
-				type: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-				},
-				dataType: 'json',
-				success: function (pagosResponse) {
-					let total = 0;
-					pagosResponse.pagos.forEach(pago => {
-						const row = document.createElement('tr');
-						row.innerHTML = `
+        // Obtener pagos
+        $.ajax({
+          url: api_url + "/reservas/" + reservaId + "/pagos",
+          type: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          dataType: "json",
+          success: function (pagosResponse) {
+            let total = 0;
+            pagosResponse.pagos.forEach((pago) => {
+              const row = document.createElement("tr");
+              row.innerHTML = `
 							<td></td>
 							<td>${pago.cantidad}</td>
 							<td>${pago.metodoPago}</td>
-							<td>${pago.detalle || ''}</td>
-							<td><button class="delete-payment" data-id="${pago.id}">Eliminar Pago</button></td>
+							<td>${pago.detalle || ""}</td>
+							<td><button class="delete-payment" data-id="${
+                pago.id
+              }">Eliminar Pago</button></td>
 						`;
-						const cantidadNumerica = parseFloat(pago.cantidad);
-						if (!isNaN(cantidadNumerica)) {
-							total += cantidadNumerica;
-						}
-						paymentsTable.appendChild(row);
-					});
+              const cantidadNumerica = parseFloat(pago.cantidad);
+              if (!isNaN(cantidadNumerica)) {
+                total += cantidadNumerica;
+              }
+              paymentsTable.appendChild(row);
+            });
 
-					document.getElementById('payment-total').dataset.value = total;
-					document.getElementById('payment-total').innerText = 'Total de Pagos: ' + total + '€';
+            document.getElementById("payment-total").dataset.value = total;
+            document.getElementById("payment-total").innerText =
+              "Total de Pagos: " + total + "€";
 
-					// Obtener y mostrar gastos
-					$.ajax({
-						url: api_url + '/reservas/' + reservaId + '/gastos',
-						type: 'GET',
-						headers: {
-							'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-						},
-						success: function (gastosResponse) {
-							let totalExpenses = 0;
-							gastosResponse.gastos.forEach(gasto => {
-								const row = document.createElement('tr');
-								row.innerHTML = `
+            // Obtener y mostrar gastos
+            $.ajax({
+              url: api_url + "/reservas/" + reservaId + "/gastos",
+              type: "GET",
+              headers: {
+                Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+              },
+              success: function (gastosResponse) {
+                let totalExpenses = 0;
+                gastosResponse.gastos.forEach((gasto) => {
+                  const row = document.createElement("tr");
+                  row.innerHTML = `
 									<td></td>
 									<td>-${gasto.cantidad}</td>
 									<td>${gasto.metodo}</td>
-									<td>${gasto.detalle || ''}</td>
-									<td><button class="delete-expense" data-id="${gasto.id}">Eliminar Gasto</button></td>
+									<td>${gasto.detalle || ""}</td>
+									<td><button class="delete-expense" data-id="${
+                    gasto.id
+                  }">Eliminar Gasto</button></td>
 								`;
-								const cantidadNumerica = parseFloat(gasto.cantidad);
-								if (!isNaN(cantidadNumerica)) {
-									totalExpenses -= cantidadNumerica;
-								}
-								paymentsTable.appendChild(row);
-							});
+                  const cantidadNumerica = parseFloat(gasto.cantidad);
+                  if (!isNaN(cantidadNumerica)) {
+                    totalExpenses -= cantidadNumerica;
+                  }
+                  paymentsTable.appendChild(row);
+                });
 
-							if (totalExpenses < 0) {
-								const totalPagos = parseFloat(document.getElementById('payment-total').dataset.value);
-								document.getElementById('expenses-total').innerText = 'Total de Gastos: ' + totalExpenses + '€';
-								const resultTotal = totalPagos + totalExpenses;
-								document.getElementById('paymentandexpenses-total').innerText = 'Total: ' + resultTotal + '€';
-							}
-
-							// Mostrar controles según pista
-							if (pistaNombre === 'BAR') {
-								document.getElementById('rapids-payments').style.display = 'none';
-								document.getElementById('payment-detail').value = '';
-								document.getElementById('expense-detail').value = '';
-								document.getElementById('div-expenses').style.display = 'block';
-							} else {
-								document.getElementById('rapids-payments').style.display = 'flex';
-								document.getElementById('payment-detail').value = '';
-								document.getElementById('expense-detail').value = '';
-								document.getElementById('div-expenses').style.display = 'none';
-							}
-						},
-						error: function (xhr, status, error) {
-							console.error('Error al obtener gastos:', error);
-						}
-					});
-				},
-				error: function (xhr, status, error) {
-					console.error('Error al obtener pagos:', error);
-				}
-			});
-		}
-
-
-        function agregarGasto(reservaId, gasto) {
-            $.ajax({
-                url: api_url + '/reservas/' + reservaId + '/gastos',
-                type: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                },
-                contentType: 'application/json',
-                data: JSON.stringify(gasto),
-                success: function() {
-                    mostrarPagos(reservaId, document.getElementById('pistaIdPago').value, document.getElementById('pistaNombre').value, document.getElementById('slotTimePago').value);
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error al añadir el gasto:', error);
+                if (totalExpenses < 0) {
+                  const totalPagos = parseFloat(
+                    document.getElementById("payment-total").dataset.value
+                  );
+                  document.getElementById("expenses-total").innerText =
+                    "Total de Gastos: " + totalExpenses + "€";
+                  const resultTotal = totalPagos + totalExpenses;
+                  document.getElementById(
+                    "paymentandexpenses-total"
+                  ).innerText = "Total: " + resultTotal + "€";
                 }
-            });
-        }
 
-        function agregarPago(reservaId, pago) {
-            var pistaId=document.getElementById('pistaIdPago').value;
-            var pistaNombre=document.getElementById('pistaNombre').value;
-            var slotTime=document.getElementById('slotTimePago').value;
-            $.ajax({
-                url: api_url+'/reservas/' + reservaId + '/pagos',
-                type: 'PUT',
-                headers: {
-                    'Content-Type' : 'application/json',
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                },
-                contentType: 'application/json',
-                data: JSON.stringify(pago),
-                success: function() {
-                    mostrarPagos(reservaId,pistaId,pistaNombre,slotTime);
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error al añadir el pago:', error);
+                // Mostrar controles según pista
+                if (pistaNombre === "BAR") {
+                  document.getElementById("rapids-payments").style.display =
+                    "none";
+                  document.getElementById("payment-detail").value = "";
+                  document.getElementById("expense-detail").value = "";
+                  document.getElementById("div-expenses").style.display =
+                    "block";
+                } else {
+                  document.getElementById("rapids-payments").style.display =
+                    "flex";
+                  document.getElementById("payment-detail").value = "";
+                  document.getElementById("expense-detail").value = "";
+                  document.getElementById("div-expenses").style.display =
+                    "none";
                 }
+              },
+              error: function (xhr, status, error) {
+                console.error("Error al obtener gastos:", error);
+              },
             });
-        }
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al obtener pagos:", error);
+          },
+        });
+      }
 
-        function eliminarPago(reservaId, pagoId) {
-            var pistaId=document.getElementById('pistaIdPago').value;
-            var pistaNombre=document.getElementById('pistaNombre').value;
-            var slotTime=document.getElementById('slotTimePago').value;
-            $.ajax({
-                url: api_url+'/reservas/' + reservaId + '/pagos/' + pagoId,
-                type: 'DELETE',
-                headers: {
-                    'Content-Type' : 'application/json',
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                },
-                success: function() {
-                    mostrarPagos(reservaId,pistaId,pistaNombre,slotTime);
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error al eliminar el pago:', error);
-                }
-            });
-        }
+      function agregarGasto(reservaId, gasto) {
+        $.ajax({
+          url: api_url + "/reservas/" + reservaId + "/gastos",
+          type: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          contentType: "application/json",
+          data: JSON.stringify(gasto),
+          success: function () {
+            mostrarPagos(
+              reservaId,
+              document.getElementById("pistaIdPago").value,
+              document.getElementById("pistaNombre").value,
+              document.getElementById("slotTimePago").value
+            );
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al añadir el gasto:", error);
+          },
+        });
+      }
 
-        function eliminarGasto(reservaId, gastoId) {
-            var pistaId=document.getElementById('pistaIdPago').value;
-            var pistaNombre=document.getElementById('pistaNombre').value;
-            var slotTime=document.getElementById('slotTimePago').value;
-            $.ajax({
-                url: api_url+'/reservas/' + reservaId + '/gastos/' + gastoId,
-                type: 'DELETE',
-                headers: {
-                    'Content-Type' : 'application/json',
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                },
-                success: function() {
-                    mostrarPagos(reservaId,pistaId,pistaNombre,slotTime);
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error al eliminar el gasto:', error);
-                }
-            });
-        }        
+      function agregarPago(reservaId, pago) {
+        var pistaId = document.getElementById("pistaIdPago").value;
+        var pistaNombre = document.getElementById("pistaNombre").value;
+        var slotTime = document.getElementById("slotTimePago").value;
+        $.ajax({
+          url: api_url + "/reservas/" + reservaId + "/pagos",
+          type: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          contentType: "application/json",
+          data: JSON.stringify(pago),
+          success: function () {
+            mostrarPagos(reservaId, pistaId, pistaNombre, slotTime);
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al añadir el pago:", error);
+          },
+        });
+      }
 
-        function cancelarReserva(slot) {
-            const skipValidationFlag = document.getElementById('role-info').value === 'administrador';
-            $.ajax({
-                url: api_url+'/reservas/'+slot.dataset.reserva+'?skipValidation='+skipValidationFlag,
-                type: 'DELETE',
-                headers: {
-                    'Content-Type' : 'application/json',
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                },
-                contentType: 'application/json',
-                success: function() {
-					slot.className = 'time-slot';
-					slot.innerHTML = '<span>Disponible</span></br><span></span>';
-                                        slot.dataset.estado = 'Disponible';
-                                        const username = slot.dataset.username;
-                                        slot.dataset.username = '';
-                                        slot.dataset.reserva = '';
-                                        slot.dataset.concepto = '';
+      function eliminarPago(reservaId, pagoId) {
+        var pistaId = document.getElementById("pistaIdPago").value;
+        var pistaNombre = document.getElementById("pistaNombre").value;
+        var slotTime = document.getElementById("slotTimePago").value;
+        $.ajax({
+          url: api_url + "/reservas/" + reservaId + "/pagos/" + pagoId,
+          type: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          success: function () {
+            mostrarPagos(reservaId, pistaId, pistaNombre, slotTime);
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al eliminar el pago:", error);
+          },
+        });
+      }
 
-					if (document.getElementById('role-info').value === 'administrador') {
-						ocultarPagos();
-					}
+      function eliminarGasto(reservaId, gastoId) {
+        var pistaId = document.getElementById("pistaIdPago").value;
+        var pistaNombre = document.getElementById("pistaNombre").value;
+        var slotTime = document.getElementById("slotTimePago").value;
+        $.ajax({
+          url: api_url + "/reservas/" + reservaId + "/gastos/" + gastoId,
+          type: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          success: function () {
+            mostrarPagos(reservaId, pistaId, pistaNombre, slotTime);
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al eliminar el gasto:", error);
+          },
+        });
+      }
 
-					// Obtener email y enviar correo de cancelación
-					
-					const pistaNombre = slot.dataset.pistaNombre;
-					const slotTime = slot.dataset.time;
-					const selectedDate = new Date(document.getElementById('reservation-date').value);
-					const dia = `${String(selectedDate.getDate()).padStart(2, '0')}/${String(selectedDate.getMonth() + 1).padStart(2, '0')}/${selectedDate.getFullYear()}`;
-					const [horaInicio, horaFin] = slotTime.split('-').map(str => str.trim());
+      function cancelarReserva(slot) {
+        const skipValidationFlag =
+          document.getElementById("role-info").value === "administrador";
+        $.ajax({
+          url:
+            api_url +
+            "/reservas/" +
+            slot.dataset.reserva +
+            "?skipValidation=" +
+            skipValidationFlag,
+          type: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          contentType: "application/json",
+          success: function () {
+            slot.className = "time-slot";
+            slot.innerHTML = "<span>Disponible</span></br><span></span>";
+            slot.dataset.estado = "Disponible";
+            const username = slot.dataset.username;
+            slot.dataset.username = "";
+            slot.dataset.reserva = "";
+            slot.dataset.concepto = "";
 
-					// 1. Obtener el email del usuario
-					fetch(club_ajaxurl, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-						body: new URLSearchParams({
-							action: 'obtener_email_usuario',
-							username: username
-						})
-					})
-					.then(res => res.json())
-					.then(data => {
-						if (data.success) {
-							const email = data.data.email;
-
-							// 2. Enviar el correo de cancelación
-							return fetch(club_ajaxurl, {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-								body: new URLSearchParams({
-									action: 'enviar_correo_custom',
-									para: email,
-									asunto: 'Cancelación de tu reserva en Club Pádel Andújar',
-									pista: pistaNombre,
-									fecha: dia,
-									hora: `${horaInicio} - ${horaFin}`,
-									tipo: 'cancelacion'
-								})
-							});
-						}
-					})
-					.catch(error => {
-						console.error('Error al enviar correo de cancelación:', error);
-					});
-				},
-                error: function(xhr, status, error) {
-                    const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Error al cancelar la reserva';
-                    alert(msg);
-                    console.error('Error al eliminar la reserva:', msg);
-                }
-            });
-			document.getElementById('title-details').innerHTML='';
-            
-        }
-        
-        function anadirReserva(slot,username) {
-            const confirmMsg = "¿Desea realmente reservar la pista?";
-            if (!confirm(confirmMsg)) {
-                return;
+            if (
+              document.getElementById("role-info").value === "administrador"
+            ) {
+              ocultarPagos();
             }
-            var arrayHoras =  slot.dataset.time.split('-');
-            console.log(arrayHoras);
-            var horaInicio = arrayHoras[0].trim();
-            var horaFin = arrayHoras[1].trim();
-            
-            const selectedDate = new Date(document.getElementById('reservation-date').value);            
-            const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const dd = String(selectedDate.getDate()).padStart(2, '0');
-            const yyyy = selectedDate.getFullYear();
 
-            const dia = `${dd}/${mm}/${yyyy}`;
-			
-			const concepto = document.getElementById('concepto-admin')?.value || '';
+            // Obtener email y enviar correo de cancelación solo si NO es administrador
+            const rolUsuarioActual = document.getElementById("role-info").value;
 
-            const reservaRequest = {
-				username: username,
-				pistaId: slot.dataset.pista,
-				fechaReserva: dia,
-				horaInicio: horaInicio,
-				horaFin: horaFin,
-				concepto: concepto
-			};
+            if (rolUsuarioActual !== "administrador") {
+              const pistaNombre = slot.dataset.pistaNombre;
+              const slotTime = slot.dataset.time;
+              const selectedDate = new Date(
+                document.getElementById("reservation-date").value
+              );
+              const dia = `${String(selectedDate.getDate()).padStart(
+                2,
+                "0"
+              )}/${String(selectedDate.getMonth() + 1).padStart(
+                2,
+                "0"
+              )}/${selectedDate.getFullYear()}`;
+              const [horaInicio, horaFin] = slotTime
+                .split("-")
+                .map((str) => str.trim());
 
-            $.ajax({
-                url: api_url+'/reservas',
-                type: 'POST',
+              // 1. Obtener el email del usuario
+              fetch(club_ajaxurl, {
+                method: "POST",
                 headers: {
-                    'Content-Type' : 'application/json',
-                    'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
+                  "Content-Type": "application/x-www-form-urlencoded",
                 },
-                contentType: 'application/json',
-                data: JSON.stringify(reservaRequest),
-                success: function(dataResponse) {
-
-    // 🔄 Actualizar UI como antes
-    slot.className = 'time-slot-booked';
-    slot.innerHTML = '<span>Reservada</span></br><span>' + username + '</span>' + (concepto ? '<br><span>' + concepto + '</span>' : '');
-    slot.dataset.estado = 'Reservada';
-    slot.dataset.reserva = dataResponse.id;
-    slot.dataset.username = username;
-    slot.dataset.concepto = concepto;
-
-    if (document.getElementById('role-info').value === 'administrador') {
-        mostrarPagos(slot.dataset.reserva, slot.dataset.pista, slot.dataset.pistaNombre, slot.dataset.time);
-    }
-
-    // ✉️ Obtener email y enviar correo sin interrumpir la interfaz
-    const usernameEmail = username;
-    fetch(club_ajaxurl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            action: 'obtener_email_usuario',
-            username: usernameEmail
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success && data.data.email) {
-            const email = data.data.email;
-            fetch(club_ajaxurl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({
-                    action: 'enviar_correo_custom',
-                    para: email,
-                    asunto: 'Confirmación de tu reserva en Club Pádel Andújar',
-                    pista: slot.dataset.pistaNombre,
-                    fecha: dia,
-                    hora: `${horaInicio} - ${horaFin}`,
-                    tipo: 'reserva'
+                  action: "obtener_email_usuario",
+                  username: username,
+                }),
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.success) {
+                    const email = data.data.email;
+
+                    // 2. Enviar el correo de cancelación
+                    return fetch(club_ajaxurl, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                      },
+                      body: new URLSearchParams({
+                        action: "enviar_correo_custom",
+                        para: email,
+                        asunto:
+                          "Cancelación de tu reserva en Club Pádel Andújar",
+                        pista: pistaNombre,
+                        fecha: dia,
+                        hora: `${horaInicio} - ${horaFin}`,
+                        tipo: "cancelacion",
+                      }),
+                    });
+                  }
                 })
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error al enviar correo de reserva:', error);
-    });
-
-        }, error: function(xhr, status, error) {
-                    alert(xhr.responseJSON.message);
-                    console.error('Error al realizar la reserva:', xhr.responseJSON.message);
-                    document.getElementById('reservation-date').dispatchEvent(new Event('change'));
-                }
-            });
-        }
-
-        function procesarTablaReservas(datosPista, slots, dia, datosReservas) {
-            ocultarPagos();
-            firstSlotTime = slots[0].time;
-            limpiarYConfigurarContenedor(datosPista.length);
-            agregarHeaders(datosPista);
-            agregarSlotsConReservas(datosPista, slots, dia, datosReservas);
-            
-        }
-
-        function limpiarYConfigurarContenedor(numPistas) {
-            const divTime = document.createElement('div');
-            divTime.className = 'time-label';
-            scheduleContainer.innerHTML = '';
-            scheduleContainer.appendChild(divTime);
-            scheduleContainer.style.gridTemplateColumns = `repeat(${numPistas + 1}, 1fr)`;
-        }
-
-        function agregarHeaders(datosPista) {
-            datosPista.forEach(pista => {
-                const header = document.createElement('div');
-                header.className = 'pista-header';
-                header.innerHTML = `${pista.nombre}<br>(${pista.ubicacion})`;
-                scheduleContainer.appendChild(header);
-            });
-        }
-
-        function agregarSlotsConReservas(datosPista, slots, dia, datosReservas) {
-            slots.forEach(slot => {
-                const timeLabel = crearTimeLabel(slot.time);
-                scheduleContainer.appendChild(timeLabel);
-
-                datosPista.forEach(pista => {
-                    const timeSlot = crearTimeSlot(pista, slot, dia, datosReservas);
-                    scheduleContainer.appendChild(timeSlot); 
+                .catch((error) => {
+                  console.error(
+                    "Error al enviar correo de cancelación:",
+                    error
+                  );
                 });
-            });
-        }
-
-        function crearTimeLabel(time) {
-            const timeLabel = document.createElement('div');
-            timeLabel.className = 'time-label';
-            timeLabel.textContent = time;
-            return timeLabel;
-        }
-
-        function crearTimeSlotReserva(pista, slot, dia, datosReservas) {
-            const timeSlot = document.createElement('div');
-            timeSlot.id = `${pista.id}_${dia}_${slot.time}`;
-            timeSlot.dataset.pista = pista.id;
-            timeSlot.dataset.pistaNombre = pista.nombre;
-            timeSlot.dataset.time = slot.time;
-
-            const { username, rolename } = obtenerDatosUsuario();
-            const reserva = obtenerReserva(datosReservas, pista.id, slot.time);
-
-            configurarTimeSlot(timeSlot, reserva, username, rolename);  
-            if (username!=='') {
-                agregarEventListener(timeSlot, dia, username, rolename);
-            }          
-            
-            
-            return timeSlot;
-        }
-
-        function crearTimeSlotBar(pista, slot, dia, datosReservas) {
-            if (slot.time === firstSlotTime) {
-                return crearTimeSlotReserva(pista, slot, dia, datosReservas);
             }
-
-            const timeSlot = document.createElement('div');
-            timeSlot.className = 'time-slot-disabled';
-            timeSlot.textContent = 'No Reservable';
-            return timeSlot;
-        }
-
-        function crearTimeSlot(pista, slot, dia, datosReservas) {
-            if (pista.nombre!=='BAR') {
-                return crearTimeSlotReserva(pista, slot, dia, datosReservas);
-            } else {
-                return crearTimeSlotBar(pista, slot,dia, datosReservas);      
-            }
-        }
-
-        function obtenerDatosUsuario() {
-            return {
-                username: document.getElementById('user-info').value,
-                rolename: document.getElementById('role-info').value
-            };
-        }
-
-        function obtenerReserva(datosReservas, pistaId, slotTime) {
-            const filters = { pistaId: [pistaId], slotTime: [slotTime] };
-            return multiFilter(datosReservas, filters)[0] || null;
-        }
-
-		function configurarTimeSlot(timeSlot, reserva, username, rolename) {
-			const selectedDate = document.getElementById('reservation-date').value;
-			const slotTime = timeSlot.dataset.time;
-			const [startHour, startMinute] = slotTime.split('-')[0].trim().split(':');
-
-			const dateObj = new Date(selectedDate); // formato yyyy-mm-dd
-			const slotDate = new Date(
-				dateObj.getFullYear(),
-				dateObj.getMonth(),
-				dateObj.getDate(),
-				Number(startHour),
-				Number(startMinute)
-			);
-
-			const ahora = new Date();
-			const esPasado = slotDate.getTime() < ahora.getTime();
-
-                        if (reserva) {
-                                timeSlot.innerHTML = `<span>Reservada</span><br><span>${reserva.userName}</span>${reserva.concepto ? `<br><span>${reserva.concepto}</span>` : ''}`;
-                                timeSlot.dataset.estado = 'Reservada';
-                                timeSlot.dataset.reserva = reserva.reservaId;
-                                timeSlot.dataset.username = reserva.userName;
-                                timeSlot.dataset.concepto = reserva.concepto || '';
-                                timeSlot.dataset.telefono = '';
-				// 1. Obtener el telefono del usuario
-				fetch(club_ajaxurl, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-					body: new URLSearchParams({
-						action: 'obtener_email_usuario',
-						username: reserva.userName
-					})
-				})
-				.then(res => res.json())
-				.then(data => {
-					if (data.success) {
-						const telefono = data.data.telefono;
-						timeSlot.dataset.telefono=telefono;
-					}
-				})
-				.catch(error => {
-					console.error('Error al obtener el telefono:', error);
-				});
-				
-				timeSlot.className = esPasado ? 'time-slot-booked-past' : (username !== '' ? 'time-slot-booked' : 'time-slot-booked-no-user');
-                        } else {
-                                timeSlot.innerHTML = '<span>Disponible</span><br><span></span>';
-                                timeSlot.dataset.estado = 'Disponible';
-                                timeSlot.dataset.concepto = '';
-                                timeSlot.className = esPasado ? 'time-slot-past' : (username !== '' ? 'time-slot' : 'time-slot-no-user');
-                        }
-
-			// Solo bloqueamos clics si es pasado Y no es administrador
-			if (esPasado && rolename !== 'administrador') {
-				timeSlot.style.pointerEvents = 'none';
-			}
-		}
-       
-
-        function agregarEventListener(timeSlot, dia, username, rolename) {
-            timeSlot.addEventListener('click', () => {
-                if (!dia) {
-                    alert('Por favor, selecciona una fecha antes de reservar.');
-                    return;
-                }
-                
-                if (rolename === 'administrador' && timeSlot.dataset.reserva) {
-                    mostrarPagos(timeSlot.dataset.reserva, timeSlot.dataset.pista,timeSlot.dataset.pistaNombre, timeSlot.dataset.time);
-                } else if (timeSlot.dataset.estado === 'Reservada') {
-                    manejarCancelacionReserva(timeSlot, username, rolename);
-                } else {
-                    manejarNuevaReserva(timeSlot, username);
-                }
-            });
-        }
-
-        function manejarCancelacionReserva(timeSlot, username, rolename) {
-            if (rolename !== 'administrador' && timeSlot.dataset.username === username) {
-                const text = "¿Desea realmente cancelar la pista?";
-                if (confirm(text)) {
-                    cancelarReserva(timeSlot);
-                }
-            }
-        }
-
-		let slotPendienteAdmin = null;
-
-                function manejarNuevaReserva(timeSlot, username) {
-                        const rolename = document.getElementById('role-info').value;
-
-                        if (rolename === 'administrador') {
-                                slotPendienteAdmin = timeSlot;
-                                document.getElementById('modal-reserva-admin').style.display = 'flex';
-                        } else {
-                                anadirReserva(timeSlot, username);
-                        }
-                }
-
-
-
-        document.getElementById('cancelar-reserva-button').addEventListener('click', () => { 
-            var pistaId=document.getElementById('pistaIdPago').value;
-            var slotTime=document.getElementById('slotTimePago').value;
-            //pista.id+'`_'+dia+'_'+slot.time;
-            const selectedDate = new Date(document.getElementById('reservation-date').value);            
-            const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const dd = String(selectedDate.getDate()).padStart(2, '0');
-            const yyyy = selectedDate.getFullYear();
-
-            const dia = `${dd}/${mm}/${yyyy}`;
-
-            var slot=document.getElementById(pistaId+'_'+dia+'_'+slotTime);
-
-            cancelarReserva(slot);
-        });  
-        
-        function anadirPago(cantidad,metodoPago,detalle){
-            var reservaId=document.getElementById('reservaIdPago').value;
-            document.getElementById('payment-amount').value=cantidad;
-            document.querySelector(`input[name='payment-method'][value='${metodoPago}']`).checked = true;
-            document.getElementById('payment-detail').value=detalle;
-            const newPayment = {
-                cantidad: parseFloat(cantidad),
-                metodoPago: metodoPago,
-                detalle: detalle
-            };
-            agregarPago(reservaId,newPayment);
-        }
-
-        document.getElementById('socio-propietario-contado-btn').addEventListener('click', () => {             
-            anadirPago(2.5,'CONTADO','Pago Pista socio propietario');     
+          },
+          error: function (xhr, status, error) {
+            const msg =
+              xhr.responseJSON && xhr.responseJSON.message
+                ? xhr.responseJSON.message
+                : "Error al cancelar la reserva";
+            alert(msg);
+            console.error("Error al eliminar la reserva:", msg);
+          },
         });
+        document.getElementById("title-details").innerHTML = "";
+      }
 
-        document.getElementById('socio-deportista-contado-btn').addEventListener('click', () => {             
-            anadirPago(3.5,'CONTADO','Pago Pista socio deportista');
-        });  
-        
-        document.getElementById('deportista-contado-btn').addEventListener('click', () => {             
-            anadirPago(5.5,'CONTADO','Pago Pista deportista');
-        });         
-        
-        document.getElementById('socio-propietario-tarjeta-btn').addEventListener('click', () => {             
-            anadirPago(2.5,'TARJETA','Pago Pista socio propietario');     
-        });
+      function anadirReserva(slot, username) {
+        const confirmMsg = "¿Desea realmente reservar la pista?";
+        if (!confirm(confirmMsg)) {
+          return;
+        }
+        var arrayHoras = slot.dataset.time.split("-");
+        console.log(arrayHoras);
+        var horaInicio = arrayHoras[0].trim();
+        var horaFin = arrayHoras[1].trim();
 
-        document.getElementById('socio-deportista-tarjeta-btn').addEventListener('click', () => {             
-            anadirPago(3.5,'TARJETA','Pago Pista socio deportista');
-        });  
-        
-        document.getElementById('deportista-tarjeta-btn').addEventListener('click', () => {             
-            anadirPago(5.5,'TARJETA','Pago Pista deportista');
-        });  
+        const selectedDate = new Date(
+          document.getElementById("reservation-date").value
+        );
+        const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
+        const dd = String(selectedDate.getDate()).padStart(2, "0");
+        const yyyy = selectedDate.getFullYear();
 
-        //Evento para manejar los gastos
-        document.getElementById('expense-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            var reservaId = document.getElementById('reservaIdPago').value;
-            var gasto = {
-                cantidad: parseFloat(document.getElementById('expense-amount').value),
-                metodo: document.getElementById('expense-method').value,
-                detalle: document.getElementById('expense-detail').value
-            };
-            agregarGasto(reservaId, gasto);
-        });
-        // Evento para manejar la adición de pagos
-        document.getElementById('add-payment-form').addEventListener('submit', function(event) {
-            event.preventDefault();
+        const dia = `${dd}/${mm}/${yyyy}`;
 
-            const reservaId = document.getElementById('reservaIdPago').value;
-            const newPayment = {
-                cantidad: parseFloat(document.getElementById('payment-amount').value),
-                metodoPago: getSelectedPaymentMethod(),
-                detalle: document.getElementById('payment-detail').value
-            };
-            
-            agregarPago(reservaId,newPayment);
-        });
+        const concepto = document.getElementById("concepto-admin")?.value || "";
 
-        // Delegar eventos para editar y eliminar pagos
-        document.getElementById('payments-table').addEventListener('click', function(event) {
-            const row = event.target.closest('tr');
-            const paymentId = event.target.dataset.id;
-            const reservaId = document.getElementById('reservaIdPago').value;
-            if (event.target.classList.contains('delete-payment')) {
-                if (confirm('¿Desea eliminar este pago?')) {
-                    eliminarPago(reservaId, paymentId);
-                }
+        const reservaRequest = {
+          username: username,
+          pistaId: slot.dataset.pista,
+          fechaReserva: dia,
+          horaInicio: horaInicio,
+          horaFin: horaFin,
+          concepto: concepto,
+        };
+
+        $.ajax({
+          url: api_url + "/reservas",
+          type: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          contentType: "application/json",
+          data: JSON.stringify(reservaRequest),
+          success: function (dataResponse) {
+            // 🔄 Actualizar UI como antes
+            slot.className = "time-slot-booked";
+            slot.innerHTML =
+              "<span>Reservada</span></br><span>" +
+              username +
+              "</span>" +
+              (concepto ? "<br><span>" + concepto + "</span>" : "");
+            slot.dataset.estado = "Reservada";
+            slot.dataset.reserva = dataResponse.id;
+            slot.dataset.username = username;
+            slot.dataset.concepto = concepto;
+
+            if (
+              document.getElementById("role-info").value === "administrador"
+            ) {
+              mostrarPagos(
+                slot.dataset.reserva,
+                slot.dataset.pista,
+                slot.dataset.pistaNombre,
+                slot.dataset.time
+              );
             }
-            if (event.target.classList.contains('delete-expense')) {
-                if (confirm('¿Desea eliminar este gasto?')) {
-                    eliminarGasto(reservaId, paymentId);
-                }
+
+            // ✉️ Obtener email y enviar correo sin interrumpir la interfaz (solo si NO es administrador)
+            const rolUsuarioActual = document.getElementById("role-info").value;
+
+            if (rolUsuarioActual !== "administrador") {
+              const usernameEmail = username;
+              fetch(club_ajaxurl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: new URLSearchParams({
+                  action: "obtener_email_usuario",
+                  username: usernameEmail,
+                }),
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.success && data.data.email) {
+                    const email = data.data.email;
+                    fetch(club_ajaxurl, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                      },
+                      body: new URLSearchParams({
+                        action: "enviar_correo_custom",
+                        para: email,
+                        asunto:
+                          "Confirmación de tu reserva en Club Pádel Andújar",
+                        pista: slot.dataset.pistaNombre,
+                        fecha: dia,
+                        hora: `${horaInicio} - ${horaFin}`,
+                        tipo: "reserva",
+                      }),
+                    });
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error al enviar correo de reserva:", error);
+                });
             }
-        });               
+          },
+          error: function (xhr, status, error) {
+            alert(xhr.responseJSON.message);
+            console.error(
+              "Error al realizar la reserva:",
+              xhr.responseJSON.message
+            );
+            document
+              .getElementById("reservation-date")
+              .dispatchEvent(new Event("change"));
+          },
+        });
+      }
 
-        document.getElementById('reservation-date').addEventListener('change', (event) => {
-            const selectedDate = new Date(event.target.value);
-            const day = selectedDate.getDay();
-            const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const dd = String(selectedDate.getDate()).padStart(2, '0');
-            const yyyy = selectedDate.getFullYear();
+      function procesarTablaReservas(datosPista, slots, dia, datosReservas) {
+        ocultarPagos();
+        firstSlotTime = slots[0].time;
+        limpiarYConfigurarContenedor(datosPista.length);
+        agregarHeaders(datosPista);
+        agregarSlotsConReservas(datosPista, slots, dia, datosReservas);
+      }
 
-            const selectedFormatedDate = `${dd}/${mm}/${yyyy}`;
+      function limpiarYConfigurarContenedor(numPistas) {
+        const divTime = document.createElement("div");
+        divTime.className = "time-label";
+        scheduleContainer.innerHTML = "";
+        scheduleContainer.appendChild(divTime);
+        scheduleContainer.style.gridTemplateColumns = `repeat(${
+          numPistas + 1
+        }, 1fr)`;
+      }
 
-            datosReservas=[];
+      function agregarHeaders(datosPista) {
+        datosPista.forEach((pista) => {
+          const header = document.createElement("div");
+          header.className = "pista-header";
+          header.innerHTML = `${pista.nombre}<br>(${pista.ubicacion})`;
+          scheduleContainer.appendChild(header);
+        });
+      }
 
-            obtenerReservas(selectedFormatedDate)
+      function agregarSlotsConReservas(datosPista, slots, dia, datosReservas) {
+        slots.forEach((slot) => {
+          const timeLabel = crearTimeLabel(slot.time);
+          scheduleContainer.appendChild(timeLabel);
+
+          datosPista.forEach((pista) => {
+            const timeSlot = crearTimeSlot(pista, slot, dia, datosReservas);
+            scheduleContainer.appendChild(timeSlot);
+          });
+        });
+      }
+
+      function crearTimeLabel(time) {
+        const timeLabel = document.createElement("div");
+        timeLabel.className = "time-label";
+        timeLabel.textContent = time;
+        return timeLabel;
+      }
+
+      function crearTimeSlotReserva(pista, slot, dia, datosReservas) {
+        const timeSlot = document.createElement("div");
+        timeSlot.id = `${pista.id}_${dia}_${slot.time}`;
+        timeSlot.dataset.pista = pista.id;
+        timeSlot.dataset.pistaNombre = pista.nombre;
+        timeSlot.dataset.time = slot.time;
+
+        const { username, rolename } = obtenerDatosUsuario();
+        const reserva = obtenerReserva(datosReservas, pista.id, slot.time);
+
+        configurarTimeSlot(timeSlot, reserva, username, rolename);
+        if (username !== "") {
+          agregarEventListener(timeSlot, dia, username, rolename);
+        }
+
+        return timeSlot;
+      }
+
+      function crearTimeSlotBar(pista, slot, dia, datosReservas) {
+        if (slot.time === firstSlotTime) {
+          return crearTimeSlotReserva(pista, slot, dia, datosReservas);
+        }
+
+        const timeSlot = document.createElement("div");
+        timeSlot.className = "time-slot-disabled";
+        timeSlot.textContent = "No Reservable";
+        return timeSlot;
+      }
+
+      function crearTimeSlot(pista, slot, dia, datosReservas) {
+        if (pista.nombre !== "BAR") {
+          return crearTimeSlotReserva(pista, slot, dia, datosReservas);
+        } else {
+          return crearTimeSlotBar(pista, slot, dia, datosReservas);
+        }
+      }
+
+      function obtenerDatosUsuario() {
+        return {
+          username: document.getElementById("user-info").value,
+          rolename: document.getElementById("role-info").value,
+        };
+      }
+
+      function obtenerReserva(datosReservas, pistaId, slotTime) {
+        const filters = { pistaId: [pistaId], slotTime: [slotTime] };
+        return multiFilter(datosReservas, filters)[0] || null;
+      }
+
+      function configurarTimeSlot(timeSlot, reserva, username, rolename) {
+        const selectedDate = document.getElementById("reservation-date").value;
+        const slotTime = timeSlot.dataset.time;
+        const [startHour, startMinute] = slotTime
+          .split("-")[0]
+          .trim()
+          .split(":");
+
+        const dateObj = new Date(selectedDate); // formato yyyy-mm-dd
+        const slotDate = new Date(
+          dateObj.getFullYear(),
+          dateObj.getMonth(),
+          dateObj.getDate(),
+          Number(startHour),
+          Number(startMinute)
+        );
+
+        const ahora = new Date();
+        const esPasado = slotDate.getTime() < ahora.getTime();
+
+        if (reserva) {
+          timeSlot.innerHTML = `<span>Reservada</span><br><span>${
+            reserva.userName
+          }</span>${
+            reserva.concepto ? `<br><span>${reserva.concepto}</span>` : ""
+          }`;
+          timeSlot.dataset.estado = "Reservada";
+          timeSlot.dataset.reserva = reserva.reservaId;
+          timeSlot.dataset.username = reserva.userName;
+          timeSlot.dataset.concepto = reserva.concepto || "";
+          timeSlot.dataset.telefono = "";
+          // 1. Obtener el telefono del usuario
+          fetch(club_ajaxurl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              action: "obtener_email_usuario",
+              username: reserva.userName,
+            }),
+          })
+            .then((res) => res.json())
             .then((data) => {
-                datosReservas = data;
-                console.log(datosReservas);
-                
-                if (day === 6 || day === 0 || selectedFormatedDate === '13/10/2025') { // Sábado (6) o Domingo (0)
-                    procesarTablaReservas(datosPista,weekendSlots,selectedFormatedDate,datosReservas);
-                } else {
-                    procesarTablaReservas(datosPista,timeSlots,selectedFormatedDate,datosReservas);
-                }
+              if (data.success) {
+                const telefono = data.data.telefono;
+                timeSlot.dataset.telefono = telefono;
+              }
             })
             .catch((error) => {
-                console.error('Error obteniendo los datos:', error);
+              console.error("Error al obtener el telefono:", error);
             });
-        
-            
-        });
 
-        document.getElementById('refresh-reservas').addEventListener('click', () => {
-            document.getElementById('reservation-date').dispatchEvent(new Event('change'));
-        });
-
-        document.getElementById('go-today').addEventListener('click', () => {
-            const todayDate = new Date();
-            const reservationDateInput = document.getElementById('reservation-date');
-            reservationDateInput.valueAsDate = todayDate;
-            reservationDateInput.dispatchEvent(new Event('change'));
-        });
-
-        function cargaPrincipal() {
-            //Autoselect today
-            const todayDate = new Date();
-            const todayDay = todayDate.getDay();
-            
-            const mm = String(todayDate.getMonth() + 1).padStart(2, '0');
-            const dd = String(todayDate.getDate()).padStart(2, '0');
-            const yyyy = todayDate.getFullYear();
-
-            const currentDate = `${dd}/${mm}/${yyyy}`;
-
-            console.log(currentDate);
-            
-            
-            document.getElementById('reservation-date').valueAsDate = todayDate;  
-            //Cargar Reservas
-            
-            obtenerReservas(currentDate)
-            .then((data) => {
-                datosReservas = data;
-                console.log(datosReservas);
-                $.ajax({
-                    url: api_url+'/pistas',
-                    type: 'GET',
-                    headers: {
-                        'Content-Type' : 'application/json',
-                        'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-                    },
-                    dataType: 'json',
-                    success: function(data) {
-                        datosPista = data.sort((a, b) => {
-                            if (a.nombre === 'BAR') return 1;
-                            if (b.nombre === 'BAR') return -1;
-                            return 0;
-                        });
-                        if (document.getElementById('role-info').value !== 'administrador') {
-                            datosPista = datosPista.filter(p => p.nombre !== 'BAR');
-                        }
-                        // Renderizar las horas por defecto
-                        if (todayDay === 6 || todayDay === 0 || currentDate === '13/10/2025') { // S�bado (6) o Domingo (0)
-                            procesarTablaReservas(datosPista,weekendSlots,currentDate,datosReservas);
-                        } else {
-                            procesarTablaReservas(datosPista,timeSlots,currentDate,datosReservas);
-                        } 
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error al obtener datos de la API:', error);
-                    }
-                });                    
-            })
-            .catch((error) => {
-                console.error('Error obteniendo los datos:', error);
-            });
-            
-                       
+          timeSlot.className = esPasado
+            ? "time-slot-booked-past"
+            : username !== ""
+            ? "time-slot-booked"
+            : "time-slot-booked-no-user";
+        } else {
+          timeSlot.innerHTML = "<span>Disponible</span><br><span></span>";
+          timeSlot.dataset.estado = "Disponible";
+          timeSlot.dataset.concepto = "";
+          timeSlot.className = esPasado
+            ? "time-slot-past"
+            : username !== ""
+            ? "time-slot"
+            : "time-slot-no-user";
         }
 
-        document.getElementById('user-info').addEventListener('userReady', function (event) {
-            cargarRolUsuario();
+        // Solo bloqueamos clics si es pasado Y no es administrador
+        if (esPasado && rolename !== "administrador") {
+          timeSlot.style.pointerEvents = "none";
+        }
+      }
+
+      function agregarEventListener(timeSlot, dia, username, rolename) {
+        timeSlot.addEventListener("click", () => {
+          if (!dia) {
+            alert("Por favor, selecciona una fecha antes de reservar.");
+            return;
+          }
+
+          if (rolename === "administrador" && timeSlot.dataset.reserva) {
+            mostrarPagos(
+              timeSlot.dataset.reserva,
+              timeSlot.dataset.pista,
+              timeSlot.dataset.pistaNombre,
+              timeSlot.dataset.time
+            );
+          } else if (timeSlot.dataset.estado === "Reservada") {
+            manejarCancelacionReserva(timeSlot, username, rolename);
+          } else {
+            manejarNuevaReserva(timeSlot, username);
+          }
         });
-		
-				document.getElementById('confirmar-reserva-admin').addEventListener('click', () => {
-                        const userTarget = document.getElementById('user-select-modal').value;
-						const usuarioValido = usuariosDisponibles.some(usuario => usuario.username === userTarget);
-                        if (usuarioValido && slotPendienteAdmin) {
-                                anadirReserva(slotPendienteAdmin, userTarget);
-                                document.getElementById('modal-reserva-admin').style.display = 'none';
-                                slotPendienteAdmin = null;
-                        } else if (!usuarioValido) {
-							alert('Selecciona un usuario válido.');
-						}
+      }
+
+      function manejarCancelacionReserva(timeSlot, username, rolename) {
+        if (
+          rolename !== "administrador" &&
+          timeSlot.dataset.username === username
+        ) {
+          const text = "¿Desea realmente cancelar la pista?";
+          if (confirm(text)) {
+            cancelarReserva(timeSlot);
+          }
+        }
+      }
+
+      let slotPendienteAdmin = null;
+
+      function manejarNuevaReserva(timeSlot, username) {
+        const rolename = document.getElementById("role-info").value;
+
+        if (rolename === "administrador") {
+          slotPendienteAdmin = timeSlot;
+          document.getElementById("modal-reserva-admin").style.display = "flex";
+        } else {
+          anadirReserva(timeSlot, username);
+        }
+      }
+
+      document
+        .getElementById("cancelar-reserva-button")
+        .addEventListener("click", () => {
+          var pistaId = document.getElementById("pistaIdPago").value;
+          var slotTime = document.getElementById("slotTimePago").value;
+          //pista.id+'`_'+dia+'_'+slot.time;
+          const selectedDate = new Date(
+            document.getElementById("reservation-date").value
+          );
+          const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
+          const dd = String(selectedDate.getDate()).padStart(2, "0");
+          const yyyy = selectedDate.getFullYear();
+
+          const dia = `${dd}/${mm}/${yyyy}`;
+
+          var slot = document.getElementById(
+            pistaId + "_" + dia + "_" + slotTime
+          );
+
+          cancelarReserva(slot);
+        });
+
+      function anadirPago(cantidad, metodoPago, detalle) {
+        var reservaId = document.getElementById("reservaIdPago").value;
+        document.getElementById("payment-amount").value = cantidad;
+        document.querySelector(
+          `input[name='payment-method'][value='${metodoPago}']`
+        ).checked = true;
+        document.getElementById("payment-detail").value = detalle;
+        const newPayment = {
+          cantidad: parseFloat(cantidad),
+          metodoPago: metodoPago,
+          detalle: detalle,
+        };
+        agregarPago(reservaId, newPayment);
+      }
+
+      document
+        .getElementById("socio-propietario-contado-btn")
+        .addEventListener("click", () => {
+          anadirPago(2.5, "CONTADO", "Pago Pista socio propietario");
+        });
+
+      document
+        .getElementById("socio-deportista-contado-btn")
+        .addEventListener("click", () => {
+          anadirPago(3.5, "CONTADO", "Pago Pista socio deportista");
+        });
+
+      document
+        .getElementById("deportista-contado-btn")
+        .addEventListener("click", () => {
+          anadirPago(5.5, "CONTADO", "Pago Pista deportista");
+        });
+
+      document
+        .getElementById("socio-propietario-tarjeta-btn")
+        .addEventListener("click", () => {
+          anadirPago(2.5, "TARJETA", "Pago Pista socio propietario");
+        });
+
+      document
+        .getElementById("socio-deportista-tarjeta-btn")
+        .addEventListener("click", () => {
+          anadirPago(3.5, "TARJETA", "Pago Pista socio deportista");
+        });
+
+      document
+        .getElementById("deportista-tarjeta-btn")
+        .addEventListener("click", () => {
+          anadirPago(5.5, "TARJETA", "Pago Pista deportista");
+        });
+
+      //Evento para manejar los gastos
+      document
+        .getElementById("expense-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          var reservaId = document.getElementById("reservaIdPago").value;
+          var gasto = {
+            cantidad: parseFloat(
+              document.getElementById("expense-amount").value
+            ),
+            metodo: document.getElementById("expense-method").value,
+            detalle: document.getElementById("expense-detail").value,
+          };
+          agregarGasto(reservaId, gasto);
+        });
+      // Evento para manejar la adición de pagos
+      document
+        .getElementById("add-payment-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const reservaId = document.getElementById("reservaIdPago").value;
+          const newPayment = {
+            cantidad: parseFloat(
+              document.getElementById("payment-amount").value
+            ),
+            metodoPago: getSelectedPaymentMethod(),
+            detalle: document.getElementById("payment-detail").value,
+          };
+
+          agregarPago(reservaId, newPayment);
+        });
+
+      // Delegar eventos para editar y eliminar pagos
+      document
+        .getElementById("payments-table")
+        .addEventListener("click", function (event) {
+          const row = event.target.closest("tr");
+          const paymentId = event.target.dataset.id;
+          const reservaId = document.getElementById("reservaIdPago").value;
+          if (event.target.classList.contains("delete-payment")) {
+            if (confirm("¿Desea eliminar este pago?")) {
+              eliminarPago(reservaId, paymentId);
+            }
+          }
+          if (event.target.classList.contains("delete-expense")) {
+            if (confirm("¿Desea eliminar este gasto?")) {
+              eliminarGasto(reservaId, paymentId);
+            }
+          }
+        });
+
+      document
+        .getElementById("reservation-date")
+        .addEventListener("change", (event) => {
+          const selectedDate = new Date(event.target.value);
+          const day = selectedDate.getDay();
+          const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
+          const dd = String(selectedDate.getDate()).padStart(2, "0");
+          const yyyy = selectedDate.getFullYear();
+
+          const selectedFormatedDate = `${dd}/${mm}/${yyyy}`;
+
+          datosReservas = [];
+
+          obtenerReservas(selectedFormatedDate)
+            .then((data) => {
+              datosReservas = data;
+              console.log(datosReservas);
+
+              if (
+                day === 6 ||
+                day === 0 ||
+                selectedFormatedDate === "13/10/2025"
+              ) {
+                // Sábado (6) o Domingo (0)
+                procesarTablaReservas(
+                  datosPista,
+                  weekendSlots,
+                  selectedFormatedDate,
+                  datosReservas
+                );
+              } else {
+                procesarTablaReservas(
+                  datosPista,
+                  timeSlots,
+                  selectedFormatedDate,
+                  datosReservas
+                );
+              }
+            })
+            .catch((error) => {
+              console.error("Error obteniendo los datos:", error);
+            });
+        });
+
+      document
+        .getElementById("refresh-reservas")
+        .addEventListener("click", () => {
+          document
+            .getElementById("reservation-date")
+            .dispatchEvent(new Event("change"));
+        });
+
+      document.getElementById("go-today").addEventListener("click", () => {
+        const todayDate = new Date();
+        const reservationDateInput =
+          document.getElementById("reservation-date");
+        reservationDateInput.valueAsDate = todayDate;
+        reservationDateInput.dispatchEvent(new Event("change"));
+      });
+
+      function cargaPrincipal() {
+        //Autoselect today
+        const todayDate = new Date();
+        const todayDay = todayDate.getDay();
+
+        const mm = String(todayDate.getMonth() + 1).padStart(2, "0");
+        const dd = String(todayDate.getDate()).padStart(2, "0");
+        const yyyy = todayDate.getFullYear();
+
+        const currentDate = `${dd}/${mm}/${yyyy}`;
+
+        console.log(currentDate);
+
+        document.getElementById("reservation-date").valueAsDate = todayDate;
+        //Cargar Reservas
+
+        obtenerReservas(currentDate)
+          .then((data) => {
+            datosReservas = data;
+            console.log(datosReservas);
+            $.ajax({
+              url: api_url + "/pistas",
+              type: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+              },
+              dataType: "json",
+              success: function (data) {
+                datosPista = data.sort((a, b) => {
+                  if (a.nombre === "BAR") return 1;
+                  if (b.nombre === "BAR") return -1;
+                  return 0;
                 });
+                if (
+                  document.getElementById("role-info").value !== "administrador"
+                ) {
+                  datosPista = datosPista.filter((p) => p.nombre !== "BAR");
+                }
+                // Renderizar las horas por defecto
+                if (
+                  todayDay === 6 ||
+                  todayDay === 0 ||
+                  currentDate === "13/10/2025"
+                ) {
+                  // S�bado (6) o Domingo (0)
+                  procesarTablaReservas(
+                    datosPista,
+                    weekendSlots,
+                    currentDate,
+                    datosReservas
+                  );
+                } else {
+                  procesarTablaReservas(
+                    datosPista,
+                    timeSlots,
+                    currentDate,
+                    datosReservas
+                  );
+                }
+              },
+              error: function (xhr, status, error) {
+                console.error("Error al obtener datos de la API:", error);
+              },
+            });
+          })
+          .catch((error) => {
+            console.error("Error obteniendo los datos:", error);
+          });
+      }
 
-    
-document.getElementById('btn-detalle-tienda').addEventListener('click', () => {
-  document.getElementById('payment-detail').value = 'TIENDA';
-});
+      document
+        .getElementById("user-info")
+        .addEventListener("userReady", function (event) {
+          cargarRolUsuario();
+        });
 
-document.getElementById('btn-detalle-bar').addEventListener('click', () => {
-  document.getElementById('payment-detail').value = 'BAR';
-});
+      document
+        .getElementById("confirmar-reserva-admin")
+        .addEventListener("click", () => {
+          const userTarget = document.getElementById("user-select-modal").value;
+          const usuarioValido = usuariosDisponibles.some(
+            (usuario) => usuario.username === userTarget
+          );
+          if (usuarioValido && slotPendienteAdmin) {
+            anadirReserva(slotPendienteAdmin, userTarget);
+            document.getElementById("modal-reserva-admin").style.display =
+              "none";
+            slotPendienteAdmin = null;
+          } else if (!usuarioValido) {
+            alert("Selecciona un usuario válido.");
+          }
+        });
 
-document.getElementById('btn-detalle-pista').addEventListener('click', () => {
-  document.getElementById('payment-detail').value = 'Pago Pista';
-});
+      document
+        .getElementById("btn-detalle-tienda")
+        .addEventListener("click", () => {
+          document.getElementById("payment-detail").value = "TIENDA";
+        });
 
-</script>
-</body>
+      document
+        .getElementById("btn-detalle-bar")
+        .addEventListener("click", () => {
+          document.getElementById("payment-detail").value = "BAR";
+        });
+
+      document
+        .getElementById("btn-detalle-pista")
+        .addEventListener("click", () => {
+          document.getElementById("payment-detail").value = "Pago Pista";
+        });
+    </script>
+  </body>
 </html>
-
-
-
