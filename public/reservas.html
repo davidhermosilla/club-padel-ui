@@ -453,6 +453,56 @@
         { time: "19:30 - 21:00" },
       ];
 
+      const specialWeekendDates = new Set([
+        "24/12/2025",
+        "26/12/2025",
+        "31/12/2025",
+      ]);
+
+      function parseInputDate(value) {
+        if (!value) {
+          return { dateObj: null, formatted: "" };
+        }
+        const [year, month, day] = value.split("-");
+        if (!year || !month || !day) {
+          return { dateObj: null, formatted: "" };
+        }
+        const numericYear = Number(year);
+        const numericMonth = Number(month);
+        const numericDay = Number(day);
+        if (
+          Number.isNaN(numericYear) ||
+          Number.isNaN(numericMonth) ||
+          Number.isNaN(numericDay)
+        ) {
+          return { dateObj: null, formatted: "" };
+        }
+        const dateObj = new Date(numericYear, numericMonth - 1, numericDay);
+        const formatted = `${String(numericDay).padStart(2, "0")}/${String(
+          numericMonth
+        ).padStart(2, "0")}/${numericYear}`;
+        return { dateObj, formatted };
+      }
+
+      function formatDateObj(dateObj) {
+        if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) {
+          return "";
+        }
+        return `${String(dateObj.getDate()).padStart(2, "0")}/${String(
+          dateObj.getMonth() + 1
+        ).padStart(2, "0")}/${dateObj.getFullYear()}`;
+      }
+
+      function isWeekendOrSpecialDate(dateObj, formattedDate) {
+        if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) {
+          return false;
+        }
+        const day = dateObj.getDay();
+        return (
+          day === 6 || day === 0 || specialWeekendDates.has(formattedDate)
+        );
+      }
+
       let datosPista;
       let datosReservas;
       let firstSlotTime = "";
@@ -619,13 +669,9 @@
         const reservaUser = reservaSlot ? reservaSlot.userName : "";
 
         // 🔎 Localiza el DIV del slot que tiene el data-telefono
-        const selectedDate = new Date(
+        const { formatted: diaId } = parseInputDate(
           document.getElementById("reservation-date").value
         );
-        const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
-        const dd = String(selectedDate.getDate()).padStart(2, "0");
-        const yyyy = selectedDate.getFullYear();
-        const diaId = `${dd}/${mm}/${yyyy}`;
         const slotEl = document.getElementById(
           `${pistaId}_${diaId}_${slotTime}`
         );
@@ -883,20 +929,14 @@
 
             // Obtener email y enviar correo de cancelación solo si NO es administrador
             const rolUsuarioActual = document.getElementById("role-info").value;
+            const usernameParaEmail = username;
 
-            if (rolUsuarioActual !== "administrador") {
+            if (rolUsuarioActual !== "administrador" && usernameParaEmail) {
               const pistaNombre = slot.dataset.pistaNombre;
               const slotTime = slot.dataset.time;
-              const selectedDate = new Date(
+              const { formatted: dia } = parseInputDate(
                 document.getElementById("reservation-date").value
               );
-              const dia = `${String(selectedDate.getDate()).padStart(
-                2,
-                "0"
-              )}/${String(selectedDate.getMonth() + 1).padStart(
-                2,
-                "0"
-              )}/${selectedDate.getFullYear()}`;
               const [horaInicio, horaFin] = slotTime
                 .split("-")
                 .map((str) => str.trim());
@@ -909,7 +949,7 @@
                 },
                 body: new URLSearchParams({
                   action: "obtener_email_usuario",
-                  username: username,
+                  username: usernameParaEmail,
                 }),
               })
                 .then((res) => res.json())
@@ -966,14 +1006,13 @@
         var horaInicio = arrayHoras[0].trim();
         var horaFin = arrayHoras[1].trim();
 
-        const selectedDate = new Date(
+        const { formatted: dia } = parseInputDate(
           document.getElementById("reservation-date").value
         );
-        const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
-        const dd = String(selectedDate.getDate()).padStart(2, "0");
-        const yyyy = selectedDate.getFullYear();
-
-        const dia = `${dd}/${mm}/${yyyy}`;
+        if (!dia) {
+          alert("Selecciona una fecha válida para la reserva.");
+          return;
+        }
 
         const concepto = document.getElementById("concepto-admin")?.value || "";
 
@@ -1019,11 +1058,11 @@
               );
             }
 
-            // ✉️ Obtener email y enviar correo sin interrumpir la interfaz (solo si NO es administrador)
+            // ✉️ Obtener email y enviar correo sin interrumpir la interfaz (solo si NO es administrador y hay usuario)
             const rolUsuarioActual = document.getElementById("role-info").value;
+            const usernameEmail = username;
 
-            if (rolUsuarioActual !== "administrador") {
-              const usernameEmail = username;
+            if (rolUsuarioActual !== "administrador" && usernameEmail) {
               fetch(club_ajaxurl, {
                 method: "POST",
                 headers: {
@@ -1170,7 +1209,14 @@
       }
 
       function configurarTimeSlot(timeSlot, reserva, username, rolename) {
-        const selectedDate = document.getElementById("reservation-date").value;
+        const selectedDateValue =
+          document.getElementById("reservation-date").value;
+        const { dateObj: selectedDate } = parseInputDate(selectedDateValue);
+        if (!selectedDate) {
+          timeSlot.className = "time-slot-disabled";
+          timeSlot.textContent = "Fecha no válida";
+          return;
+        }
         const slotTime = timeSlot.dataset.time;
         const [startHour, startMinute] = slotTime
           .split("-")[0]
@@ -1295,14 +1341,9 @@
           var pistaId = document.getElementById("pistaIdPago").value;
           var slotTime = document.getElementById("slotTimePago").value;
           //pista.id+'`_'+dia+'_'+slot.time;
-          const selectedDate = new Date(
+          const { formatted: dia } = parseInputDate(
             document.getElementById("reservation-date").value
           );
-          const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
-          const dd = String(selectedDate.getDate()).padStart(2, "0");
-          const yyyy = selectedDate.getFullYear();
-
-          const dia = `${dd}/${mm}/${yyyy}`;
 
           var slot = document.getElementById(
             pistaId + "_" + dia + "_" + slotTime
@@ -1417,13 +1458,15 @@
       document
         .getElementById("reservation-date")
         .addEventListener("change", (event) => {
-          const selectedDate = new Date(event.target.value);
-          const day = selectedDate.getDay();
-          const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
-          const dd = String(selectedDate.getDate()).padStart(2, "0");
-          const yyyy = selectedDate.getFullYear();
-
-          const selectedFormatedDate = `${dd}/${mm}/${yyyy}`;
+          const { dateObj: selectedDate, formatted: selectedFormatedDate } =
+            parseInputDate(event.target.value);
+          if (!selectedDate || !selectedFormatedDate) {
+            console.warn(
+              "Fecha de reserva no válida seleccionada:",
+              event.target.value
+            );
+            return;
+          }
 
           datosReservas = [];
 
@@ -1432,13 +1475,7 @@
               datosReservas = data;
               console.log(datosReservas);
 
-              if (
-                day === 6 ||
-                day === 0 ||
-                selectedFormatedDate === "24/12/2025" ||
-				selectedFormatedDate === "31/12/2025" ||
-				selectedFormatedDate === "26/12/2025"
-              ) {
+              if (isWeekendOrSpecialDate(selectedDate, selectedFormatedDate)) {
                 // Sábado (6) o Domingo (0)
                 procesarTablaReservas(
                   datosPista,
@@ -1479,13 +1516,7 @@
       function cargaPrincipal() {
         //Autoselect today
         const todayDate = new Date();
-        const todayDay = todayDate.getDay();
-
-        const mm = String(todayDate.getMonth() + 1).padStart(2, "0");
-        const dd = String(todayDate.getDate()).padStart(2, "0");
-        const yyyy = todayDate.getFullYear();
-
-        const currentDate = `${dd}/${mm}/${yyyy}`;
+        const currentDate = formatDateObj(todayDate);
 
         console.log(currentDate);
 
@@ -1517,11 +1548,7 @@
                 }
                 // Renderizar las horas por defecto
                 if (
-                  todayDay === 6 ||
-                  todayDay === 0 ||
-                  currentDate === "24/12/2025" ||
-				  currentDate === "31/12/2025" ||
-				  currentDate === "26/12/2025"
+                  isWeekendOrSpecialDate(todayDate, currentDate)
                 ) {
                   // S�bado (6) o Domingo (0)
                   procesarTablaReservas(
@@ -1554,6 +1581,10 @@
         .addEventListener("userReady", function (event) {
           cargarRolUsuario();
         });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        cargaPrincipal();
+      });
 
       document
         .getElementById("confirmar-reserva-admin")
