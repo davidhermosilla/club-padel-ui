@@ -929,8 +929,10 @@
 
             // Obtener email y enviar correo de cancelación solo si NO es administrador
             const rolUsuarioActual = document.getElementById("role-info").value;
+            const usernameParaEmail = username;
 
-            if (rolUsuarioActual !== "administrador") {
+            if (rolUsuarioActual !== "administrador" && usernameParaEmail) {
+
               const pistaNombre = slot.dataset.pistaNombre;
               const slotTime = slot.dataset.time;
               const { formatted: dia } = parseInputDate(
@@ -948,7 +950,7 @@
                 },
                 body: new URLSearchParams({
                   action: "obtener_email_usuario",
-                  username: username,
+                  username: usernameParaEmail,
                 }),
               })
                 .then((res) => res.json())
@@ -1057,11 +1059,11 @@
               );
             }
 
-            // ✉️ Obtener email y enviar correo sin interrumpir la interfaz (solo si NO es administrador)
+            // ✉️ Obtener email y enviar correo sin interrumpir la interfaz (solo si NO es administrador y hay usuario)
             const rolUsuarioActual = document.getElementById("role-info").value;
+            const usernameEmail = username;
 
-            if (rolUsuarioActual !== "administrador") {
-              const usernameEmail = username;
+            if (rolUsuarioActual !== "administrador" && usernameEmail) {
               fetch(club_ajaxurl, {
                 method: "POST",
                 headers: {
