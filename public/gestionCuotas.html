@@ -544,7 +544,9 @@
               username,
               cuotaMensual,
             );
-            $row.append(cellHtml);
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = cellHtml;
+            $row.append(tempDiv.firstElementChild);
           });
         });
 
