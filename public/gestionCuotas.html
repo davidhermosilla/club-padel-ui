@@ -33,6 +33,8 @@
           Cantarell, sans-serif;
         padding: 20px;
         background: #f5f5f5;
+        max-width: 100%;
+        overflow-x: hidden;
       }
 
       h1 {
@@ -66,8 +68,8 @@
       table.dataTable td,
       table.dataTable th {
         white-space: nowrap;
-        padding: 6px 8px !important;
-        font-size: 12px;
+        padding: 6px 4px !important;
+        font-size: 11px;
         vertical-align: middle;
       }
 
@@ -76,15 +78,13 @@
         color: white;
         font-weight: 600;
         border-bottom: 2px solid #155a8a;
-        padding: 8px 6px !important;
-        font-size: 11px;
+        padding: 8px 4px !important;
+        font-size: 10px;
       }
 
-      /* Columnas de mes más estrechas */
-      table.dataTable td:not(.col-usuario):not(.col-rol),
-      table.dataTable th:not(.col-usuario):not(.col-rol) {
-        min-width: 85px;
-        max-width: 85px;
+      /* Sin anchos fijos - ajuste automático al ancho disponible */
+      table.dataTable {
+        width: 100% !important;
       }
 
       /* Altura del área scroll vertical del DataTable */
@@ -98,9 +98,6 @@
         z-index: 3;
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
       }
-      .dtfc-fixed-left .dataTables_scrollBody {
-        overflow: hidden !important;
-      }
 
       /* Botones y selects más compactos y visuales - layout vertical */
       #cuotas-table td {
@@ -108,20 +105,20 @@
       }
 
       #cuotas-table select {
-        font-size: 11px;
-        padding: 3px 5px;
+        font-size: 10px;
+        padding: 2px 4px;
         border: 1px solid #ccc;
         border-radius: 3px;
         background: white;
         cursor: pointer;
-        margin-bottom: 3px;
+        margin-bottom: 2px;
         width: 100%;
         display: block;
       }
 
       #cuotas-table button {
-        font-size: 10px;
-        padding: 4px 8px;
+        font-size: 9px;
+        padding: 3px 6px;
         border: none;
         border-radius: 3px;
         cursor: pointer;
@@ -155,15 +152,15 @@
         cursor: not-allowed;
       }
 
-      /* Anchos optimizados para laptop */
+      /* Anchos optimizados - flexibles */
       th.col-usuario,
       td.col-usuario {
-        min-width: 200px;
+        width: 15%;
         font-weight: 500;
       }
       th.col-rol,
       td.col-rol {
-        min-width: 100px;
+        width: 8%;
       }
 
       /* Filtros más visuales */
@@ -243,17 +240,17 @@
 
       /* Info de pago en celda */
       .payment-info {
-        font-size: 9px;
+        font-size: 8px;
         color: #666;
         margin: 1px 0;
-        line-height: 1.2;
+        line-height: 1.1;
       }
 
       .payment-method {
         font-weight: 600;
         color: #28a745;
-        font-size: 10px;
-        margin-bottom: 2px;
+        font-size: 9px;
+        margin-bottom: 1px;
       }
     </style>
   </head>
@@ -393,33 +390,31 @@
         if (state.isInitialized) return;
 
         state.dt = $("#cuotas-table").DataTable({
-          scrollX: true,
+          scrollX: false,
           scrollY: "75vh",
           scrollCollapse: true,
           paging: false,
           ordering: false,
           searching: true,
-          fixedHeader: true,
-          fixedColumns: {
-            left: 1,
-          },
+          fixedHeader: false,
+          autoWidth: true,
           language: {
             url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json",
           },
           columnDefs: [
             {
               targets: 0,
-              width: 200,
+              width: "15%",
               className: "dt-head-center dt-body-left",
             },
             {
               targets: 1,
-              width: 100,
+              width: "8%",
               className: "dt-head-center dt-body-left",
             },
             {
               targets: _range(2, 13),
-              width: 85,
+              width: "6.4%",
               className: "dt-head-center dt-body-center",
             },
           ],
