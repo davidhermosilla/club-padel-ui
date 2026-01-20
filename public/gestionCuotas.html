@@ -513,7 +513,10 @@
           state.dt.rows().invalidate().draw(false);
           state.dt.columns.adjust();
         } else {
-          initDataTable();
+          // Usar setTimeout para asegurar que el DOM esté completamente actualizado
+          setTimeout(() => {
+            initDataTable();
+          }, 0);
         }
       }
 
