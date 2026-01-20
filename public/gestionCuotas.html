@@ -438,25 +438,9 @@
         const cuotaPagada = multiFilter(cuotasPagadas, filters)[0] || null;
 
         if (cuotaPagada) {
-          return `
-          <td class="paid" data-cuota-id="${cuotaPagada.id}" data-mes="${mes.numero}" data-year="${year}">
-            <div class="payment-method">Pagado (${cuotaPagada.metodoPago})</div>
-            <div class="payment-info">${cuotaPagada.fechaPago}</div>
-            <div class="payment-info">${cuotaPagada.mesPagoCuota}</div>
-            <button class="btn-eliminar" data-action="eliminar" data-cuota-id="${cuotaPagada.id}" data-user-id="${userId}">Eliminar</button>
-          </td>
-        `;
+          return `<td class="paid" data-cuota-id="${cuotaPagada.id}" data-mes="${mes.numero}" data-year="${year}"><div class="payment-method">Pagado (${cuotaPagada.metodoPago})</div><div class="payment-info">${cuotaPagada.fechaPago}</div><div class="payment-info">${cuotaPagada.mesPagoCuota}</div><button class="btn-eliminar" data-action="eliminar" data-cuota-id="${cuotaPagada.id}" data-user-id="${userId}">Eliminar</button></td>`;
         } else {
-          return `
-          <td class="not-paid" data-mes="${mes.numero}" data-year="${year}">
-            <select class="payment-select">
-              <option value="CONTADO">Contado</option>
-              <option value="TARJETA">Tarjeta</option>
-            </select>
-            <button class="btn-pagar" data-action="pagar" data-mes="${mes.numero}" data-year="${year}" 
-                    data-user-id="${userId}" data-username="${username}" data-cuota="${cuotaMensual}">Pagar</button>
-          </td>
-        `;
+          return `<td class="not-paid" data-mes="${mes.numero}" data-year="${year}"><select class="payment-select"><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button class="btn-pagar" data-action="pagar" data-mes="${mes.numero}" data-year="${year}" data-user-id="${userId}" data-username="${username}" data-cuota="${cuotaMensual}">Pagar</button></td>`;
         }
       }
 
