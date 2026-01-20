@@ -1,381 +1,781 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <title>Gestión de Cuotas</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Gestión de Cuotas</title>
 
-  <!-- DataTables CSS -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.min.css">
+    <!-- DataTables CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.min.css"
+    />
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-
-    /* Estados de pago */
-    .paid { background-color: #d4edda; }
-    .not-paid { background-color: #f8d7da; }
-
-    /* Evitar que el tema corte el scroll horizontal del wrapper de DataTables */
-    html, body,
-    .wp-site-blocks, .site, .site-content, .entry-content, .has-global-padding {
-      overflow-x: visible !important;
-    }
-
-    /* Que los textos no se rompan en varias líneas dentro de celdas */
-    table.dataTable td, table.dataTable th { white-space: nowrap; }
-
-    /* Altura del área scroll vertical del DataTable */
-    div.dataTables_scrollBody { max-height: 70vh !important; }
-
-    /* Asegurar fondo y z-index de la columna fija para que se lea bien */
-    .dtfc-fixed-left { background: #fff; z-index: 3; }
-    .dtfc-fixed-left .dataTables_scrollBody { overflow: hidden !important; }
-
-    /* Botones/Selects un pelín más compactos */
-    #cuotas-table select, #cuotas-table button { font-size: 14px; }
-
-    /* Un poco más de ancho a Usuario y Rol para legibilidad */
-    th.col-usuario, td.col-usuario { min-width: 240px; }
-    th.col-rol, td.col-rol { min-width: 140px; }
-  </style>
-</head>
-<body>
-
-  <h1>Gestión de Cuotas</h1>
-
-  <!-- Filtros -->
-  <div class="filters" style="margin-bottom: 12px;">
-    <label for="year-select">Año:</label>
-    <select id="year-select" style="margin-right:16px;">
-      <option value="2025" selected>2025</option>
-      <option value="2026">2026</option>
-      <option value="2027">2027</option>
-      <option value="2028">2028</option>
-      <option value="2029">2029</option>
-      <option value="2030">2030</option>
-      <option value="2031">2031</option>
-      <option value="2032">2032</option>
-      <option value="2033">2033</option>
-      <option value="2034">2034</option>
-    </select>
-
-    <label for="role-select">Rol:</label>
-    <select id="role-select" style="margin-right:16px;">
-      <option value="all" selected>Todos</option>
-    </select>
-
-    <label for="user-filter">Usuario:</label>
-    <input type="text" id="user-filter" placeholder="Buscar por nombre de usuario" style="width:420px;">
-  </div>
-
-  <div class="table-container">
-    <table id="cuotas-table" class="display nowrap" style="width:100%; color:#1e73be;">
-      <thead>
-        <tr>
-          <th class="has-text-align-center col-usuario">Usuario</th>
-          <th class="has-text-align-center col-rol">Rol</th>
-          <th class="has-text-align-center">Enero</th>
-          <th class="has-text-align-center">Febrero</th>
-          <th class="has-text-align-center">Marzo</th>
-          <th class="has-text-align-center">Abril</th>
-          <th class="has-text-align-center">Mayo</th>
-          <th class="has-text-align-center">Junio</th>
-          <th class="has-text-align-center">Julio</th>
-          <th class="has-text-align-center">Agosto</th>
-          <th class="has-text-align-center">Septiembre</th>
-          <th class="has-text-align-center">Octubre</th>
-          <th class="has-text-align-center">Noviembre</th>
-          <th class="has-text-align-center">Diciembre</th>
-        </tr>
-      </thead>
-      <tbody id="cuotas-table-body"></tbody>
-    </table>
-  </div>
-
-  <!-- DataTables JS -->
-  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
-  <script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
-
-  <script>
-    var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
-
-    const meses = [
-      { mes: 'Enero', numero: '01' }, { mes: 'Febrero', numero: '02' },
-      { mes: 'Marzo', numero: '03' }, { mes: 'Abril', numero: '04' },
-      { mes: 'Mayo', numero: '05' }, { mes: 'Junio', numero: '06' },
-      { mes: 'Julio', numero: '07' }, { mes: 'Agosto', numero: '08' },
-      { mes: 'Septiembre', numero: '09' }, { mes: 'Octubre', numero: '10' },
-      { mes: 'Noviembre', numero: '11' }, { mes: 'Diciembre', numero: '12' }
-    ];
-
-    var rolesList = [];
-    var dt = null; // instancia DataTable
-
-    function initDataTable() {
-      if ($.fn.DataTable.isDataTable('#cuotas-table')) {
-        dt.destroy();
-        // limpiar estilos insertados por DT al destruir
-        $('#cuotas-table').attr('style','width:100%; color:#1e73be;');
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
       }
 
-      dt = $('#cuotas-table').DataTable({
-        scrollX: true,
-        scrollY: '70vh',
-        scrollCollapse: true,
-        paging: false,
-        ordering: false,
-        searching: true,     // usaremos búsqueda de DataTables para Usuario
-        fixedHeader: true,
-        fixedColumns: {
-          left: 1            // fija la primera columna (Usuario)
-        },
-        language: {
-          url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json"
-        },
-        // Anchos sugeridos (puedes ajustar)
-        columnDefs: [
-          { targets: 0, width: 260, className: 'dt-head-center dt-body-left' },  // Usuario
-          { targets: 1, width: 140, className: 'dt-head-center dt-body-left' },  // Rol
-          { targets: _range(2, 13), width: 240, className: 'dt-head-center dt-body-left' } // Meses
-        ]
-      });
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+          Cantarell, sans-serif;
+        padding: 20px;
+        background: #f5f5f5;
+      }
 
-      // Conectar filtro de Usuario al DataTable (col 0)
-      $('#user-filter').off('keyup').on('keyup', function() {
-        dt.column(0).search(this.value).draw();
-      });
+      h1 {
+        color: #1e73be;
+        margin-bottom: 20px;
+        font-size: 28px;
+      }
 
-      // Conectar filtro de Rol al DataTable (col 1)
-      $('#role-select').off('change').on('change', function() {
-        const value = this.value;
-        if (value === 'all') {
-          dt.column(1).search('').draw();
-        } else {
-          // búsqueda exacta del rol
-          dt.column(1).search('^' + escapeRegex(value) + '$', true, false).draw();
+      /* Estados de pago */
+      .paid {
+        background-color: #d4edda !important;
+        border-left: 3px solid #28a745;
+      }
+      .not-paid {
+        background-color: #fff3cd !important;
+        border-left: 3px solid #ffc107;
+      }
+
+      /* Evitar que el tema corte el scroll horizontal del wrapper de DataTables */
+      html,
+      body,
+      .wp-site-blocks,
+      .site,
+      .site-content,
+      .entry-content,
+      .has-global-padding {
+        overflow-x: visible !important;
+      }
+
+      /* Optimización para laptop - celdas más compactas */
+      table.dataTable td,
+      table.dataTable th {
+        white-space: nowrap;
+        padding: 8px 10px !important;
+        font-size: 13px;
+      }
+
+      table.dataTable thead th {
+        background-color: #1e73be;
+        color: white;
+        font-weight: 600;
+        border-bottom: 2px solid #155a8a;
+      }
+
+      /* Altura del área scroll vertical del DataTable */
+      div.dataTables_scrollBody {
+        max-height: 75vh !important;
+      }
+
+      /* Asegurar fondo y z-index de la columna fija para que se lea bien */
+      .dtfc-fixed-left {
+        background: #fff;
+        z-index: 3;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      }
+      .dtfc-fixed-left .dataTables_scrollBody {
+        overflow: hidden !important;
+      }
+
+      /* Botones y selects más compactos y visuales */
+      #cuotas-table select {
+        font-size: 12px;
+        padding: 4px 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        margin-bottom: 4px;
+      }
+
+      #cuotas-table button {
+        font-size: 11px;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        text-transform: uppercase;
+      }
+
+      #cuotas-table button.btn-pagar {
+        background-color: #28a745;
+        color: white;
+      }
+
+      #cuotas-table button.btn-pagar:hover:not(:disabled) {
+        background-color: #218838;
+      }
+
+      #cuotas-table button.btn-eliminar {
+        background-color: #dc3545;
+        color: white;
+      }
+
+      #cuotas-table button.btn-eliminar:hover:not(:disabled) {
+        background-color: #c82333;
+      }
+
+      #cuotas-table button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      /* Anchos optimizados para laptop */
+      th.col-usuario,
+      td.col-usuario {
+        min-width: 200px;
+        font-weight: 500;
+      }
+      th.col-rol,
+      td.col-rol {
+        min-width: 100px;
+      }
+
+      /* Filtros más visuales */
+      .filters {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .filters label {
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+      }
+
+      .filters select,
+      .filters input {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .filters select {
+        cursor: pointer;
+        min-width: 120px;
+      }
+
+      .filters input[type="text"] {
+        width: 300px;
+      }
+
+      /* Loading spinner */
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #1e73be;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
         }
-      });
-
-      // Recalcular tamaños si algo cambia (pestañas, etc.)
-      setTimeout(() => dt.columns.adjust().draw(false), 50);
-    }
-
-    function escapeRegex(text) {
-      return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-    }
-
-    function _range(a, b) { // helper para targets de columnas
-      const arr = [];
-      for (let i = a; i <= b; i++) arr.push(i);
-      return arr;
-    }
-
-    function cargarRoles() {
-      $.ajax({
-        url: api_url + '/roles',
-        type: 'GET',
-        contentType: 'application/json',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-        },
-        success: function(data) {
-          const roleSelect = document.getElementById('role-select');
-          roleSelect.innerHTML = '<option value="all" selected>Todos</option>';
-          rolesList = [];
-          $.each(data, function(index, rol) {
-            if (rol.nombre && rol.nombre.toLowerCase() === 'deportista') return;
-            rolesList.push(rol.nombre);
-            const option = document.createElement('option');
-            option.value = rol.nombre;
-            option.text = rol.nombre;
-            roleSelect.appendChild(option);
-          });
-          cargarUsuarios(); // primera carga con el año por defecto
-        },
-        error: function(xhr, status, error) {
-          console.error('Error al cargar roles:', error);
+        100% {
+          transform: rotate(360deg);
         }
-      });
-    }
+      }
 
-    function multiFilter(array, filters) {
-      let filterKeys = Object.keys(filters);
-      return array.filter((item) => filterKeys.every((key) => (filters[key].indexOf(item[key]) !== -1)));
-    }
+      .table-container {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
 
-    function agregarTdMeses(cuotasPagadas, meses, year, row) {
-      meses.forEach(mes => {
-        const filters = { mesPagoCuota: [mes.numero + '/' + year] };
+      /* Info de pago en celda */
+      .payment-info {
+        font-size: 11px;
+        color: #666;
+        margin: 2px 0;
+      }
+
+      .payment-method {
+        font-weight: 600;
+        color: #28a745;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Gestión de Cuotas</h1>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <label for="year-select">Año:</label>
+      <select id="year-select">
+        <option value="2025" selected>2025</option>
+        <option value="2026">2026</option>
+        <option value="2027">2027</option>
+        <option value="2028">2028</option>
+        <option value="2029">2029</option>
+        <option value="2030">2030</option>
+        <option value="2031">2031</option>
+        <option value="2032">2032</option>
+        <option value="2033">2033</option>
+        <option value="2034">2034</option>
+      </select>
+
+      <label for="role-select">Rol:</label>
+      <select id="role-select">
+        <option value="all" selected>Todos</option>
+      </select>
+
+      <label for="user-filter">Usuario:</label>
+      <input
+        type="text"
+        id="user-filter"
+        placeholder="Buscar por nombre de usuario"
+      />
+    </div>
+
+    <div class="table-container">
+      <table
+        id="cuotas-table"
+        class="display nowrap"
+        style="width: 100%; color: #1e73be"
+      >
+        <thead>
+          <tr>
+            <th class="has-text-align-center col-usuario">Usuario</th>
+            <th class="has-text-align-center col-rol">Rol</th>
+            <th class="has-text-align-center">Enero</th>
+            <th class="has-text-align-center">Febrero</th>
+            <th class="has-text-align-center">Marzo</th>
+            <th class="has-text-align-center">Abril</th>
+            <th class="has-text-align-center">Mayo</th>
+            <th class="has-text-align-center">Junio</th>
+            <th class="has-text-align-center">Julio</th>
+            <th class="has-text-align-center">Agosto</th>
+            <th class="has-text-align-center">Septiembre</th>
+            <th class="has-text-align-center">Octubre</th>
+            <th class="has-text-align-center">Noviembre</th>
+            <th class="has-text-align-center">Diciembre</th>
+          </tr>
+        </thead>
+        <tbody id="cuotas-table-body"></tbody>
+      </table>
+    </div>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
+
+    <script>
+      const api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
+
+      const meses = [
+        { mes: "Enero", numero: "01" },
+        { mes: "Febrero", numero: "02" },
+        { mes: "Marzo", numero: "03" },
+        { mes: "Abril", numero: "04" },
+        { mes: "Mayo", numero: "05" },
+        { mes: "Junio", numero: "06" },
+        { mes: "Julio", numero: "07" },
+        { mes: "Agosto", numero: "08" },
+        { mes: "Septiembre", numero: "09" },
+        { mes: "Octubre", numero: "10" },
+        { mes: "Noviembre", numero: "11" },
+        { mes: "Diciembre", numero: "12" },
+      ];
+
+      // Estado de la aplicación
+      let state = {
+        rolesList: [],
+        cachedUsers: [],
+        dt: null,
+        currentYear: "2026",
+        isInitialized: false,
+      };
+
+      // Utilidades
+      function showLoading() {
+        $("#loading-overlay").fadeIn(200);
+      }
+
+      function hideLoading() {
+        $("#loading-overlay").fadeOut(200);
+      }
+
+      function escapeRegex(text) {
+        return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+      }
+
+      function _range(a, b) {
+        const arr = [];
+        for (let i = a; i <= b; i++) arr.push(i);
+        return arr;
+      }
+
+      function multiFilter(array, filters) {
+        let filterKeys = Object.keys(filters);
+        return array.filter((item) =>
+          filterKeys.every((key) => filters[key].indexOf(item[key]) !== -1),
+        );
+      }
+
+      function getCurrentDate() {
+        const currentDate = new Date();
+        const mm = String(currentDate.getMonth() + 1).padStart(2, "0");
+        const dd = String(currentDate.getDate()).padStart(2, "0");
+        const yyyy = currentDate.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      }
+
+      // Inicialización DataTable (solo una vez)
+      function initDataTable() {
+        if (state.isInitialized) return;
+
+        state.dt = $("#cuotas-table").DataTable({
+          scrollX: true,
+          scrollY: "75vh",
+          scrollCollapse: true,
+          paging: false,
+          ordering: false,
+          searching: true,
+          fixedHeader: true,
+          fixedColumns: {
+            left: 1,
+          },
+          language: {
+            url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json",
+          },
+          columnDefs: [
+            {
+              targets: 0,
+              width: 200,
+              className: "dt-head-center dt-body-left",
+            },
+            {
+              targets: 1,
+              width: 100,
+              className: "dt-head-center dt-body-left",
+            },
+            {
+              targets: _range(2, 13),
+              width: 180,
+              className: "dt-head-center dt-body-left",
+            },
+          ],
+        });
+
+        // Filtro de Usuario
+        $("#user-filter").on("keyup", function () {
+          state.dt.column(0).search(this.value).draw();
+        });
+
+        // Filtro de Rol
+        $("#role-select").on("change", function () {
+          const value = this.value;
+          if (value === "all") {
+            state.dt.column(1).search("").draw();
+          } else {
+            state.dt
+              .column(1)
+              .search("^" + escapeRegex(value) + "$", true, false)
+              .draw();
+          }
+        });
+
+        state.isInitialized = true;
+      }
+
+      // Renderizar celda de mes
+      function renderMonthCell(
+        cuotasPagadas,
+        mes,
+        year,
+        userId,
+        username,
+        cuotaMensual,
+      ) {
+        const filters = { mesPagoCuota: [mes.numero + "/" + year] };
         const cuotaPagada = multiFilter(cuotasPagadas, filters)[0] || null;
+
         if (cuotaPagada) {
-          const td = document.createElement('td');
-          td.classList.add('paid');
-          td.dataset.cuotaId = cuotaPagada.id;
-          td.dataset.mesanopago = mes.numero + '/' + year;
-          td.innerHTML = `Pagado (${cuotaPagada.metodoPago})</br>${cuotaPagada.fechaPago}</br>${cuotaPagada.mesPagoCuota}</br>
-                          <button onclick="removePayment(this,'${cuotaPagada.id}')">ELIMINAR PAGO</button>`;
-          row.appendChild(td);
+          return `
+          <td class="paid" data-cuota-id="${cuotaPagada.id}" data-mes="${mes.numero}" data-year="${year}">
+            <div class="payment-method">Pagado (${cuotaPagada.metodoPago})</div>
+            <div class="payment-info">${cuotaPagada.fechaPago}</div>
+            <div class="payment-info">${cuotaPagada.mesPagoCuota}</div>
+            <button class="btn-eliminar" data-action="eliminar" data-cuota-id="${cuotaPagada.id}" data-user-id="${userId}">Eliminar</button>
+          </td>
+        `;
         } else {
-          const td = document.createElement('td');
-          td.classList.add('not-paid');
-          td.dataset.mesanopago = mes.numero + '/' + year;
-          td.innerHTML = `<select>
-                            <option value="CONTADO">Contado</option>
-                            <option value="TARJETA">Tarjeta</option>
-                          </select>
-                          <button onclick="markPaid(this,'${mes.numero}/${year}')">PAGAR</button>`;
-          row.appendChild(td);
+          return `
+          <td class="not-paid" data-mes="${mes.numero}" data-year="${year}">
+            <select class="payment-select">
+              <option value="CONTADO">Contado</option>
+              <option value="TARJETA">Tarjeta</option>
+            </select>
+            <button class="btn-pagar" data-action="pagar" data-mes="${mes.numero}" data-year="${year}" 
+                    data-user-id="${userId}" data-username="${username}" data-cuota="${cuotaMensual}">Pagar</button>
+          </td>
+        `;
         }
-      });
-    }
-
-    function cargarUsuarios() {
-      const tbody = document.getElementById('cuotas-table-body');
-      tbody.innerHTML = '';
-      const year = document.getElementById('year-select').value;
-      const rolesParam = rolesList.map(role => encodeURIComponent(role)).join(',');
-
-      $.ajax({
-        url: api_url + '/usuarios/buscar-por-roles?roles=' + rolesParam,
-        type: 'GET',
-        contentType: 'application/json',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-        },
-        success: function(data) {
-          const frag = document.createDocumentFragment();
-          $.each(data, function(index, user) {
-            const row = document.createElement('tr');
-            row.dataset.rolId = user.rolId;
-            row.dataset.role = user.rolName;
-            row.dataset.userId = user.userId;
-            row.dataset.username = user.username;
-            row.dataset.cuotaMensual = user.cuotaMensual;
-
-            // Usuario
-            const tdUsername = document.createElement('td');
-            tdUsername.className = 'col-usuario';
-            tdUsername.textContent = user.username + ' (' + user.cuotaMensual + ')';
-            row.appendChild(tdUsername);
-
-            // Rol
-            const tdRol = document.createElement('td');
-            tdRol.className = 'col-rol';
-            tdRol.textContent = user.rolName;
-            row.appendChild(tdRol);
-
-            // Meses
-            agregarTdMeses(user.cuotas, meses, year, row);
-
-            frag.appendChild(row);
-          });
-          tbody.appendChild(frag);
-
-          // (Re)inicializar DataTables tras poblar la tabla
-          initDataTable();
-        },
-        error: function(xhr, status, error) {
-          console.error('Error al cargar usuarios:', error);
-        }
-      });
-    }
-
-    // Acciones de pago
-    function removePayment(button, cuotaId) {
-      const td = button.parentElement;
-      const tr = td.parentElement;
-      var userId = tr.dataset.userId;
-
-      $.ajax({
-        url: api_url + '/usuarios/' + userId + '/cuotas/' + cuotaId,
-        type: 'DELETE',
-        contentType: 'application/json',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-        },
-        success: function() {
-          td.classList.remove('paid');
-          td.classList.add('not-paid');
-          delete td.dataset.cuotaId;
-          const mesanopago = td.dataset.mesanopago;
-          td.innerHTML = `<select>
-                            <option value="CONTADO">Contado</option>
-                            <option value="TARJETA">Tarjeta</option>
-                          </select>
-                          <button onclick="markPaid(this,'${mesanopago}')">PAGAR</button>`;
-        },
-        error: function(xhr, status, error) {
-          console.error('Error al eliminar el pago:', error);
-        }
-      });
-    }
-
-    function markPaid(button, mesanopago) {
-      const td = button.parentElement;
-      const select = td.querySelector('select');
-      const metodoPago = select.value;
-      const tr = td.parentElement;
-
-      if (!metodoPago) {
-        alert("Por favor, selecciona un método de pago.");
-        return;
       }
 
-      var currentDate = new Date();
-      const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
-      const dd = String(currentDate.getDate()).padStart(2, '0');
-      const yyyy = currentDate.getFullYear();
-      const diaPago = `${dd}/${mm}/${yyyy}`;
+      // Renderizar todas las filas
+      function renderUserRows() {
+        const year = state.currentYear;
+        const tbody = $("#cuotas-table-body");
+        tbody.empty();
 
-      var userId = tr.dataset.userId;
-      var cuotaMensual = tr.dataset.cuotaMensual;
-      var detalle = 'Pago de cuota mensual de ' + tr.dataset.cuotaMensual + ' euros por el usuario ' + tr.dataset.username;
+        const frag = document.createDocumentFragment();
 
-      $.ajax({
-        url: api_url + '/usuarios/' + userId + '/cuotas',
-        type: 'PUT',
-        contentType: 'application/json',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
-        },
-        data: JSON.stringify({
-          "cantidad": cuotaMensual,
-          "detalle": detalle,
-          "metodoPago": metodoPago,
-          "fechaPago": diaPago,
-          "mesPagoCuota": mesanopago
-        }),
-        success: function(data) {
-          td.classList.remove('not-paid');
-          td.classList.add('paid');
-          td.dataset.cuotaId = data.id;
-          td.dataset.mesanopago = mesanopago;
-          td.innerHTML = `Pagado (${metodoPago})</br>${diaPago}</br>${mesanopago}</br>
-                          <button onclick="removePayment(this,'${data.id}')">ELIMINAR PAGO</button>`;
-        },
-        error: function(xhr, status, error) {
-          console.error('Error al añadir la cuota de pago:', error);
+        state.cachedUsers.forEach((user) => {
+          const row = document.createElement("tr");
+          row.dataset.userId = user.userId;
+          row.dataset.rolId = user.rolId;
+          row.dataset.role = user.rolName;
+          row.dataset.username = user.username;
+          row.dataset.cuotaMensual = user.cuotaMensual;
+
+          // Usuario
+          const tdUsername = document.createElement("td");
+          tdUsername.className = "col-usuario";
+          tdUsername.textContent = `${user.username} (${user.cuotaMensual}€)`;
+          row.appendChild(tdUsername);
+
+          // Rol
+          const tdRol = document.createElement("td");
+          tdRol.className = "col-rol";
+          tdRol.textContent = user.rolName;
+          row.appendChild(tdRol);
+
+          // Meses
+          meses.forEach((mes) => {
+            const cellHtml = renderMonthCell(
+              user.cuotas,
+              mes,
+              year,
+              user.userId,
+              user.username,
+              user.cuotaMensual,
+            );
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = cellHtml;
+            row.appendChild(tempDiv.firstElementChild);
+          });
+
+          frag.appendChild(row);
+        });
+
+        tbody.append(frag);
+
+        // Actualizar DataTable
+        if (state.isInitialized) {
+          state.dt.rows().invalidate().draw(false);
+          state.dt.columns.adjust();
+        } else {
+          initDataTable();
         }
+      }
+
+      // Regenerar solo las columnas de meses (sin recargar usuarios)
+      function regenerateMonthColumns() {
+        const year = state.currentYear;
+
+        $("#cuotas-table-body tr").each(function () {
+          const $row = $(this);
+          const userId = $row.data("userId");
+          const username = $row.data("username");
+          const cuotaMensual = $row.data("cuotaMensual");
+
+          // Buscar el usuario en caché
+          const user = state.cachedUsers.find((u) => u.userId === userId);
+          if (!user) return;
+
+          // Eliminar celdas de meses (columnas 2-13)
+          $row.find("td:gt(1)").remove();
+
+          // Regenerar celdas de meses
+          meses.forEach((mes) => {
+            const cellHtml = renderMonthCell(
+              user.cuotas,
+              mes,
+              year,
+              userId,
+              username,
+              cuotaMensual,
+            );
+            $row.append(cellHtml);
+          });
+        });
+
+        if (state.isInitialized) {
+          state.dt.rows().invalidate().draw(false);
+          state.dt.columns.adjust();
+        }
+      }
+
+      // Actualizar una celda específica después de pago/eliminación
+      function updateCell($td, user) {
+        const mes = $td.data("mes");
+        const year = $td.data("year");
+        const userId = user.userId;
+        const username = user.username;
+        const cuotaMensual = user.cuotaMensual;
+
+        const mesObj = meses.find((m) => m.numero === mes);
+        if (!mesObj) return;
+
+        const cellHtml = renderMonthCell(
+          user.cuotas,
+          mesObj,
+          year,
+          userId,
+          username,
+          cuotaMensual,
+        );
+        const $newCell = $(cellHtml);
+
+        // Reemplazar con animación
+        $td.fadeOut(150, function () {
+          $td.replaceWith($newCell);
+          $newCell.hide().fadeIn(150);
+        });
+      }
+
+      // Cargar roles
+      function cargarRoles() {
+        showLoading();
+
+        $.ajax({
+          url: api_url + "/roles",
+          type: "GET",
+          contentType: "application/json",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          success: function (data) {
+            const roleSelect = $("#role-select");
+            roleSelect.html('<option value="all" selected>Todos</option>');
+            state.rolesList = [];
+
+            data.forEach((rol) => {
+              if (rol.nombre && rol.nombre.toLowerCase() === "deportista")
+                return;
+              state.rolesList.push(rol.nombre);
+              roleSelect.append(
+                `<option value="${rol.nombre}">${rol.nombre}</option>`,
+              );
+            });
+
+            cargarUsuarios();
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al cargar roles:", error);
+            alert("Error al cargar roles. Por favor, recarga la página.");
+            hideLoading();
+          },
+        });
+      }
+
+      // Cargar usuarios (solo se llama al inicio o al cambiar filtro de rol)
+      function cargarUsuarios() {
+        showLoading();
+
+        const rolesParam = state.rolesList
+          .map((role) => encodeURIComponent(role))
+          .join(",");
+
+        $.ajax({
+          url: api_url + "/usuarios/buscar-por-roles?roles=" + rolesParam,
+          type: "GET",
+          contentType: "application/json",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          success: function (data) {
+            state.cachedUsers = data;
+            renderUserRows();
+            hideLoading();
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al cargar usuarios:", error);
+            alert("Error al cargar usuarios. Por favor, recarga la página.");
+            hideLoading();
+          },
+        });
+      }
+
+      // Marcar como pagado
+      function markPaid($button) {
+        const $td = $button.closest("td");
+        const $row = $button.closest("tr");
+        const $select = $td.find(".payment-select");
+
+        const metodoPago = $select.val();
+        const mes = $button.data("mes");
+        const year = $button.data("year");
+        const userId = $button.data("user-id");
+        const username = $button.data("username");
+        const cuotaMensual = $button.data("cuota");
+        const mesanopago = `${mes}/${year}`;
+
+        if (!metodoPago) {
+          alert("Por favor, selecciona un método de pago.");
+          return;
+        }
+
+        // Deshabilitar botón
+        $button.prop("disabled", true).text("Procesando...");
+
+        const diaPago = getCurrentDate();
+        const detalle = `Pago de cuota mensual de ${cuotaMensual} euros por el usuario ${username}`;
+
+        $.ajax({
+          url: `${api_url}/usuarios/${userId}/cuotas`,
+          type: "PUT",
+          contentType: "application/json",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          data: JSON.stringify({
+            cantidad: cuotaMensual,
+            detalle: detalle,
+            metodoPago: metodoPago,
+            fechaPago: diaPago,
+            mesPagoCuota: mesanopago,
+          }),
+          success: function (data) {
+            // Actualizar usuario en caché
+            const userIndex = state.cachedUsers.findIndex(
+              (u) => u.userId === userId,
+            );
+            if (userIndex !== -1) {
+              state.cachedUsers[userIndex].cuotas.push(data);
+              updateCell($td, state.cachedUsers[userIndex]);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al añadir la cuota de pago:", error);
+            alert("Error al procesar el pago. Por favor, inténtalo de nuevo.");
+            $button.prop("disabled", false).text("Pagar");
+          },
+        });
+      }
+
+      // Eliminar pago
+      function removePayment($button) {
+        const $td = $button.closest("td");
+        const cuotaId = $button.data("cuota-id");
+        const userId = $button.data("user-id");
+
+        if (!confirm("¿Estás seguro de que quieres eliminar este pago?")) {
+          return;
+        }
+
+        // Deshabilitar botón
+        $button.prop("disabled", true).text("Eliminando...");
+
+        $.ajax({
+          url: `${api_url}/usuarios/${userId}/cuotas/${cuotaId}`,
+          type: "DELETE",
+          contentType: "application/json",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+          },
+          success: function () {
+            // Actualizar usuario en caché
+            const userIndex = state.cachedUsers.findIndex(
+              (u) => u.userId === userId,
+            );
+            if (userIndex !== -1) {
+              state.cachedUsers[userIndex].cuotas = state.cachedUsers[
+                userIndex
+              ].cuotas.filter((c) => c.id !== cuotaId);
+              updateCell($td, state.cachedUsers[userIndex]);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error("Error al eliminar el pago:", error);
+            alert("Error al eliminar el pago. Por favor, inténtalo de nuevo.");
+            $button.prop("disabled", false).text("Eliminar");
+          },
+        });
+      }
+
+      // Event delegation para botones
+      $("#cuotas-table-body").on(
+        "click",
+        'button[data-action="pagar"]',
+        function (e) {
+          e.preventDefault();
+          markPaid($(this));
+        },
+      );
+
+      $("#cuotas-table-body").on(
+        "click",
+        'button[data-action="eliminar"]',
+        function (e) {
+          e.preventDefault();
+          removePayment($(this));
+        },
+      );
+
+      // Cambio de año - solo regenera columnas de meses
+      $("#year-select").on("change", function () {
+        state.currentYear = this.value;
+        regenerateMonthColumns();
       });
-    }
 
-    // Eventos
-    $('#year-select').on('change', function() {
-      cargarUsuarios();
-    });
-
-    // Inicio
-    $(function(){
-      cargarRoles();
-    });
-  </script>
-</body>
+      // Inicio
+      $(function () {
+        state.currentYear = $("#year-select").val();
+        cargarRoles();
+      });
+    </script>
+  </body>
 </html>
