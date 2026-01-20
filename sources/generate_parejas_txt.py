@@ -13,24 +13,39 @@ for c in xls_candidates:
 if xls is None:
     raise SystemExit(f'No se encontró ningún archivo .xlsx en {src} (buscado Liga2026*.xlsx)')
 
-# Leer hoja 'Parejas' intentando varias variantes de nombres de columna
-df = pd.read_excel(xls, sheet_name='Parejas')
+# Leer hoja 'ListadoPreLiga' primero, si no existe usar 'Parejas'
+try:
+    df = pd.read_excel(xls, sheet_name='ListadoPreLiga', header=None)
+    # La hoja ListadoPreLiga tiene estructura diferente, buscar fila de encabezado
+    header_row = None
+    for idx, row in df.iterrows():
+        if any('pareja' in str(val).lower() for val in row if pd.notna(val)):
+            header_row = idx
+            break
+    
+    if header_row is not None:
+        df = pd.read_excel(xls, sheet_name='ListadoPreLiga', header=header_row)
+    else:
+        # Si no hay encabezado claro, intentar con Parejas
+        df = pd.read_excel(xls, sheet_name='Parejas')
+except Exception:
+    # Fallback a hoja Parejas
+    df = pd.read_excel(xls, sheet_name='Parejas')
+
 cols = {c.lower(): c for c in df.columns}
 
-# Nombres esperados (flexible)
+# Buscar columna ListadoPreLiga o Pareja
+col_listado = None
 col_div = None
-col_j1 = None
-col_j2 = None
-for k, v in cols.items():
-    if 'div' in k:
-        col_div = v
-    if 'jugador1' in k or 'jugador 1' in k or 'jug1' in k:
-        col_j1 = v
-    if 'jugador2' in k or 'jugador 2' in k or 'jug2' in k:
-        col_j2 = v
 
-if col_j1 is None or col_j2 is None:
-    raise SystemExit('No se encontraron columnas de jugadores en el Excel')
+for k, v in cols.items():
+    if 'listadoprelig' in k.replace(' ', '').replace('_', '').lower() or 'pareja' in k.lower():
+        col_listado = v
+    if 'div' in k and 'listado' not in k.lower() and 'pareja' not in k.lower():
+        col_div = v
+
+if col_listado is None:
+    raise SystemExit('No se encontró la columna ListadoPreLiga o Pareja en el Excel')
 
 # Función para normalizar división a 'Xª División'
 def fmt_div(d):
@@ -57,14 +72,43 @@ def fmt_div(d):
     except Exception:
         return s
 
+# Función para parsear la columna ListadoPreLiga
+def parse_pareja(listado_text):
+    """
+    Parsea texto como 'Jugador1 / Jugador2' o 'Jugador1 - Jugador2'
+    Retorna (jugador1, jugador2) o None si no es válido
+    """
+    if pd.isna(listado_text):
+        return None
+    
+    text = str(listado_text).strip()
+    if not text or text == 'nan':
+        return None
+    
+    # Intentar separadores comunes
+    separadores = [' / ', '/', ' - ', '-', ' | ', '|']
+    for sep in separadores:
+        if sep in text:
+            parts = text.split(sep, 1)
+            if len(parts) == 2:
+                j1 = parts[0].strip()
+                j2 = parts[1].strip()
+                if j1 and j2:
+                    return (j1, j2)
+    
+    return None
+
 # Preparar listas
 parejas = []
 for _, row in df.iterrows():
-    j1 = str(row[col_j1]).strip()
-    j2 = str(row[col_j2]).strip()
-    div = fmt_div(row[col_div]) if col_div else ''
-    if j1 and j2:
+    pareja = parse_pareja(row[col_listado])
+    if pareja:
+        j1, j2 = pareja
+        div = fmt_div(row[col_div]) if col_div else ''
         parejas.append((div, j1, j2))
+
+if not parejas:
+    raise SystemExit('No se encontraron parejas válidas en la columna Pareja/ListadoPreLiga')
 
 # Escribir parejas_carga.txt (División|Jugador1|Jugador2)
 out1 = src / 'parejas_carga.txt'
@@ -79,4 +123,6 @@ with out2.open('w', encoding='utf-8') as f:
     for _, j1, j2 in parejas:
         f.write(f"{j1}|{j2}|0|0\n")
 
-print('Generados:', out1, out2)
+print(f'✓ Generados {len(parejas)} parejas desde columna "{col_listado}":')
+print(f'  - {out1}')
+print(f'  - {out2}')
