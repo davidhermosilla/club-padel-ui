@@ -425,8 +425,8 @@
         state.isInitialized = true;
       }
 
-      // Renderizar celda de mes
-      function renderMonthCell(
+      // Renderizar celda de mes - crear elemento directamente
+      function createMonthCell(
         cuotasPagadas,
         mes,
         year,
@@ -437,11 +437,69 @@
         const filters = { mesPagoCuota: [mes.numero + "/" + year] };
         const cuotaPagada = multiFilter(cuotasPagadas, filters)[0] || null;
 
+        const td = document.createElement("td");
+        td.dataset.mes = mes.numero;
+        td.dataset.year = year;
+
         if (cuotaPagada) {
-          return `<td class="paid" data-cuota-id="${cuotaPagada.id}" data-mes="${mes.numero}" data-year="${year}"><div class="payment-method">Pagado (${cuotaPagada.metodoPago})</div><div class="payment-info">${cuotaPagada.fechaPago}</div><div class="payment-info">${cuotaPagada.mesPagoCuota}</div><button class="btn-eliminar" data-action="eliminar" data-cuota-id="${cuotaPagada.id}" data-user-id="${userId}">Eliminar</button></td>`;
+          td.className = "paid";
+          td.dataset.cuotaId = cuotaPagada.id;
+
+          const paymentMethod = document.createElement("div");
+          paymentMethod.className = "payment-method";
+          paymentMethod.textContent = `Pagado (${cuotaPagada.metodoPago})`;
+
+          const fechaPago = document.createElement("div");
+          fechaPago.className = "payment-info";
+          fechaPago.textContent = cuotaPagada.fechaPago;
+
+          const mesPago = document.createElement("div");
+          mesPago.className = "payment-info";
+          mesPago.textContent = cuotaPagada.mesPagoCuota;
+
+          const btnEliminar = document.createElement("button");
+          btnEliminar.className = "btn-eliminar";
+          btnEliminar.dataset.action = "eliminar";
+          btnEliminar.dataset.cuotaId = cuotaPagada.id;
+          btnEliminar.dataset.userId = userId;
+          btnEliminar.textContent = "Eliminar";
+
+          td.appendChild(paymentMethod);
+          td.appendChild(fechaPago);
+          td.appendChild(mesPago);
+          td.appendChild(btnEliminar);
         } else {
-          return `<td class="not-paid" data-mes="${mes.numero}" data-year="${year}"><select class="payment-select"><option value="CONTADO">Contado</option><option value="TARJETA">Tarjeta</option></select><button class="btn-pagar" data-action="pagar" data-mes="${mes.numero}" data-year="${year}" data-user-id="${userId}" data-username="${username}" data-cuota="${cuotaMensual}">Pagar</button></td>`;
+          td.className = "not-paid";
+
+          const select = document.createElement("select");
+          select.className = "payment-select";
+
+          const optContado = document.createElement("option");
+          optContado.value = "CONTADO";
+          optContado.textContent = "Contado";
+
+          const optTarjeta = document.createElement("option");
+          optTarjeta.value = "TARJETA";
+          optTarjeta.textContent = "Tarjeta";
+
+          select.appendChild(optContado);
+          select.appendChild(optTarjeta);
+
+          const btnPagar = document.createElement("button");
+          btnPagar.className = "btn-pagar";
+          btnPagar.dataset.action = "pagar";
+          btnPagar.dataset.mes = mes.numero;
+          btnPagar.dataset.year = year;
+          btnPagar.dataset.userId = userId;
+          btnPagar.dataset.username = username;
+          btnPagar.dataset.cuota = cuotaMensual;
+          btnPagar.textContent = "Pagar";
+
+          td.appendChild(select);
+          td.appendChild(btnPagar);
         }
+
+        return td;
       }
 
       // Renderizar todas las filas
@@ -474,7 +532,7 @@
 
           // Meses
           meses.forEach((mes) => {
-            const cellHtml = renderMonthCell(
+            const cell = createMonthCell(
               user.cuotas,
               mes,
               year,
@@ -482,9 +540,7 @@
               user.username,
               user.cuotaMensual,
             );
-            const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = cellHtml;
-            row.appendChild(tempDiv.firstElementChild);
+            row.appendChild(cell);
           });
 
           frag.appendChild(row);
@@ -523,7 +579,7 @@
 
           // Regenerar celdas de meses
           meses.forEach((mes) => {
-            const cellHtml = renderMonthCell(
+            const cell = createMonthCell(
               user.cuotas,
               mes,
               year,
@@ -531,9 +587,7 @@
               username,
               cuotaMensual,
             );
-            const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = cellHtml;
-            $row.append(tempDiv.firstElementChild);
+            $row.append(cell);
           });
         });
 
@@ -554,7 +608,7 @@
         const mesObj = meses.find((m) => m.numero === mes);
         if (!mesObj) return;
 
-        const cellHtml = renderMonthCell(
+        const newCell = createMonthCell(
           user.cuotas,
           mesObj,
           year,
@@ -562,12 +616,11 @@
           username,
           cuotaMensual,
         );
-        const $newCell = $(cellHtml);
 
         // Reemplazar con animación
         $td.fadeOut(150, function () {
-          $td.replaceWith($newCell);
-          $newCell.hide().fadeIn(150);
+          $(this).replaceWith(newCell);
+          $(newCell).hide().fadeIn(150);
         });
       }
 
