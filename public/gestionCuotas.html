@@ -66,8 +66,9 @@
       table.dataTable td,
       table.dataTable th {
         white-space: nowrap;
-        padding: 8px 10px !important;
-        font-size: 13px;
+        padding: 6px 8px !important;
+        font-size: 12px;
+        vertical-align: middle;
       }
 
       table.dataTable thead th {
@@ -75,6 +76,15 @@
         color: white;
         font-weight: 600;
         border-bottom: 2px solid #155a8a;
+        padding: 8px 6px !important;
+        font-size: 11px;
+      }
+
+      /* Columnas de mes más estrechas */
+      table.dataTable td:not(.col-usuario):not(.col-rol),
+      table.dataTable th:not(.col-usuario):not(.col-rol) {
+        min-width: 85px;
+        max-width: 85px;
       }
 
       /* Altura del área scroll vertical del DataTable */
@@ -92,26 +102,34 @@
         overflow: hidden !important;
       }
 
-      /* Botones y selects más compactos y visuales */
+      /* Botones y selects más compactos y visuales - layout vertical */
+      #cuotas-table td {
+        text-align: center;
+      }
+
       #cuotas-table select {
-        font-size: 12px;
-        padding: 4px 6px;
+        font-size: 11px;
+        padding: 3px 5px;
         border: 1px solid #ccc;
-        border-radius: 4px;
+        border-radius: 3px;
         background: white;
         cursor: pointer;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
+        width: 100%;
+        display: block;
       }
 
       #cuotas-table button {
-        font-size: 11px;
-        padding: 5px 10px;
+        font-size: 10px;
+        padding: 4px 8px;
         border: none;
-        border-radius: 4px;
+        border-radius: 3px;
         cursor: pointer;
         font-weight: 600;
         transition: all 0.2s;
         text-transform: uppercase;
+        width: 100%;
+        display: block;
       }
 
       #cuotas-table button.btn-pagar {
@@ -225,14 +243,17 @@
 
       /* Info de pago en celda */
       .payment-info {
-        font-size: 11px;
+        font-size: 9px;
         color: #666;
-        margin: 2px 0;
+        margin: 1px 0;
+        line-height: 1.2;
       }
 
       .payment-method {
         font-weight: 600;
         color: #28a745;
+        font-size: 10px;
+        margin-bottom: 2px;
       }
     </style>
   </head>
@@ -248,8 +269,8 @@
     <div class="filters">
       <label for="year-select">Año:</label>
       <select id="year-select">
-        <option value="2025" selected>2025</option>
-        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
         <option value="2027">2027</option>
         <option value="2028">2028</option>
         <option value="2029">2029</option>
@@ -283,18 +304,18 @@
           <tr>
             <th class="has-text-align-center col-usuario">Usuario</th>
             <th class="has-text-align-center col-rol">Rol</th>
-            <th class="has-text-align-center">Enero</th>
-            <th class="has-text-align-center">Febrero</th>
-            <th class="has-text-align-center">Marzo</th>
-            <th class="has-text-align-center">Abril</th>
-            <th class="has-text-align-center">Mayo</th>
-            <th class="has-text-align-center">Junio</th>
-            <th class="has-text-align-center">Julio</th>
-            <th class="has-text-align-center">Agosto</th>
-            <th class="has-text-align-center">Septiembre</th>
-            <th class="has-text-align-center">Octubre</th>
-            <th class="has-text-align-center">Noviembre</th>
-            <th class="has-text-align-center">Diciembre</th>
+            <th class="has-text-align-center">Ene</th>
+            <th class="has-text-align-center">Feb</th>
+            <th class="has-text-align-center">Mar</th>
+            <th class="has-text-align-center">Abr</th>
+            <th class="has-text-align-center">May</th>
+            <th class="has-text-align-center">Jun</th>
+            <th class="has-text-align-center">Jul</th>
+            <th class="has-text-align-center">Ago</th>
+            <th class="has-text-align-center">Sep</th>
+            <th class="has-text-align-center">Oct</th>
+            <th class="has-text-align-center">Nov</th>
+            <th class="has-text-align-center">Dic</th>
           </tr>
         </thead>
         <tbody id="cuotas-table-body"></tbody>
@@ -398,8 +419,8 @@
             },
             {
               targets: _range(2, 13),
-              width: 180,
-              className: "dt-head-center dt-body-left",
+              width: 85,
+              className: "dt-head-center dt-body-center",
             },
           ],
         });
@@ -617,11 +638,18 @@
           cuotaMensual,
         );
 
-        // Reemplazar con animación
-        $td.fadeOut(150, function () {
-          $(this).replaceWith(newCell);
-          $(newCell).hide().fadeIn(150);
-        });
+        // Obtener índice de la celda para mantener posición
+        const cellIndex = $td.index();
+        const $row = $td.closest("tr");
+
+        // Reemplazar celda y actualizar DataTables
+        $td.replaceWith(newCell);
+
+        // Forzar actualización de DataTables para esa celda
+        if (state.isInitialized) {
+          const rowNode = $row[0];
+          state.dt.row(rowNode).invalidate().draw(false);
+        }
       }
 
       // Cargar roles
