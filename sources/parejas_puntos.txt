@@ -48,26 +48,25 @@ Anselmo Martínez|Javi Porras|0|0
 José Antonio Sequera|Antonio Luis Peña|0|0
 Pablo Ruiz|Juan Manuel Lloris|0|0
 Manolo Toribio|Raquel Fernández|0|0
-X|Y|0|0
+David Camara|Adrián Sáez|0|0
 Manuel Moreno|Álvaro López Garcia|0|0
-David Camara|Adrian Sáez|0|0
 Jesús Serra|Sergio Serra|0|0
 Ruano|Cristina|0|0
 Jose Manuel Ibañez|Ángel Villar|0|0
 Ángel Chinchilla|Javier Escribano|0|0
 Alberto Serrano|Jaime Baltanas|0|0
 Sergio Campoy|Isa Monsalve|0|0
+Jose Carlos Jiménez|Alejandro Jiménez|0|0
 Manu Morata|Maria del Mar Morata|0|0
 Emilio Briones Jr|Emilio Briones|0|0
 Nicanor Hermosilla|J. Antonio Berdonces|0|0
-Jose Carlos Jiménez|Alejandro Jiménez|0|0
-Carlos Lozano|Alejandro Rueda|0|0
 Miguel Marmol|Fernando Cubero|0|0
 Vanessa Platero|Rocío Muñoz|0|0
 Álvaro Cazorla|Rosa López|0|0
 Tomas|Juan Carlos Romero|0|0
 Miguel Cáliz|Ricardo García|0|0
 Jose Alberto Navarro|Sandra Rodríguez|0|0
+Carlos Lozano|Alejandro Rueda|0|0
 Laura|Mari Angeles|0|0
 Miguel Angel Arenas|Rafa Robles|0|0
 Santi Molina|Estefanía|0|0
