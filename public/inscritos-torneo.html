@@ -1,78 +1,109 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Inscritos (columnas filtradas)</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inscritos (columnas filtradas)</title>
 
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    #table-container { max-width: 100%; margin: 0 auto; }
-    table { width: 100%; border-collapse: collapse; }
-  </style>
-</head>
-<body>
-  <div id="table-container"></div>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      #table-container {
+        max-width: 100%;
+        margin: 0 auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="table-container"></div>
 
-  <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRgka9abi9x3WHQPDd-AtEunM_WYUwRmMKsBGYTkm8pGcKobScSTxiaO3vxc3LYKToZfV0sfiyNluXR/pub?gid=0&single=true&output=tsv";
+    <script>
+      const sheetURL =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vRgka9abi9x3WHQPDd-AtEunM_WYUwRmMKsBGYTkm8pGcKobScSTxiaO3vxc3LYKToZfV0sfiyNluXR/pub?gid=0&single=true&output=tsv";
 
-    const desired = [
-      { label: "Nombre Pareja1", aliases: ["nombre pareja1","nombre pareja 1"] },
-      { label: "Nombre Pareja2", aliases: ["nombre pareja2","nombre pareja 2"] },
-      { label: "Categoría",       aliases: ["categoria","categoría"] },
-      { label: "Incidencias",     aliases: ["incidencias"] },
-      { label: "Fecha Inscripción", aliases: ["fecha inscripcion","fecha inscripción"] }
-    ];
+      const desired = [
+        {
+          label: "Nombre Pareja1",
+          aliases: ["nombre pareja1", "nombre pareja 1"],
+        },
+        {
+          label: "Nombre Pareja2",
+          aliases: ["nombre pareja2", "nombre pareja 2"],
+        },
+        { label: "Categoría", aliases: ["categoria", "categoría"] },
+        { label: "Incidencias", aliases: ["incidencias"] },
+        { label: "Notas", aliases: ["notas"] },
+        { label: "Correo", aliases: ["correo"] },
+        {
+          label: "Fecha Inscripción",
+          aliases: ["fecha inscripcion", "fecha inscripción"],
+        },
+      ];
 
-    const normalize = (s) =>
-      (s || "").toString()
-        .toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita tildes
-        .replace(/\s+/g, " ")
-        .trim();
+      const normalize = (s) =>
+        (s || "")
+          .toString()
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "") // quita tildes
+          .replace(/\s+/g, " ")
+          .trim();
 
-    async function loadAndShowTable() {
-      const response = await fetch(sheetURL);
-      const text = await response.text();
-      const rows = text.trim().split("\n").map(line => line.split("\t"));
+      async function loadAndShowTable() {
+        const response = await fetch(sheetURL);
+        const text = await response.text();
+        const rows = text
+          .trim()
+          .split("\n")
+          .map((line) => line.split("\t"));
 
-      const headers = rows[0];
-      const headersNorm = headers.map(normalize);
-      const body = rows.slice(1);
+        const headers = rows[0];
+        const headersNorm = headers.map(normalize);
+        const body = rows.slice(1);
 
-      // Encuentra los índices en el orden deseado
-      const selected = [];
-      desired.forEach(d => {
-        const idx = headersNorm.findIndex(hn => d.aliases.includes(hn));
-        if (idx !== -1) selected.push({ idx, label: d.label });
-      });
+        // Encuentra los índices en el orden deseado
+        const selected = [];
+        desired.forEach((d) => {
+          const idx = headersNorm.findIndex((hn) => d.aliases.includes(hn));
+          if (idx !== -1) selected.push({ idx, label: d.label });
+        });
 
-      // Construye la tabla solo con las columnas seleccionadas
-      let html = '<table id="dynamic-table" class="display"><thead><tr>';
-      selected.forEach(col => html += `<th>${col.label}</th>`);
-      html += '</tr></thead><tbody>';
+        // Construye la tabla solo con las columnas seleccionadas
+        let html = '<table id="dynamic-table" class="display"><thead><tr>';
+        selected.forEach((col) => (html += `<th>${col.label}</th>`));
+        html += "</tr></thead><tbody>";
 
-      body.forEach(row => {
-        html += '<tr>';
-        selected.forEach(col => html += `<td>${row[col.idx] || ""}</td>`);
-        html += '</tr>';
-      });
-      html += '</tbody></table>';
+        body.forEach((row) => {
+          html += "<tr>";
+          selected.forEach((col) => (html += `<td>${row[col.idx] || ""}</td>`));
+          html += "</tr>";
+        });
+        html += "</tbody></table>";
 
-      document.getElementById("table-container").innerHTML = html;
+        document.getElementById("table-container").innerHTML = html;
 
-      $('#dynamic-table').DataTable({
-        pageLength: 100,
-        language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" }
-      });
-    }
+        $("#dynamic-table").DataTable({
+          pageLength: 100,
+          language: {
+            url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+          },
+        });
+      }
 
-    loadAndShowTable();
-  </script>
-</body>
+      loadAndShowTable();
+    </script>
+  </body>
 </html>
