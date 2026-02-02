@@ -55,7 +55,8 @@ jQuery(document).ready(function ($) {
     }
     formData.append("correo", document.getElementById(id_correo).value);
     formData.append("telefono", document.getElementById(id_telefono).value);
-    formData.append("notas", document.getElementById(id_notas).value);
+    const notasElement = document.getElementById(id_notas);
+    formData.append("notas", notasElement ? notasElement.value : "");
     formData.append(
       "google_sheet_id",
       "1vJeQycrbLbe3BgeIN2JII91bIkCQ21pmZ7e5BEwxnLU",
