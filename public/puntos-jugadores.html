@@ -76,7 +76,12 @@
       async function loadAndShowTable() {
         try {
           // Obtener parejas con puntos
-          const response = await fetch(API_URL + "/parejas");
+          const response = await fetch(API_URL + "/parejas", {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+          });
 
           if (!response.ok) {
             throw new Error("Error al cargar los datos");
