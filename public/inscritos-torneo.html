@@ -62,7 +62,15 @@
           .trim();
 
       async function loadAndShowTable() {
-        const response = await fetch(sheetURL);
+        // Agregar timestamp para evitar caché
+        const cacheBuster = `&_=${new Date().getTime()}`;
+        const response = await fetch(sheetURL + cacheBuster, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        });
         const text = await response.text();
         const rows = text
           .trim()

@@ -41,8 +41,7 @@ Alejandro Ferro|Juan Ferro|0|0
 Alberto Lomas|Juan Carlos Mesa|0|0
 Antonio Jesús Martos|Fran Otto|0|0
 Manuel Puri|Antonio Lara|0|0
-Vanesa Platero|Luis Mena|0|0
-José Manuel Jurado|Ángel Jurado|0|0
+Vanesa Platero|Luis Mena2|0|0
 Javier Morón|Manuel Ruiz|0|0
 Anselmo Martínez|Javi Porras|0|0
 José Antonio Sequera|Antonio Luis Peña|0|0
@@ -55,8 +54,9 @@ Ruano|Cristina|0|0
 Jose Manuel Ibañez|Ángel Villar|0|0
 Ángel Chinchilla|Javier Escribano|0|0
 Alberto Serrano|Jaime Baltanas|0|0
-Sergio Campoy|Isa Monsalve|0|0
+Sergio Campoy2|Isa Monsalve|0|0
 Jose Carlos Jiménez|Alejandro Jiménez|0|0
+Santi Molina2|Estefanía|0|0
 Manu Morata|Maria del Mar Morata|0|0
 Emilio Briones Jr|Emilio Briones|0|0
 Nicanor Hermosilla|J. Antonio Berdonces|0|0
@@ -64,14 +64,12 @@ Miguel Marmol|Fernando Cubero|0|0
 Vanessa Platero|Rocío Muñoz|0|0
 Álvaro Cazorla|Rosa López|0|0
 Tomas|Juan Carlos Romero|0|0
-Miguel Cáliz|Ricardo García|0|0
 Jose Alberto Navarro|Sandra Rodríguez|0|0
 Carlos Lozano|Alejandro Rueda|0|0
 Laura|Mari Angeles|0|0
+Miguel Cáliz|Ricardo García|0|0
 Miguel Angel Arenas|Rafa Robles|0|0
-Santi Molina|Estefanía|0|0
 Almudena|Inma Villacañas|0|0
 Manuel Juarez|Antonio García|0|0
-Mari Ángeles|Laura|0|0
 Jose Torres|Josemi|0|0
 Oscar Donaire|Fran Delgado|0|0
