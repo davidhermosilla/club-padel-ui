@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Puntos Jugadores - Clasificación Master</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      #reload-btn {
+        margin-bottom: 15px;
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      #reload-btn:hover {
+        background-color: #45a049;
+      }
+      #table-container {
+        max-width: 100%;
+        margin: 0 auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .master-oro {
+        background-color: #ffd700;
+        font-weight: bold;
+      }
+      .master-plata {
+        background-color: #c0c0c0;
+        font-weight: bold;
+      }
+      .master-bronce {
+        background-color: #cd7f32;
+        font-weight: bold;
+        color: white;
+      }
+      .master-cobre {
+        background-color: #b87333;
+        font-weight: bold;
+        color: white;
+      }
+      .master-club {
+        background-color: #e8e8e8;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Clasificación Master - Jugadores</h1>
+    <button id="reload-btn" onclick="reloadTable()">🔄 Recargar datos</button>
+    <div id="table-container"></div>
+
+    <script>
+      const API_URL = "https://club-padel-api-12f28391bbbd.herokuapp.com";
+
+      function getMasterCategory(position) {
+        if (position <= 32) return "Oro";
+        if (position <= 64) return "Plata";
+        if (position <= 96) return "Bronce";
+        if (position <= 128) return "Cobre";
+        return "Club";
+      }
+
+      function getMasterClass(category) {
+        return "master-" + category.toLowerCase();
+      }
+
+      async function loadAndShowTable() {
+        try {
+          // Obtener parejas con puntos
+          const cacheBuster = `?_=${new Date().getTime()}_${Math.random().toString(36).substring(7)}`;
+          const response = await fetch(API_URL + "/parejas" + cacheBuster, {
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Error al cargar los datos");
+          }
+
+          const parejas = await response.json();
+
+          // Crear un mapa de jugadores con sus puntos totales y división mínima
+          const jugadoresMap = {};
+
+          parejas.forEach((pareja) => {
+            const jugador1 = pareja.jugador1 || "";
+            const jugador2 = pareja.jugador2 || "";
+            const puntos1 = parseFloat(pareja.puntosJugador1) || 0;
+            const puntos2 = parseFloat(pareja.puntosJugador2) || 0;
+            const divisionId = parseInt(pareja.divisionId) || 999;
+
+            // Acumular puntos para cada jugador y guardar la división más baja (mejor)
+            if (jugador1) {
+              if (!jugadoresMap[jugador1]) {
+                jugadoresMap[jugador1] = { puntos: 0, division: 999 };
+              }
+              jugadoresMap[jugador1].puntos += puntos1;
+              // La división más baja (menor número) es la mejor
+              if (divisionId < jugadoresMap[jugador1].division) {
+                jugadoresMap[jugador1].division = divisionId;
+              }
+            }
+
+            if (jugador2) {
+              if (!jugadoresMap[jugador2]) {
+                jugadoresMap[jugador2] = { puntos: 0, division: 999 };
+              }
+              jugadoresMap[jugador2].puntos += puntos2;
+              // La división más baja (menor número) es la mejor
+              if (divisionId < jugadoresMap[jugador2].division) {
+                jugadoresMap[jugador2].division = divisionId;
+              }
+            }
+          });
+
+          // Convertir a array y ordenar por puntos (descendente), y en caso de empate por división (ascendente)
+          const jugadoresArray = Object.keys(jugadoresMap).map((nombre) => ({
+            jugador: nombre,
+            puntos: jugadoresMap[nombre].puntos,
+            division: jugadoresMap[nombre].division,
+          }));
+
+          jugadoresArray.sort((a, b) => {
+            // Primero por puntos (descendente)
+            if (b.puntos !== a.puntos) {
+              return b.puntos - a.puntos;
+            }
+            // Si tienen los mismos puntos, por división (ascendente - menor es mejor)
+            return a.division - b.division;
+          });
+
+          // Construir la tabla
+          let html = '<table id="dynamic-table" class="display"><thead><tr>';
+          html += "<th>Posición</th>";
+          html += "<th>Jugador</th>";
+          html += "<th>Puntos</th>";
+          html += "<th>Master</th>";
+          html += "</tr></thead><tbody>";
+
+          jugadoresArray.forEach((jugador, index) => {
+            const position = index + 1;
+            const master = getMasterCategory(position);
+            const masterClass = getMasterClass(master);
+
+            html += "<tr>";
+            html += `<td>${position}</td>`;
+            html += `<td>${jugador.jugador}</td>`;
+            html += `<td>${jugador.puntos.toFixed(1)}</td>`;
+            html += `<td class="${masterClass}">${master}</td>`;
+            html += "</tr>";
+          });
+
+          html += "</tbody></table>";
+
+          document.getElementById("table-container").innerHTML = html;
+
+          $("#dynamic-table").DataTable({
+            pageLength: 100,
+            order: [[0, "asc"]], // Ordenar por posición
+            language: {
+              url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+            },
+          });
+        } catch (error) {
+          document.getElementById("table-container").innerHTML =
+            `<p style="color: red;">Error al cargar los datos: ${error.message}</p>`;
+          console.error(error);
+        }
+      }
+
+      function reloadTable() {
+        const container = document.getElementById("table-container");
+        const existingTable = $("#dynamic-table").DataTable();
+        if (existingTable) {
+          existingTable.destroy();
+        }
+        container.innerHTML = "<p>Cargando datos actualizados...</p>";
+        loadAndShowTable();
+      }
+
+      loadAndShowTable();
+    </script>
+  </body>
+</html>
