@@ -63,7 +63,7 @@ jQuery(document).ready(function ($) {
     );
 
     const googlescripturl =
-      "https://script.google.com/macros/s/AKfycbyzbVw5zSf15XNyZDewQLeLQ79NCU6uuTQG_3a7p3hRFm8LQNBuRQeYhDLeIZ-XL5su/exec";
+      "https://script.google.com/macros/s/AKfycbz93i5YyjM-esLsGMfktR-Y0eB18K78q4Y47d-wr8oysg5wGe6lQx5aDVI94wdgN6na/exec";
 
     // 🔧 Esta línea es clave: debes retornar el fetch
     return fetch(googlescripturl, {
