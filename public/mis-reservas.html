@@ -24,6 +24,14 @@
     .club-scope .badge{display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(30,115,190,.1); color:var(--brand); font-size:12px; font-weight:600}
     .club-scope .empty{padding:16px; color:var(--muted)}
     .club-scope table.dataTable thead th{background:#f2f5f8;}
+    .club-scope table.dataTable tbody tr.reserva-con-clase td{
+      background:#2e7d32 !important;
+      color:#fff !important;
+    }
+    .club-scope table.dataTable tbody tr.reserva-con-clase-completa td{
+      background:#d32f2f !important;
+      color:#fff !important;
+    }
     /* Contenedor para evitar desbordes en pantallas intermedias */
     .club-scope .table-wrap{width:100%}
 
@@ -171,6 +179,14 @@
         const pista    = (r.pista && (r.pista.nombre || r.pista)) || r.pistaNombre || '-';
         const usuario  = (r.usuario && r.usuario.username) || r.username || '-';
         const concepto = r.concepto || '';
+        const tieneClaseAsociada =
+          (r.clase !== null && r.clase !== undefined) ||
+          (r.claseId !== null && r.claseId !== undefined);
+        const numeroJugadoresClase =
+          r.clase && Array.isArray(r.clase.jugadores)
+            ? r.clase.jugadores.length
+            : 0;
+        const claseCompleta = tieneClaseAsociada && numeroJugadoresClase >= 4;
 
         // Para separar en activas/pasadas
         let startMs = 0;
@@ -189,7 +205,9 @@
           fechaReservaFmt: fecha,
           horaFmt: (inicio && fin) ? `${inicio} - ${fin}` : (inicio || '-'),
           horaInicioSolo: inicio || '',   // para orden adicional
-          pista, usuario, concepto
+          pista, usuario, concepto,
+          tieneClaseAsociada,
+          claseCompleta
         };
         (startMs >= now ? activas : pasadas).push(row);
       }
@@ -240,6 +258,21 @@
       ]);
       dt.clear();
       dt.rows.add(data).draw();
+
+      dt.rows().every(function(rowIdx){
+        const node = this.node();
+        if(!node) return;
+        if(rows[rowIdx] && rows[rowIdx].tieneClaseAsociada && rows[rowIdx].claseCompleta){
+          node.classList.add("reserva-con-clase-completa");
+          node.classList.remove("reserva-con-clase");
+        } else if (rows[rowIdx] && rows[rowIdx].tieneClaseAsociada){
+          node.classList.add("reserva-con-clase");
+          node.classList.remove("reserva-con-clase-completa");
+        } else {
+          node.classList.remove("reserva-con-clase");
+          node.classList.remove("reserva-con-clase-completa");
+        }
+      });
     }
 
     (async function init(){
