@@ -1520,9 +1520,7 @@
         const reserva = obtenerReserva(datosReservas, pista.id, slot.time);
 
         configurarTimeSlot(timeSlot, reserva, username, rolename);
-        if (username !== "") {
-          agregarEventListener(timeSlot, dia, username, rolename);
-        }
+        agregarEventListener(timeSlot, dia, username, rolename);
 
         return timeSlot;
       }
@@ -1645,9 +1643,17 @@
             username !== "" ? "time-slot" : "time-slot-no-user";
         }
 
-        // Solo bloqueamos clics si es pasado Y no es administrador
-        if (rolename !== "administrador") {
+        const rolNormalizado = String(rolename || "")
+          .trim()
+          .toLowerCase();
+        const ahora = new Date();
+        const esSlotPasado = slotDate.getTime() < ahora.getTime();
+
+        // Solo bloqueamos clics si el slot es pasado y no es administrador.
+        if (esSlotPasado && rolNormalizado !== "administrador") {
           timeSlot.style.pointerEvents = "none";
+        } else {
+          timeSlot.style.pointerEvents = "auto";
         }
       }
 
@@ -1681,6 +1687,10 @@
       let slotPendienteAdmin = null;
 
       function manejarNuevaReserva(timeSlot, username) {
+        if (!username) {
+          alert("Debes iniciar sesion para realizar una reserva.");
+          return;
+        }
         const rolename = document.getElementById("role-info").value;
 
         if (rolename === "administrador") {
