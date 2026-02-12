@@ -1134,8 +1134,13 @@
         )
           .trim()
           .toLowerCase();
-        const esAdminOEntrenadorActual =
-          rolActual === "administrador" || rolActual === "entrenador";
+        const usernameSesion = String(
+          document.getElementById("user-info").value || "",
+        )
+          .trim()
+          .toLowerCase();
+        const esAdministradorActual = rolActual === "administrador";
+        const esEntrenadorActual = rolActual === "entrenador";
         const fechaClase = clase?.fecha || reserva?.fechaReserva || "-";
         const entrenadorClase =
           clase?.entrenador?.username ||
@@ -1155,8 +1160,15 @@
                   const jugadorId =
                     j?.id ?? j?.usuarioId ?? j?.userId ?? "";
                   const jugadorNombre = j?.username || "-";
+                  const jugadorNombreNormalizado = String(jugadorNombre)
+                    .trim()
+                    .toLowerCase();
+                  const puedeEliminarJugador =
+                    esAdministradorActual ||
+                    esEntrenadorActual ||
+                    jugadorNombreNormalizado === usernameSesion;
                   const botonEliminarJugador =
-                    esAdminOEntrenadorActual && jugadorId
+                    puedeEliminarJugador && jugadorId
                       ? `<button type="button" class="class-player-remove" data-jugador-id="${escapeHtml(
                           jugadorId,
                         )}" data-jugador-nombre="${escapeHtml(
@@ -1183,13 +1195,14 @@
         );
         cancelarClaseBtn.style.display =
           mostrarBotonCancelarClase && reservaId ? "inline-block" : "none";
-        const usernameSesion = document.getElementById("user-info").value || "";
+        const usernameSesionOriginal =
+          document.getElementById("user-info").value || "";
         claseModalContext = { claseId, reservaId, jugadores, reservaUsername };
         configurarAccionesReservaClase(
           claseId,
           jugadores,
           rolActual,
-          usernameSesion,
+          usernameSesionOriginal,
           reservaUsername,
           reservaId,
         );
@@ -2270,6 +2283,28 @@
           const claseId = claseModalContext.claseId;
           const jugadorId = botonEliminar.dataset.jugadorId;
           const jugadorNombre = botonEliminar.dataset.jugadorNombre || "";
+          const rolActual = String(
+            document.getElementById("role-info").value || "",
+          )
+            .trim()
+            .toLowerCase();
+          const usernameSesion = String(
+            document.getElementById("user-info").value || "",
+          )
+            .trim()
+            .toLowerCase();
+          const jugadorNombreNormalizado = String(jugadorNombre)
+            .trim()
+            .toLowerCase();
+          const esAdminOEntrenador =
+            rolActual === "administrador" || rolActual === "entrenador";
+          if (
+            !esAdminOEntrenador &&
+            jugadorNombreNormalizado !== usernameSesion
+          ) {
+            alert("Solo puedes eliminar tu propio usuario.");
+            return;
+          }
 
           if (!claseId || !jugadorId) {
             alert("No se pudo identificar el jugador de la clase.");
