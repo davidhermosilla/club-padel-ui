@@ -1771,7 +1771,15 @@
 
         const dia = `${dd}/${mm}/${yyyy}`;
 
-        const concepto = document.getElementById("concepto-admin")?.value || "";
+        const rolActual = String(
+          document.getElementById("role-info").value || "",
+        )
+          .trim()
+          .toLowerCase();
+        const conceptoManual =
+          document.getElementById("concepto-admin")?.value || "";
+        const concepto =
+          rolActual === "entrenador" ? "Clase de Pádel" : conceptoManual;
 
         const reservaRequest = {
           username: username,
