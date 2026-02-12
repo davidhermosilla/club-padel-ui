@@ -349,7 +349,15 @@
       const entrenador = extraerEntrenador(claseObj);
       const jugadores = Array.isArray(claseObj?.jugadores) ? claseObj.jugadores : [];
       const slot = horaInicio && horaInicio !== "-" ? horaInicio : "-";
-      const reservaId = null;
+      const reservaIdRaw =
+        claseObj?.reservaId ??
+        claseObj?.idReserva ??
+        claseObj?.reserva?.reservaId ??
+        claseObj?.reserva?.id ??
+        null;
+      const reservaId = reservaIdRaw !== null && reservaIdRaw !== undefined && reservaIdRaw !== ""
+        ? reservaIdRaw
+        : null;
       const reservaUsername = "";
 
       const startMs = parseDateAndTime(fecha, horaInicio);
@@ -652,8 +660,7 @@
       const rolNormalizado = String(rolename || "").trim().toLowerCase();
       const esAdministrador = rolNormalizado === "administrador";
       const esEntrenador = rolNormalizado === "entrenador";
-      const usernameReserva = reserva?.userName || reserva?.username || reserva?.usuario?.username || "";
-      return esAdministrador || (esEntrenador && usernameReserva === usernameSesion);
+      return esAdministrador || esEntrenador;
     }
 
     function cerrarModalClase() {
