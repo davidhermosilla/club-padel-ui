@@ -123,6 +123,7 @@
                 <th>Fecha</th>
                 <th>Hora Inicio</th>
                 <th>Entrenador</th>
+                <th>Jugadores</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -143,6 +144,7 @@
                 <th>Fecha</th>
                 <th>Hora Inicio</th>
                 <th>Entrenador</th>
+                <th>Jugadores</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -387,6 +389,7 @@
         fechaFmt: formatFechaDDMMYYYY(fecha) || "-",
         horaInicioFmt: formatHoraHHMM(horaInicio) || "-",
         entrenadorFmt: entrenador || "-",
+        jugadoresFmt: totalJugadores + "/" + MAX_JUGADORES_CLASE,
         claseCompleta,
         startMs,
         reservaLike,
@@ -427,11 +430,13 @@
           { data: "fechaFmt" },
           { data: "horaInicioFmt" },
           { data: "entrenadorFmt" },
+          { data: "jugadoresFmt" },
         ],
         columnDefs: [
           { responsivePriority: 1, targets: 0 },
           { responsivePriority: 2, targets: 1 },
           { responsivePriority: 3, targets: 2 },
+          { responsivePriority: 4, targets: 3 },
         ],
         createdRow: function (row, data) {
           if (data?.claseCompleta) {
