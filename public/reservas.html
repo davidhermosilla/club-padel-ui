@@ -1142,6 +1142,12 @@
         const esAdministradorActual = rolActual === "administrador";
         const esEntrenadorActual = rolActual === "entrenador";
         const fechaClase = clase?.fecha || reserva?.fechaReserva || "-";
+        const horaInicioClase =
+          clase?.horaInicio ||
+          reserva?.horaInicio ||
+          (typeof reserva?.slotTime === "string"
+            ? reserva.slotTime.split("-")[0].trim()
+            : "-");
         const entrenadorClase =
           clase?.entrenador?.username ||
           reserva?.userName ||
@@ -1183,8 +1189,8 @@
             : "<p>No hay jugadores apuntados.</p>";
 
         document.getElementById("modal-clase-body").innerHTML = `
-          <p><strong>Clase ID:</strong> ${escapeHtml(claseId || "-")}</p>
           <p><strong>Fecha:</strong> ${escapeHtml(fechaClase)}</p>
+          <p><strong>Hora Inicio:</strong> ${escapeHtml(horaInicioClase)}</p>
           <p><strong>Entrenador:</strong> ${escapeHtml(entrenadorClase)}</p>
           <p><strong>Jugadores apuntados (${jugadores.length}):</strong></p>
           ${jugadoresHtml}
