@@ -217,6 +217,51 @@
       h3 {
         color: #1e73be;
       }
+
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+      }
+
+      .modal-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        min-width: 320px;
+        max-width: 520px;
+        width: 92%;
+      }
+
+      .class-summary {
+        text-align: left;
+        margin: 12px 0;
+      }
+
+      .class-summary p {
+        margin: 6px 0;
+      }
+
+      .class-players {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        max-height: 220px;
+        overflow-y: auto;
+      }
+
+      .class-actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
     </style>
   </head>
   <body>
@@ -270,6 +315,18 @@
         >
           Cancelar
         </button>
+      </div>
+    </div>
+    <div id="modal-clase-info" class="modal-overlay">
+      <div class="modal-content">
+        <h3>Informacion de la clase</h3>
+        <div id="modal-clase-body" class="class-summary"></div>
+        <div class="class-actions">
+          <button id="cancelar-clase-button" type="button" style="display: none">
+            Cancelar clase
+          </button>
+          <button id="cerrar-clase-button" type="button">Cerrar</button>
+        </div>
       </div>
     </div>
     <input id="user-info" type="hidden" />
@@ -485,6 +542,7 @@
       let firstSlotTime = "";
       let usuariosDisponibles = [];
       let diasExtraordinarios = []; // Almacena las fechas extraordinarias
+      let claseModalContext = { claseId: null, reservaId: null };
 
       // Función para verificar si una fecha es fin de semana o día extraordinario
       function esDiaEspecial(fecha, diaSemana) {
@@ -713,6 +771,165 @@
               "No se pudo sincronizar la reserva recien creada:",
               error,
             );
+          });
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function obtenerRolReserva(reserva) {
+        return (
+          reserva?.usuario?.rol?.nombre ??
+          reserva?.user?.rol?.nombre ??
+          reserva?.rol?.nombre ??
+          reserva?.rolName ??
+          reserva?.userRol ??
+          reserva?.usuarioRol ??
+          ""
+        );
+      }
+
+      function esReservaConClase(reserva) {
+        const rolReserva = String(obtenerRolReserva(reserva)).trim().toLowerCase();
+        return (
+          (reserva?.clase !== null && reserva?.clase !== undefined) ||
+          (reserva?.claseId !== null && reserva?.claseId !== undefined) ||
+          rolReserva === "entrenador"
+        );
+      }
+
+      function cerrarModalClase() {
+        document.getElementById("modal-clase-info").style.display = "none";
+        document.getElementById("modal-clase-body").innerHTML = "";
+        document.getElementById("cancelar-clase-button").style.display = "none";
+        claseModalContext = { claseId: null, reservaId: null };
+      }
+
+      function mostrarModalClase(reserva, mostrarBotonCancelarClase) {
+        const clase = reserva?.clase || null;
+        const claseId = clase?.id ?? reserva?.claseId ?? null;
+        const reservaId = reserva?.reservaId ?? reserva?.id ?? null;
+        const fechaClase = clase?.fecha || reserva?.fechaReserva || "-";
+        const entrenadorClase =
+          clase?.entrenador?.username || reserva?.userName || reserva?.username || "-";
+        const jugadores = Array.isArray(clase?.jugadores) ? clase.jugadores : [];
+
+        const jugadoresHtml =
+          jugadores.length > 0
+            ? `<ul class="class-players">${jugadores
+                .map((j) => `<li>${escapeHtml(j?.username || "-")}</li>`)
+                .join("")}</ul>`
+            : "<p>No hay jugadores apuntados.</p>";
+
+        document.getElementById("modal-clase-body").innerHTML = `
+          <p><strong>Clase ID:</strong> ${escapeHtml(claseId || "-")}</p>
+          <p><strong>Fecha:</strong> ${escapeHtml(fechaClase)}</p>
+          <p><strong>Entrenador:</strong> ${escapeHtml(entrenadorClase)}</p>
+          <p><strong>Jugadores apuntados (${jugadores.length}):</strong></p>
+          ${jugadoresHtml}
+        `;
+
+        const cancelarClaseBtn = document.getElementById("cancelar-clase-button");
+        cancelarClaseBtn.style.display =
+          mostrarBotonCancelarClase && reservaId ? "inline-block" : "none";
+        claseModalContext = { claseId, reservaId };
+        document.getElementById("modal-clase-info").style.display = "flex";
+      }
+
+      function cancelarClase(reservaId) {
+        const rolActual = String(document.getElementById("role-info").value || "")
+          .trim()
+          .toLowerCase();
+        const skipValidation = rolActual === "administrador" || rolActual === "entrenador";
+        return new Promise((resolve, reject) => {
+          $.ajax({
+            url:
+              api_url +
+              "/reservas/" +
+              reservaId +
+              "?skipValidation=" +
+              skipValidation,
+            type: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+            success: function (data) {
+              resolve(data);
+            },
+            error: function (xhr, status, error) {
+              const msg =
+                xhr?.responseJSON?.message ||
+                xhr?.responseText ||
+                "No se pudo cancelar la reserva";
+              reject(new Error(msg));
+            },
+          });
+        });
+      }
+
+      function manejarClickReserva(timeSlot, username, rolename) {
+        const fallback = () => {
+          if (rolename === "administrador") {
+            mostrarPagos(
+              timeSlot.dataset.reserva,
+              timeSlot.dataset.pista,
+              timeSlot.dataset.pistaNombre,
+              timeSlot.dataset.time,
+            );
+          } else {
+            manejarCancelacionReserva(timeSlot, username, rolename);
+          }
+        };
+
+        if (!timeSlot.dataset.reserva) {
+          return;
+        }
+
+        const reservaEnCache = (datosReservas || []).find(
+          (r) => String(r?.reservaId) === String(timeSlot.dataset.reserva),
+        );
+
+        obtenerDetalleReserva(timeSlot.dataset.reserva)
+          .then((reservaDetalle) => {
+            const reservaSeleccionada = reservaDetalle || reservaEnCache;
+            if (!reservaSeleccionada || !esReservaConClase(reservaSeleccionada)) {
+              fallback();
+              return;
+            }
+
+            const esEntrenador = String(rolename).trim().toLowerCase() === "entrenador";
+            const usernameReserva =
+              reservaSeleccionada?.userName ||
+              reservaSeleccionada?.username ||
+              reservaSeleccionada?.usuario?.username ||
+              timeSlot.dataset.username;
+            const esUsuarioReserva = usernameReserva === username;
+            const mostrarBotonCancelarClase = esEntrenador && esUsuarioReserva;
+
+            mostrarModalClase(reservaSeleccionada, mostrarBotonCancelarClase);
+          })
+          .catch((error) => {
+            console.error("No se pudo obtener el detalle de la reserva:", error);
+            if (reservaEnCache && esReservaConClase(reservaEnCache)) {
+              const esEntrenador = String(rolename).trim().toLowerCase() === "entrenador";
+              const usernameReserva =
+                reservaEnCache?.userName ||
+                reservaEnCache?.username ||
+                reservaEnCache?.usuario?.username ||
+                timeSlot.dataset.username;
+              const esUsuarioReserva = usernameReserva === username;
+              const mostrarBotonCancelarClase = esEntrenador && esUsuarioReserva;
+              mostrarModalClase(reservaEnCache, mostrarBotonCancelarClase);
+              return;
+            }
+            fallback();
           });
       }
 
@@ -1351,20 +1568,17 @@
         const esPasado = slotDate.getTime() < ahora.getTime();
 
         if (reserva) {
-          const rolReserva =
-            reserva?.usuario?.rol?.nombre ??
-            reserva?.user?.rol?.nombre ??
-            reserva?.rol?.nombre ??
-            reserva?.rolName ??
-            reserva?.userRol ??
-            reserva?.usuarioRol ??
-            "";
-          const esReservaEntrenador =
-            String(rolReserva).trim().toLowerCase() === "entrenador";
-          const tieneClaseAsociada =
-            (reserva.clase !== null && reserva.clase !== undefined) ||
-            (reserva.claseId !== null && reserva.claseId !== undefined) ||
-            esReservaEntrenador;
+          const tieneClaseAsociada = esReservaConClase(reserva);
+          const userNameReserva =
+            reserva?.userName ||
+            reserva?.username ||
+            reserva?.usuario?.username ||
+            "-";
+          const conceptoReserva =
+            reserva?.concepto !== null && reserva?.concepto !== undefined
+              ? reserva.concepto
+              : "";
+          const reservaId = reserva?.reservaId ?? reserva?.id ?? "";
           const numeroJugadoresClase =
             reserva.clase && Array.isArray(reserva.clase.jugadores)
               ? reserva.clase.jugadores.length
@@ -1372,22 +1586,24 @@
           const claseCompleta = tieneClaseAsociada && numeroJugadoresClase >= 4;
 
           timeSlot.innerHTML = `<span>Reservada</span><br><span>${
-            reserva.userName
+            userNameReserva
           }</span>${
-            reserva.concepto ? `<br><span>${reserva.concepto}</span>` : ""
+            conceptoReserva ? `<br><span>${conceptoReserva}</span>` : ""
           }`;
           timeSlot.dataset.estado = "Reservada";
-          timeSlot.dataset.reserva = reserva.reservaId;
-          timeSlot.dataset.username = reserva.userName;
-          timeSlot.dataset.concepto = reserva.concepto || "";
+          timeSlot.dataset.reserva = reservaId;
+          timeSlot.dataset.username = userNameReserva;
+          timeSlot.dataset.concepto = conceptoReserva;
           timeSlot.dataset.telefono = "";
+          timeSlot.dataset.tieneClase = tieneClaseAsociada ? "true" : "false";
+          timeSlot.dataset.claseId = reserva?.clase?.id ?? reserva?.claseId ?? "";
           // 1. Obtener el telefono del usuario
           fetch(club_ajaxurl, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({
               action: "obtener_email_usuario",
-              username: reserva.userName,
+              username: userNameReserva,
             }),
           })
             .then((res) => res.json())
@@ -1418,6 +1634,8 @@
           timeSlot.innerHTML = "<span>Disponible</span><br><span></span>";
           timeSlot.dataset.estado = "Disponible";
           timeSlot.dataset.concepto = "";
+          timeSlot.dataset.tieneClase = "false";
+          timeSlot.dataset.claseId = "";
           timeSlot.className = esPasado
             ? "time-slot-past"
             : username !== ""
@@ -1438,15 +1656,8 @@
             return;
           }
 
-          if (rolename === "administrador" && timeSlot.dataset.reserva) {
-            mostrarPagos(
-              timeSlot.dataset.reserva,
-              timeSlot.dataset.pista,
-              timeSlot.dataset.pistaNombre,
-              timeSlot.dataset.time,
-            );
-          } else if (timeSlot.dataset.estado === "Reservada") {
-            manejarCancelacionReserva(timeSlot, username, rolename);
+          if (timeSlot.dataset.estado === "Reservada") {
+            manejarClickReserva(timeSlot, username, rolename);
           } else {
             manejarNuevaReserva(timeSlot, username);
           }
@@ -1498,6 +1709,44 @@
           );
 
           cancelarReserva(slot);
+        });
+
+      document
+        .getElementById("cerrar-clase-button")
+        .addEventListener("click", cerrarModalClase);
+
+      document
+        .getElementById("modal-clase-info")
+        .addEventListener("click", (event) => {
+          if (event.target.id === "modal-clase-info") {
+            cerrarModalClase();
+          }
+        });
+
+      document
+        .getElementById("cancelar-clase-button")
+        .addEventListener("click", () => {
+          const reservaId = claseModalContext.reservaId;
+          if (!reservaId) {
+            alert("No se ha encontrado la reserva a cancelar.");
+            return;
+          }
+
+          if (!confirm("¿Desea realmente cancelar la clase?")) {
+            return;
+          }
+
+          cancelarClase(reservaId)
+            .then(() => {
+              cerrarModalClase();
+              document
+                .getElementById("reservation-date")
+                .dispatchEvent(new Event("change"));
+            })
+            .catch((error) => {
+              alert(error.message || "No se pudo cancelar la clase.");
+              console.error("Error al cancelar la clase:", error);
+            });
         });
 
       function anadirPago(cantidad, metodoPago, detalle) {
@@ -1606,6 +1855,7 @@
       document
         .getElementById("reservation-date")
         .addEventListener("change", (event) => {
+          cerrarModalClase();
           const selectedDate = new Date(event.target.value);
           const day = selectedDate.getDay();
           const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
