@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mis Clases</title>
+
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; background:var(--bg); color:var(--ink)}
+    .club-scope{
+      --bg:#f7f9fc; --card:#fff; --ink:#0f172a; --muted:#64748b; --brand:#1e73be; --line:#e5e7eb;
+      --radius:14px;
+    }
+    .club-scope .club-wrap{max-width:1200px;margin:32px auto;padding:0 16px}
+    .club-scope h1{font-size:28px;margin:0 0 24px}
+    .club-scope section{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:28px; box-shadow:0 1px 0 rgba(0,0,0,.03)}
+    .club-scope .section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px; flex-wrap:wrap}
+    .club-scope .section-head h2{font-size:18px;margin:0}
+    .club-scope .search{display:flex; gap:8px; align-items:center; margin-left:auto}
+    .club-scope .search input{border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-width:220px; outline:none}
+    .club-scope .search input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(30,115,190,.15)}
+    .club-scope .badge{display:inline-block; padding:.25rem .5rem; border-radius:999px; background:rgba(30,115,190,.1); color:var(--brand); font-size:12px; font-weight:600}
+    .club-scope .empty{padding:16px; color:var(--muted)}
+    .club-scope .hint{padding:0 0 10px; color:var(--muted); font-size:13px}
+    .club-scope table.dataTable thead th{background:#f2f5f8;}
+    .club-scope table.dataTable tbody tr.clase-disponible td{background:#2e7d32 !important; color:#fff !important;}
+    .club-scope table.dataTable tbody tr.clase-completa td{background:#d32f2f !important; color:#fff !important;}
+    .club-scope table.dataTable tbody tr.clase-futura{cursor:pointer}
+    .club-scope .table-wrap{width:100%}
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      min-width: 320px;
+      max-width: 520px;
+      width: 92%;
+    }
+    .class-summary { text-align: left; margin: 12px 0; }
+    .class-summary p { margin: 6px 0; }
+    .class-players { margin: 8px 0 0; padding-left: 18px; max-height: 220px; overflow-y: auto; }
+    .class-player-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 6px 0;
+    }
+    .class-player-remove {
+      margin: 0;
+      width: auto !important;
+      min-width: 0;
+      padding: 4px 8px;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+    .class-actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .modal-content .class-actions button {
+      margin: 0;
+      width: auto;
+      min-width: 0;
+      padding: 10px 14px;
+      line-height: 1.2;
+    }
+    #modal-clase-reserva input { box-sizing: border-box; font-size: 16px; }
+
+    @media (max-width: 720px){
+      .club-scope .club-wrap{padding:0 10px}
+      .club-scope h1{font-size:22px}
+      .club-scope section{padding:14px}
+      .club-scope .section-head{gap:10px}
+      .club-scope .search{width:100%; margin:0}
+      .club-scope .search input{width:100%; min-width:0}
+      .club-scope table.dataTable tbody td{word-break:break-word}
+    }
+  </style>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <script src="https://cdn.datatables.net/plug-ins/1.13.8/sorting/datetime-moment.js"></script>
+</head>
+<body>
+  <div class="club-scope">
+    <div class="club-wrap">
+      <input id="user-info" type="hidden"/>
+      <input id="role-info" type="hidden"/>
+
+      <h1>Mis Clases</h1>
+
+      <section id="sec-futuras">
+        <div class="section-head">
+          <h2>Clases Futuras <span id="count-futuras" class="badge">0</span></h2>
+          <div class="search"><input id="q-futuras" type="search" placeholder="Buscar" /></div>
+        </div>
+        <div class="hint">Haz click en una fila para gestionar la clase.</div>
+        <div class="table-wrap">
+          <table id="tabla-futuras" class="display nowrap" style="width:100%">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Hora Inicio</th>
+                <th>Entrenador</th>
+                <th>Pista</th>
+                <th>Jugadores</th>
+                <th>Franja</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="empty-futuras" class="empty" hidden>No hay clases futuras.</div>
+      </section>
+
+      <section id="sec-pasadas">
+        <div class="section-head">
+          <h2>Clases Pasadas <span id="count-pasadas" class="badge">0</span></h2>
+          <div class="search"><input id="q-pasadas" type="search" placeholder="Buscar" /></div>
+        </div>
+        <div class="table-wrap">
+          <table id="tabla-pasadas" class="display nowrap" style="width:100%">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Hora Inicio</th>
+                <th>Entrenador</th>
+                <th>Pista</th>
+                <th>Jugadores</th>
+                <th>Franja</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="empty-pasadas" class="empty" hidden>No hay clases pasadas.</div>
+      </section>
+    </div>
+  </div>
+
+  <div id="modal-clase-info" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Informacion de la clase</h3>
+      <div id="modal-clase-body" class="class-summary"></div>
+      <div id="modal-clase-reserva" class="class-summary" style="display:none">
+        <label id="clase-usuario-label" for="clase-usuario-select" style="display:none">Selecciona el jugador:</label><br />
+        <input
+          id="clase-usuario-select"
+          list="clase-usuario-options"
+          placeholder="Escribe un nombre"
+          style="display:none; width:100%; margin:8px 0"
+          type="text"
+        />
+        <datalist id="clase-usuario-options"></datalist>
+      </div>
+      <div class="class-actions">
+        <button id="reservar-clase-button" type="button" style="display:none">Reservar clase</button>
+        <button id="borrar-reserva-clase-button" type="button" style="display:none">Borrar reserva</button>
+        <button id="cancelar-clase-button" type="button" style="display:none">Cancelar clase</button>
+        <button id="cerrar-clase-button" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://club-padel-api-12f28391bbbd.herokuapp.com";
+    const AUTH_HEADER = "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz";
+    const MAX_JUGADORES_CLASE = 4;
+
+    let usuariosDisponibles = [];
+    let usuarioSesionId = null;
+    let dtFuturas = null;
+    let dtPasadas = null;
+    let filasFuturas = [];
+    let filasPasadas = [];
+
+    let claseModalContext = {
+      claseId: null,
+      reservaId: null,
+      jugadores: [],
+      reservaUsername: "",
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function waitForUserInfo({ timeout = 10000, pollMs = 200 } = {}) {
+      return new Promise((resolve) => {
+        const el = document.getElementById("user-info");
+        const done = (val) => { cleanup(); resolve(val || null); };
+        if (el && el.value) return resolve(el.value);
+        let toId, pollId, obs;
+        const check = () => { if (el && el.value) done(el.value); };
+        const onUserReady = () => check();
+        const cleanup = () => {
+          if (toId) clearTimeout(toId);
+          if (pollId) clearInterval(pollId);
+          if (obs) obs.disconnect();
+          el && el.removeEventListener("userReady", onUserReady);
+        };
+        el && el.addEventListener("userReady", onUserReady);
+        if (el) {
+          obs = new MutationObserver(check);
+          obs.observe(el, { attributes: true, attributeFilter: ["value"] });
+        }
+        pollId = setInterval(check, pollMs);
+        toId = setTimeout(() => done(null), timeout);
+      });
+    }
+
+    function parseDateAndTime(fecha, horaInicio) {
+      const f = String(fecha || "").trim();
+      const h = String(horaInicio || "").trim();
+      if (!f) return NaN;
+
+      let yyyy, mm, dd;
+      const ddmmyyyy = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+      const yyyymmdd = /^(\d{4})-(\d{2})-(\d{2})$/;
+      if (ddmmyyyy.test(f)) {
+        const m = f.match(ddmmyyyy);
+        dd = parseInt(m[1], 10);
+        mm = parseInt(m[2], 10);
+        yyyy = parseInt(m[3], 10);
+      } else if (yyyymmdd.test(f)) {
+        const m = f.match(yyyymmdd);
+        yyyy = parseInt(m[1], 10);
+        mm = parseInt(m[2], 10);
+        dd = parseInt(m[3], 10);
+      } else {
+        return NaN;
+      }
+
+      let HH = 0;
+      let MM = 0;
+      const hm = /^(\d{2}):(\d{2})$/;
+      if (hm.test(h)) {
+        const mh = h.match(hm);
+        HH = parseInt(mh[1], 10);
+        MM = parseInt(mh[2], 10);
+      }
+
+      return new Date(yyyy, mm - 1, dd, HH, MM, 0, 0).getTime();
+    }
+
+    function extraerHora(slotTime) {
+      if (typeof slotTime !== "string") return "";
+      return slotTime.split("-")[0].trim();
+    }
+    function normalizarFilaClase(item) {
+      const reservaObj = item && item.reserva && typeof item.reserva === "object" ? item.reserva : null;
+      const claseObj = item && item.clase && typeof item.clase === "object" ? item.clase : item;
+
+      const claseId = claseObj?.id ?? item?.claseId ?? item?.id ?? null;
+      const fecha = claseObj?.fecha ?? item?.fecha ?? item?.fechaReserva ?? reservaObj?.fechaReserva ?? "-";
+      const horaInicio =
+        claseObj?.horaInicio ?? item?.horaInicio ?? reservaObj?.horaInicio ?? extraerHora(item?.slotTime || reservaObj?.slotTime) ?? "-";
+      const entrenador =
+        claseObj?.entrenador?.username ??
+        item?.userName ?? item?.username ??
+        reservaObj?.userName ?? reservaObj?.username ??
+        "-";
+      const jugadores = Array.isArray(claseObj?.jugadores) ? claseObj.jugadores : [];
+      const pista =
+        item?.pistaNombre ?? reservaObj?.pistaNombre ??
+        item?.pista?.nombre ?? reservaObj?.pista?.nombre ??
+        "-";
+      const slot = item?.slotTime ?? reservaObj?.slotTime ?? (horaInicio && horaInicio !== "-" ? horaInicio : "-");
+      const reservaId =
+        item?.reservaId ?? reservaObj?.reservaId ?? reservaObj?.id ?? claseObj?.reservaId ?? null;
+      const reservaUsername =
+        item?.userName ?? item?.username ?? item?.usuario?.username ??
+        reservaObj?.userName ?? reservaObj?.username ?? reservaObj?.usuario?.username ??
+        entrenador ?? "";
+
+      const startMs = parseDateAndTime(fecha, horaInicio);
+      const totalJugadores = jugadores.length;
+      const claseCompleta = totalJugadores >= MAX_JUGADORES_CLASE;
+
+      const reservaLike = {
+        reservaId,
+        claseId,
+        clase: {
+          id: claseId,
+          fecha,
+          horaInicio,
+          entrenador: claseObj?.entrenador || { username: entrenador },
+          jugadores,
+        },
+        pistaNombre: pista,
+        userName: reservaUsername,
+        username: reservaUsername,
+        fechaReserva: fecha,
+        horaInicio,
+        slotTime: slot,
+      };
+
+      return {
+        claseId,
+        fechaFmt: fecha || "-",
+        horaInicioFmt: horaInicio || "-",
+        entrenadorFmt: entrenador || "-",
+        pistaFmt: pista || "-",
+        jugadoresFmt: `${totalJugadores}/${MAX_JUGADORES_CLASE}`,
+        slotTimeFmt: slot || "-",
+        claseCompleta,
+        startMs,
+        reservaLike,
+      };
+    }
+
+    function normalizarClases(list) {
+      const now = Date.now();
+      const futuras = [];
+      const pasadas = [];
+      (Array.isArray(list) ? list : []).forEach((item) => {
+        const fila = normalizarFilaClase(item);
+        if (Number.isFinite(fila.startMs) && fila.startMs >= now) {
+          futuras.push(fila);
+        } else {
+          pasadas.push(fila);
+        }
+      });
+      futuras.sort((a, b) => a.startMs - b.startMs);
+      pasadas.sort((a, b) => b.startMs - a.startMs);
+      return { futuras, pasadas };
+    }
+
+    function registerDateParsers() {
+      $.fn.dataTable.moment("DD/MM/YYYY");
+      $.fn.dataTable.moment("YYYY-MM-DD");
+    }
+
+    function initDataTable(selector, order, esFutura) {
+      return $(selector).DataTable({
+        language: { url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json" },
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        dom: "lrtip",
+        responsive: true,
+        order,
+        columns: [
+          { data: "fechaFmt" },
+          { data: "horaInicioFmt" },
+          { data: "entrenadorFmt" },
+          { data: "pistaFmt" },
+          { data: "jugadoresFmt" },
+          { data: "slotTimeFmt" },
+        ],
+        columnDefs: [
+          { responsivePriority: 1, targets: 0 },
+          { responsivePriority: 2, targets: 1 },
+          { responsivePriority: 3, targets: 2 },
+          { responsivePriority: 4, targets: 4 },
+          { responsivePriority: 5, targets: 3 },
+          { responsivePriority: 6, targets: 5 },
+        ],
+        createdRow: function (row, data) {
+          if (data?.claseCompleta) {
+            row.classList.add("clase-completa");
+            row.classList.remove("clase-disponible");
+          } else {
+            row.classList.add("clase-disponible");
+            row.classList.remove("clase-completa");
+          }
+          if (esFutura) {
+            row.classList.add("clase-futura");
+          }
+          const hora = String(data?.horaInicioFmt || "").trim();
+          $("td", row).eq(1).attr("data-order", hora);
+        },
+      });
+    }
+
+    function pintarTabla(dt, rows) {
+      dt.clear();
+      dt.rows.add(rows || []).draw();
+    }
+
+    function renderUsuariosClaseModal(jugadoresClase) {
+      const input = document.getElementById("clase-usuario-select");
+      const dataList = document.getElementById("clase-usuario-options");
+      if (!input || !dataList) return;
+
+      const jugadoresSet = new Set((jugadoresClase || []).map((j) => String(j?.username || "").trim().toLowerCase()));
+      const candidatos = (usuariosDisponibles || []).filter(
+        (u) => !jugadoresSet.has(String(u?.username || "").trim().toLowerCase()),
+      );
+
+      dataList.innerHTML = "";
+      candidatos.forEach((u) => {
+        const option = document.createElement("option");
+        option.value = u.username;
+        option.label = u.username;
+        option.textContent = u.username;
+        dataList.appendChild(option);
+      });
+
+      input.disabled = candidatos.length === 0;
+      input.value = candidatos.length > 0 ? candidatos[0].username : "";
+    }
+
+    function cargarUsuariosCombo() {
+      return new Promise((resolve) => {
+        $.ajax({
+          url: API_URL + "/usuarios",
+          type: "GET",
+          headers: { Authorization: AUTH_HEADER },
+          success: function (usuarios) {
+            usuariosDisponibles = (usuarios || [])
+              .map((usuario) => {
+                if (typeof usuario === "string") return { id: null, username: usuario };
+                return {
+                  id: usuario?.id ?? usuario?.usuarioId ?? usuario?.userId ?? null,
+                  username: usuario?.username || "",
+                };
+              })
+              .filter((u) => u.username)
+              .sort((a, b) => a.username.localeCompare(b.username, "es", { sensitivity: "base" }));
+            resolve(usuariosDisponibles);
+          },
+          error: function () {
+            resolve([]);
+          },
+        });
+      });
+    }
+
+    async function obtenerIdUsuarioPorUsername(username) {
+      const usernameNorm = String(username || "").trim();
+      if (!usernameNorm) return null;
+      if (/^\d+$/.test(usernameNorm)) return parseInt(usernameNorm, 10);
+      if (usuarioSesionId) return usuarioSesionId;
+
+      const usuarioMemoria = (usuariosDisponibles || []).find(
+        (u) => String(u?.username || "") === usernameNorm && u?.id !== null && u?.id !== undefined,
+      );
+      if (usuarioMemoria) return usuarioMemoria.id;
+
+      try {
+        const res = await fetch(API_URL + "/usuarios/buscar?username=" + encodeURIComponent(usernameNorm), {
+          headers: { Authorization: AUTH_HEADER, "Content-Type": "application/json" },
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data?.id ?? data?.usuarioId ?? data?.userId ?? null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function cargarContextoUsuario(usernameSesion) {
+      const username = String(usernameSesion || "").trim();
+      if (!username) return;
+      try {
+        const res = await fetch(API_URL + "/usuarios/buscar?username=" + encodeURIComponent(username), {
+          headers: { Authorization: AUTH_HEADER, "Content-Type": "application/json" },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        usuarioSesionId = data?.id ?? data?.usuarioId ?? data?.userId ?? null;
+        if (data?.rolName) {
+          document.getElementById("role-info").setAttribute("value", data.rolName);
+        }
+        if (data?.rolName === "administrador" || data?.rolName === "entrenador") {
+          await cargarUsuariosCombo();
+        }
+      } catch {}
+    }
+
+    async function obtenerClasesPorJugador(jugadorId) {
+      if (!jugadorId) return [];
+      try {
+        const res = await fetch(API_URL + "/clases?jugadorId=" + encodeURIComponent(jugadorId), {
+          headers: { Authorization: AUTH_HEADER, "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function buscarFilaFuturaPorClaseId(claseId) {
+      return (filasFuturas || []).find((f) => String(f?.claseId ?? "") === String(claseId ?? ""));
+    }
+
+    async function recargarTablas(claseIdModal = null) {
+      const usernameSesion = String(document.getElementById("user-info").value || "").trim();
+      if (!usuarioSesionId && usernameSesion) {
+        usuarioSesionId = await obtenerIdUsuarioPorUsername(usernameSesion);
+      }
+
+      const raw = await obtenerClasesPorJugador(usuarioSesionId);
+      const { futuras, pasadas } = normalizarClases(raw);
+      filasFuturas = futuras;
+      filasPasadas = pasadas;
+
+      pintarTabla(dtFuturas, filasFuturas);
+      pintarTabla(dtPasadas, filasPasadas);
+      document.getElementById("count-futuras").textContent = filasFuturas.length;
+      document.getElementById("count-pasadas").textContent = filasPasadas.length;
+      document.getElementById("empty-futuras").hidden = filasFuturas.length !== 0;
+      document.getElementById("empty-pasadas").hidden = filasPasadas.length !== 0;
+
+      if (claseIdModal) {
+        const fila = buscarFilaFuturaPorClaseId(claseIdModal);
+        if (fila) {
+          const rolename = document.getElementById("role-info").value || "";
+          const username = document.getElementById("user-info").value || "";
+          const showCancel = calcularPermisoCancelarClase(fila.reservaLike, rolename, username);
+          mostrarModalClase(fila.reservaLike, showCancel);
+          return fila;
+        }
+        cerrarModalClase();
+      }
+
+      return null;
+    }
+
+    function anadirJugadorClase(claseId, usuarioId) {
+      return new Promise((resolve, reject) => {
+        $.ajax({
+          url: API_URL + "/clases/" + claseId + "/jugadores/" + usuarioId,
+          type: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: AUTH_HEADER },
+          success: function (data) { resolve(data); },
+          error: function (xhr) {
+            const msg = xhr?.responseJSON?.message || xhr?.responseText || "No se pudo reservar la clase";
+            reject(new Error(msg));
+          },
+        });
+      });
+    }
+
+    function eliminarJugadorClase(claseId, usuarioId) {
+      return new Promise((resolve, reject) => {
+        $.ajax({
+          url: API_URL + "/clases/" + claseId + "/jugadores/" + usuarioId,
+          type: "DELETE",
+          headers: { "Content-Type": "application/json", Authorization: AUTH_HEADER },
+          success: function (data) { resolve(data); },
+          error: function (xhr) {
+            const msg = xhr?.responseJSON?.message || xhr?.responseText || "No se pudo eliminar el jugador de la clase";
+            reject(new Error(msg));
+          },
+        });
+      });
+    }
+    function cancelarClase(reservaId) {
+      const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+      const skipValidation = rolActual === "administrador" || rolActual === "entrenador";
+      return new Promise((resolve, reject) => {
+        $.ajax({
+          url: API_URL + "/reservas/" + reservaId + "?skipValidation=" + skipValidation,
+          type: "DELETE",
+          headers: { "Content-Type": "application/json", Authorization: AUTH_HEADER },
+          success: function (data) { resolve(data); },
+          error: function (xhr) {
+            const msg = xhr?.responseJSON?.message || xhr?.responseText || "No se pudo cancelar la reserva";
+            reject(new Error(msg));
+          },
+        });
+      });
+    }
+
+    function calcularPermisoCancelarClase(reserva, rolename, usernameSesion) {
+      const rolNormalizado = String(rolename || "").trim().toLowerCase();
+      const esAdministrador = rolNormalizado === "administrador";
+      const esEntrenador = rolNormalizado === "entrenador";
+      const usernameReserva = reserva?.userName || reserva?.username || reserva?.usuario?.username || "";
+      return esAdministrador || (esEntrenador && usernameReserva === usernameSesion);
+    }
+
+    function cerrarModalClase() {
+      document.getElementById("modal-clase-info").style.display = "none";
+      document.getElementById("modal-clase-body").innerHTML = "";
+      document.getElementById("cancelar-clase-button").style.display = "none";
+      document.getElementById("reservar-clase-button").style.display = "none";
+      document.getElementById("borrar-reserva-clase-button").style.display = "none";
+      document.getElementById("modal-clase-reserva").style.display = "none";
+      document.getElementById("clase-usuario-label").style.display = "none";
+      document.getElementById("clase-usuario-select").style.display = "none";
+      document.getElementById("clase-usuario-select").value = "";
+      document.getElementById("clase-usuario-options").innerHTML = "";
+      claseModalContext = { claseId: null, reservaId: null, jugadores: [], reservaUsername: "" };
+    }
+
+    function configurarAccionesReservaClase(claseId, jugadoresClase, rolActual, usernameSesion, reservaUsername, reservaId) {
+      const modalReserva = document.getElementById("modal-clase-reserva");
+      const botonReservar = document.getElementById("reservar-clase-button");
+      const botonBorrarReserva = document.getElementById("borrar-reserva-clase-button");
+      const labelSelect = document.getElementById("clase-usuario-label");
+      const inputSelect = document.getElementById("clase-usuario-select");
+
+      modalReserva.style.display = "none";
+      botonReservar.style.display = "none";
+      botonBorrarReserva.style.display = "none";
+      labelSelect.style.display = "none";
+      inputSelect.style.display = "none";
+      botonReservar.disabled = false;
+      botonReservar.textContent = "Reservar clase";
+      botonBorrarReserva.disabled = false;
+
+      if (!claseId) return;
+
+      const total = Array.isArray(jugadoresClase) ? jugadoresClase.length : 0;
+      const claseCompleta = total >= MAX_JUGADORES_CLASE;
+      const rol = String(rolActual || "").trim().toLowerCase();
+      const esAdminOEntrenador = rol === "administrador" || rol === "entrenador";
+      const yaApuntado = (jugadoresClase || []).some(
+        (j) => String(j?.username || "").trim().toLowerCase() === String(usernameSesion || "").trim().toLowerCase(),
+      );
+
+      if (esAdminOEntrenador) {
+        const asegurarUsuarios = (usuariosDisponibles || []).length > 0 ? Promise.resolve(usuariosDisponibles) : cargarUsuariosCombo();
+        asegurarUsuarios.finally(() => {
+          renderUsuariosClaseModal(jugadoresClase);
+          if (inputSelect.disabled && !claseCompleta) {
+            botonReservar.disabled = true;
+            botonReservar.textContent = "Sin usuarios";
+          }
+        });
+        modalReserva.style.display = "block";
+        labelSelect.style.display = "inline";
+        inputSelect.style.display = "inline-block";
+        botonReservar.style.display = "inline-block";
+        botonReservar.textContent = "Anadir jugador";
+        if (claseCompleta) {
+          botonReservar.disabled = true;
+          botonReservar.textContent = "Clase completa";
+        }
+        return;
+      }
+
+      if (!usernameSesion) return;
+
+      modalReserva.style.display = "block";
+      botonReservar.style.display = "inline-block";
+      if (reservaId && String(usernameSesion || "").trim().toLowerCase() === String(reservaUsername || "").trim().toLowerCase()) {
+        botonBorrarReserva.style.display = "inline-block";
+      }
+      if (claseCompleta) {
+        botonReservar.disabled = true;
+        botonReservar.textContent = "Clase completa";
+      } else if (yaApuntado) {
+        botonReservar.disabled = true;
+        botonReservar.textContent = "Ya apuntado";
+      }
+    }
+
+    function mostrarModalClase(reserva, mostrarBotonCancelarClase) {
+      const clase = reserva?.clase || null;
+      const claseId = clase?.id ?? reserva?.claseId ?? null;
+      const reservaId = reserva?.reservaId ?? reserva?.id ?? null;
+      const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+      const usernameSesion = String(document.getElementById("user-info").value || "").trim().toLowerCase();
+      const esAdministrador = rolActual === "administrador";
+      const esEntrenador = rolActual === "entrenador";
+      const fechaClase = clase?.fecha || reserva?.fechaReserva || "-";
+      const horaInicioClase =
+        clase?.horaInicio ||
+        reserva?.horaInicio ||
+        (typeof reserva?.slotTime === "string" ? reserva.slotTime.split("-")[0].trim() : "-");
+      const entrenadorClase = clase?.entrenador?.username || reserva?.userName || reserva?.username || "-";
+      const reservaUsername = reserva?.userName || reserva?.username || reserva?.usuario?.username || "";
+      const jugadores = Array.isArray(clase?.jugadores) ? clase.jugadores : [];
+
+      const jugadoresHtml =
+        jugadores.length > 0
+          ? `<ul class="class-players">${jugadores
+              .map((j) => {
+                const jugadorId = j?.id ?? j?.usuarioId ?? j?.userId ?? "";
+                const jugadorNombre = j?.username || "-";
+                const jugadorNombreNorm = String(jugadorNombre).trim().toLowerCase();
+                const puedeEliminar = esAdministrador || esEntrenador || jugadorNombreNorm === usernameSesion;
+                const botonEliminar =
+                  puedeEliminar && jugadorId
+                    ? `<button type="button" class="class-player-remove" data-jugador-id="${escapeHtml(jugadorId)}" data-jugador-nombre="${escapeHtml(jugadorNombre)}">Eliminar</button>`
+                    : "";
+                return `<li class="class-player-item"><span>${escapeHtml(jugadorNombre)}</span>${botonEliminar}</li>`;
+              })
+              .join("")}</ul>`
+          : "<p>No hay jugadores apuntados.</p>";
+
+      document.getElementById("modal-clase-body").innerHTML = `
+        <p><strong>Fecha:</strong> ${escapeHtml(fechaClase)}</p>
+        <p><strong>Hora Inicio:</strong> ${escapeHtml(horaInicioClase)}</p>
+        <p><strong>Entrenador:</strong> ${escapeHtml(entrenadorClase)}</p>
+        <p><strong>Jugadores apuntados (${jugadores.length}):</strong></p>
+        ${jugadoresHtml}
+      `;
+
+      const cancelarBtn = document.getElementById("cancelar-clase-button");
+      cancelarBtn.style.display = mostrarBotonCancelarClase && reservaId ? "inline-block" : "none";
+
+      const usernameSesionOriginal = document.getElementById("user-info").value || "";
+      claseModalContext = { claseId, reservaId, jugadores, reservaUsername };
+      configurarAccionesReservaClase(claseId, jugadores, rolActual, usernameSesionOriginal, reservaUsername, reservaId);
+      document.getElementById("modal-clase-info").style.display = "flex";
+    }
+
+    function refrescarModalClase() {
+      const claseId = claseModalContext.claseId;
+      if (!claseId) return Promise.reject(new Error("No se encontro la clase."));
+      return recargarTablas(claseId).then((fila) => {
+        if (!fila) throw new Error("No se pudo refrescar la informacion de la clase.");
+        return fila;
+      });
+    }
+
+    function bindEventosModal() {
+      document.getElementById("cerrar-clase-button").addEventListener("click", cerrarModalClase);
+      document.getElementById("modal-clase-info").addEventListener("click", (event) => {
+        if (event.target.id === "modal-clase-info") cerrarModalClase();
+      });
+
+      document.getElementById("cancelar-clase-button").addEventListener("click", () => {
+        const reservaId = claseModalContext.reservaId;
+        if (!reservaId) {
+          alert("No se ha encontrado la reserva a cancelar.");
+          return;
+        }
+        if (!confirm("Desea realmente cancelar la clase?")) return;
+
+        cancelarClase(reservaId)
+          .then(() => {
+            cerrarModalClase();
+            return recargarTablas();
+          })
+          .catch((error) => {
+            alert(error.message || "No se pudo cancelar la clase.");
+          });
+      });
+
+      document.getElementById("reservar-clase-button").addEventListener("click", () => {
+        const boton = document.getElementById("reservar-clase-button");
+        const claseId = claseModalContext.claseId;
+        const jugadoresClase = Array.isArray(claseModalContext.jugadores) ? claseModalContext.jugadores : [];
+        const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+        const usernameSesion = document.getElementById("user-info").value || "";
+
+        if (!claseId) {
+          alert("No se ha encontrado la clase.");
+          return;
+        }
+        if (jugadoresClase.length >= MAX_JUGADORES_CLASE) {
+          alert("La clase ya esta completa.");
+          return;
+        }
+
+        if (rolActual === "administrador" || rolActual === "entrenador") {
+          const usernameSeleccionado = document.getElementById("clase-usuario-select").value.trim();
+          if (!usernameSeleccionado) {
+            alert("Selecciona un usuario.");
+            return;
+          }
+          const usuarioSel = (usuariosDisponibles || []).find((u) => u.username === usernameSeleccionado);
+          if (!usuarioSel || !usuarioSel.id) {
+            alert("Usuario no valido para reservar la clase.");
+            return;
+          }
+
+          boton.disabled = true;
+          anadirJugadorClase(claseId, usuarioSel.id)
+            .then(() => refrescarModalClase())
+            .catch((error) => alert(error.message || "No se pudo reservar la clase."))
+            .finally(() => { boton.disabled = false; });
+          return;
+        }
+
+        if (!usernameSesion) {
+          alert("Debes iniciar sesion para reservar la clase.");
+          return;
+        }
+
+        boton.disabled = true;
+        obtenerIdUsuarioPorUsername(usernameSesion)
+          .then((usuarioId) => {
+            if (!usuarioId) throw new Error("No se pudo obtener el usuario de la sesion.");
+            return anadirJugadorClase(claseId, usuarioId);
+          })
+          .then(() => refrescarModalClase())
+          .catch((error) => alert(error.message || "No se pudo reservar la clase."))
+          .finally(() => { boton.disabled = false; });
+      });
+
+      document.getElementById("modal-clase-body").addEventListener("click", (event) => {
+        const botonEliminar = event.target.closest(".class-player-remove");
+        if (!botonEliminar) return;
+
+        const claseId = claseModalContext.claseId;
+        const jugadorId = botonEliminar.dataset.jugadorId;
+        const jugadorNombre = botonEliminar.dataset.jugadorNombre || "";
+        const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+        const usernameSesion = String(document.getElementById("user-info").value || "").trim().toLowerCase();
+        const jugadorNombreNorm = String(jugadorNombre).trim().toLowerCase();
+        const esAdminOEntrenador = rolActual === "administrador" || rolActual === "entrenador";
+
+        if (!esAdminOEntrenador && jugadorNombreNorm !== usernameSesion) {
+          alert("Solo puedes eliminar tu propio usuario.");
+          return;
+        }
+        if (!claseId || !jugadorId) {
+          alert("No se pudo identificar el jugador de la clase.");
+          return;
+        }
+        if (!confirm("Desea eliminar a " + jugadorNombre + " de esta clase?")) return;
+
+        botonEliminar.disabled = true;
+        eliminarJugadorClase(claseId, jugadorId)
+          .then(() => {
+            if (jugadorNombreNorm === usernameSesion && !esAdminOEntrenador) {
+              cerrarModalClase();
+              return recargarTablas();
+            }
+            return refrescarModalClase();
+          })
+          .catch((error) => alert(error.message || "No se pudo eliminar el jugador."))
+          .finally(() => { botonEliminar.disabled = false; });
+      });
+
+      document.getElementById("borrar-reserva-clase-button").addEventListener("click", () => {
+        const reservaId = claseModalContext.reservaId;
+        const reservaUsername = String(claseModalContext.reservaUsername || "");
+        const usernameSesion = String(document.getElementById("user-info").value || "");
+        const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+        const esAdminOEntrenador = rolActual === "administrador" || rolActual === "entrenador";
+
+        if (!reservaId) {
+          alert("No se ha encontrado la reserva.");
+          return;
+        }
+        if (!esAdminOEntrenador && String(usernameSesion).trim().toLowerCase() !== String(reservaUsername).trim().toLowerCase()) {
+          alert("Solo puedes borrar una reserva hecha por ti.");
+          return;
+        }
+        if (!confirm("Desea realmente borrar la reserva?")) return;
+
+        cancelarClase(reservaId)
+          .then(() => {
+            cerrarModalClase();
+            return recargarTablas();
+          })
+          .catch((error) => alert(error.message || "No se pudo borrar la reserva."));
+      });
+    }
+
+    function bindClickTablaFuturas() {
+      $("#tabla-futuras tbody").on("click", "tr", function () {
+        let tr = $(this);
+        if (tr.hasClass("child")) tr = tr.prev();
+        const row = dtFuturas.row(tr);
+        if (!row || !row.data()) return;
+
+        const data = row.data();
+        if (!data?.reservaLike) return;
+
+        const rolename = document.getElementById("role-info").value || "";
+        const username = document.getElementById("user-info").value || "";
+        const showCancel = calcularPermisoCancelarClase(data.reservaLike, rolename, username);
+        mostrarModalClase(data.reservaLike, showCancel);
+      });
+    }
+
+    (async function init() {
+      registerDateParsers();
+      dtFuturas = initDataTable("#tabla-futuras", [[0, "asc"], [1, "asc"]], true);
+      dtPasadas = initDataTable("#tabla-pasadas", [[0, "desc"], [1, "desc"]], false);
+      bindEventosModal();
+      bindClickTablaFuturas();
+
+      document.getElementById("q-futuras").addEventListener("input", (e) => {
+        dtFuturas.search(e.target.value).draw();
+      });
+      document.getElementById("q-pasadas").addEventListener("input", (e) => {
+        dtPasadas.search(e.target.value).draw();
+      });
+
+      const username = await waitForUserInfo();
+      await cargarContextoUsuario(username);
+      await recargarTablas();
+    })();
+  </script>
+</body>
+</html>
+
