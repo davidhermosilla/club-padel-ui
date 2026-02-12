@@ -179,9 +179,20 @@
         const pista    = (r.pista && (r.pista.nombre || r.pista)) || r.pistaNombre || '-';
         const usuario  = (r.usuario && r.usuario.username) || r.username || '-';
         const concepto = r.concepto || '';
+        const rolReserva =
+          r?.usuario?.rol?.nombre ??
+          r?.user?.rol?.nombre ??
+          r?.rol?.nombre ??
+          r?.rolName ??
+          r?.userRol ??
+          r?.usuarioRol ??
+          '';
+        const esReservaEntrenador =
+          String(rolReserva).trim().toLowerCase() === 'entrenador';
         const tieneClaseAsociada =
           (r.clase !== null && r.clase !== undefined) ||
-          (r.claseId !== null && r.claseId !== undefined);
+          (r.claseId !== null && r.claseId !== undefined) ||
+          esReservaEntrenador;
         const numeroJugadoresClase =
           r.clase && Array.isArray(r.clase.jugadores)
             ? r.clase.jugadores.length

@@ -1262,9 +1262,20 @@
         const esPasado = slotDate.getTime() < ahora.getTime();
 
         if (reserva) {
+          const rolReserva =
+            reserva?.usuario?.rol?.nombre ??
+            reserva?.user?.rol?.nombre ??
+            reserva?.rol?.nombre ??
+            reserva?.rolName ??
+            reserva?.userRol ??
+            reserva?.usuarioRol ??
+            "";
+          const esReservaEntrenador =
+            String(rolReserva).trim().toLowerCase() === "entrenador";
           const tieneClaseAsociada =
             (reserva.clase !== null && reserva.clase !== undefined) ||
-            (reserva.claseId !== null && reserva.claseId !== undefined);
+            (reserva.claseId !== null && reserva.claseId !== undefined) ||
+            esReservaEntrenador;
           const numeroJugadoresClase =
             reserva.clase && Array.isArray(reserva.clase.jugadores)
               ? reserva.clase.jugadores.length
