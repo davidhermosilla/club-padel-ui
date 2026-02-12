@@ -646,6 +646,76 @@
         });
       }
 
+      function obtenerDetalleReserva(reservaId) {
+        return new Promise((resolve, reject) => {
+          if (!reservaId) {
+            resolve(null);
+            return;
+          }
+          $.ajax({
+            url: api_url + "/reservas/" + reservaId,
+            type: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+            dataType: "json",
+            success: function (data) {
+              resolve(data || null);
+            },
+            error: function (xhr, status, error) {
+              reject(error);
+            },
+          });
+        });
+      }
+
+      function sincronizarSlotTrasCrearReserva(
+        slot,
+        reservaId,
+        usernameFallback,
+        conceptoFallback,
+      ) {
+        obtenerDetalleReserva(reservaId)
+          .then((reservaDetalle) => {
+            if (!reservaDetalle) {
+              return;
+            }
+            const usernameSesion = document.getElementById("user-info").value || "";
+            const rolenameSesion = (
+              document.getElementById("role-info").value || ""
+            )
+              .trim()
+              .toLowerCase();
+            const reservaNormalizada = {
+              ...reservaDetalle,
+              reservaId: reservaDetalle.reservaId ?? reservaId,
+              userName:
+                reservaDetalle.userName ||
+                reservaDetalle.username ||
+                (reservaDetalle.usuario && reservaDetalle.usuario.username) ||
+                usernameFallback,
+              concepto:
+                reservaDetalle.concepto !== null &&
+                reservaDetalle.concepto !== undefined
+                  ? reservaDetalle.concepto
+                  : conceptoFallback || "",
+            };
+            configurarTimeSlot(
+              slot,
+              reservaNormalizada,
+              usernameSesion,
+              rolenameSesion,
+            );
+          })
+          .catch((error) => {
+            console.error(
+              "No se pudo sincronizar la reserva recien creada:",
+              error,
+            );
+          });
+      }
+
       function multiFilter(array, filters) {
         let filterKeys = Object.keys(filters);
         return array.filter((item) =>
@@ -1069,16 +1139,35 @@
           data: JSON.stringify(reservaRequest),
           success: function (dataResponse) {
             // 🔄 Actualizar UI como antes
-            slot.className = "time-slot-booked";
-            slot.innerHTML =
-              "<span>Reservada</span></br><span>" +
-              username +
-              "</span>" +
-              (concepto ? "<br><span>" + concepto + "</span>" : "");
-            slot.dataset.estado = "Reservada";
-            slot.dataset.reserva = dataResponse.id;
-            slot.dataset.username = username;
-            slot.dataset.concepto = concepto;
+            const reservaIdCreada = dataResponse?.id ?? dataResponse?.reservaId;
+            const usernameSesion = document.getElementById("user-info").value || "";
+            const rolenameSesion = (
+              document.getElementById("role-info").value || ""
+            )
+              .trim()
+              .toLowerCase();
+            const esReservaEntrenadorProvisional =
+              rolenameSesion === "entrenador" && usernameSesion === username;
+
+            const reservaProvisional = {
+              reservaId: reservaIdCreada,
+              userName: username,
+              concepto: concepto,
+              rolName: esReservaEntrenadorProvisional ? "entrenador" : undefined,
+            };
+
+            configurarTimeSlot(
+              slot,
+              reservaProvisional,
+              usernameSesion,
+              rolenameSesion,
+            );
+            sincronizarSlotTrasCrearReserva(
+              slot,
+              reservaIdCreada,
+              username,
+              concepto,
+            );
 
             if (
               document.getElementById("role-info").value === "administrador"
