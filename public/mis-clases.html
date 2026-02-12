@@ -538,10 +538,21 @@
       } catch {}
     }
 
-    async function obtenerClasesPorJugador(jugadorId) {
-      if (!jugadorId) return [];
+    async function obtenerClasesSesion({ jugadorId, usernameSesion, rolSesion }) {
+      const rolNormalizado = String(rolSesion || "").trim().toLowerCase();
+      const username = String(usernameSesion || "").trim();
+      let query = "";
+
+      if (rolNormalizado === "entrenador") {
+        if (!username) return [];
+        query = "entrenador=" + encodeURIComponent(username);
+      } else {
+        if (!jugadorId) return [];
+        query = "jugadorId=" + encodeURIComponent(jugadorId);
+      }
+
       try {
-        const res = await fetch(API_URL + "/clases?jugadorId=" + encodeURIComponent(jugadorId), {
+        const res = await fetch(API_URL + "/clases?" + query, {
           headers: { Authorization: AUTH_HEADER, "Content-Type": "application/json" },
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -558,11 +569,13 @@
 
     async function recargarTablas(claseIdModal = null) {
       const usernameSesion = String(document.getElementById("user-info").value || "").trim();
-      if (!usuarioSesionId && usernameSesion) {
+      const rolSesion = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+
+      if (rolSesion !== "entrenador" && !usuarioSesionId && usernameSesion) {
         usuarioSesionId = await obtenerIdUsuarioPorUsername(usernameSesion);
       }
 
-      const raw = await obtenerClasesPorJugador(usuarioSesionId);
+      const raw = await obtenerClasesSesion({ jugadorId: usuarioSesionId, usernameSesion, rolSesion });
       const { futuras, pasadas } = normalizarClases(raw);
       filasFuturas = futuras;
       filasPasadas = pasadas;
