@@ -303,7 +303,30 @@
       <div class="modal-content">
         <h3>Informacion de la clase</h3>
         <div id="modal-clase-body" class="class-summary"></div>
+        <div id="modal-clase-reserva" class="class-summary" style="display: none">
+          <label
+            id="clase-usuario-label"
+            for="clase-usuario-select"
+            style="display: none"
+            >Selecciona el jugador:</label
+          ><br />
+          <input
+            id="clase-usuario-select"
+            list="clase-usuario-options"
+            placeholder="Escribe un nombre"
+            style="display: none; width: 100%; margin: 8px 0"
+            type="text"
+          />
+          <datalist id="clase-usuario-options"></datalist>
+        </div>
         <div class="class-actions">
+          <button
+            id="reservar-clase-button"
+            type="button"
+            style="display: none"
+          >
+            Reservar clase
+          </button>
           <button
             id="cancelar-clase-button"
             type="button"
@@ -527,8 +550,9 @@
       let datosReservas;
       let firstSlotTime = "";
       let usuariosDisponibles = [];
+      let usuarioSesionId = null;
       let diasExtraordinarios = []; // Almacena las fechas extraordinarias
-      let claseModalContext = { claseId: null, reservaId: null };
+      let claseModalContext = { claseId: null, reservaId: null, jugadores: [] };
 
       // Función para verificar si una fecha es fin de semana o día extraordinario
       function esDiaEspecial(fecha, diaSemana) {
@@ -605,35 +629,45 @@
       }
 
       function cargarUsuariosCombo() {
-        $.ajax({
-          url: api_url + "/usuarios",
-          type: "GET",
-          headers: {
-            Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
-          },
-          success: function (usuarios) {
-            usuariosDisponibles = (usuarios || [])
-              .map(function (usuario) {
-                if (typeof usuario === "string") {
-                  return { username: usuario };
-                }
-                return {
-                  username: usuario && usuario.username ? usuario.username : "",
-                };
-              })
-              .filter(function (usuario) {
-                return usuario.username;
-              })
-              .sort(function (a, b) {
-                return a.username.localeCompare(b.username, "es", {
-                  sensitivity: "base",
+        return new Promise((resolve) => {
+          $.ajax({
+            url: api_url + "/usuarios",
+            type: "GET",
+            headers: {
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+            success: function (usuarios) {
+              usuariosDisponibles = (usuarios || [])
+                .map(function (usuario) {
+                  if (typeof usuario === "string") {
+                    return { id: null, username: usuario };
+                  }
+                  return {
+                    id:
+                      usuario?.id ??
+                      usuario?.usuarioId ??
+                      usuario?.userId ??
+                      null,
+                    username:
+                      usuario && usuario.username ? usuario.username : "",
+                  };
+                })
+                .filter(function (usuario) {
+                  return usuario.username;
+                })
+                .sort(function (a, b) {
+                  return a.username.localeCompare(b.username, "es", {
+                    sensitivity: "base",
+                  });
                 });
-              });
-            renderUsuariosCombo();
-          },
-          error: function (err) {
-            console.error("Error al cargar usuarios:", err);
-          },
+              renderUsuariosCombo();
+              resolve(usuariosDisponibles);
+            },
+            error: function (err) {
+              console.error("Error al cargar usuarios:", err);
+              resolve([]);
+            },
+          });
         });
       }
 
@@ -654,10 +688,15 @@
           success: function (data) {
             // Limpiar el input hidden de roleName
             $("#role-info").empty();
+            usuarioSesionId =
+              data?.id ?? data?.usuarioId ?? data?.userId ?? null;
             document
               .getElementById("role-info")
               .setAttribute("value", data.rolName);
-            if (data.rolName === "administrador") {
+            if (
+              data.rolName === "administrador" ||
+              data.rolName === "entrenador"
+            ) {
               cargarUsuariosCombo();
             }
 
@@ -797,7 +836,192 @@
         document.getElementById("modal-clase-info").style.display = "none";
         document.getElementById("modal-clase-body").innerHTML = "";
         document.getElementById("cancelar-clase-button").style.display = "none";
-        claseModalContext = { claseId: null, reservaId: null };
+        document.getElementById("reservar-clase-button").style.display = "none";
+        document.getElementById("modal-clase-reserva").style.display = "none";
+        document.getElementById("clase-usuario-label").style.display = "none";
+        document.getElementById("clase-usuario-select").style.display = "none";
+        document.getElementById("clase-usuario-select").value = "";
+        document.getElementById("clase-usuario-options").innerHTML = "";
+        claseModalContext = { claseId: null, reservaId: null, jugadores: [] };
+      }
+
+      function renderUsuariosClaseModal(jugadoresClase) {
+        const input = document.getElementById("clase-usuario-select");
+        const dataList = document.getElementById("clase-usuario-options");
+        if (!input || !dataList) {
+          return;
+        }
+
+        const jugadoresSet = new Set(
+          (jugadoresClase || []).map((j) =>
+            String(j?.username || "")
+              .trim()
+              .toLowerCase(),
+          ),
+        );
+        const candidatos = (usuariosDisponibles || []).filter(
+          (u) =>
+            !jugadoresSet.has(
+              String(u?.username || "")
+                .trim()
+                .toLowerCase(),
+            ),
+        );
+
+        dataList.innerHTML = "";
+        candidatos.forEach((usuario) => {
+          const option = document.createElement("option");
+          option.value = usuario.username;
+          option.label = usuario.username;
+          option.textContent = usuario.username;
+          dataList.appendChild(option);
+        });
+
+        input.disabled = candidatos.length === 0;
+        input.value = candidatos.length > 0 ? candidatos[0].username : "";
+      }
+
+      function obtenerIdUsuarioPorUsername(username) {
+        const usernameNorm = String(username || "").trim();
+        if (!usernameNorm) {
+          return Promise.resolve(null);
+        }
+        const usernameSesion = String(
+          document.getElementById("user-info").value || "",
+        ).trim();
+        if (usuarioSesionId && usernameNorm === usernameSesion) {
+          return Promise.resolve(usuarioSesionId);
+        }
+        const usuarioEnMemoria = (usuariosDisponibles || []).find(
+          (u) => u.username === usernameNorm && u.id !== null && u.id !== undefined,
+        );
+        if (usuarioEnMemoria) {
+          return Promise.resolve(usuarioEnMemoria.id);
+        }
+
+        return new Promise((resolve, reject) => {
+          $.ajax({
+            url:
+              api_url +
+              "/usuarios/buscar?username=" +
+              encodeURIComponent(usernameNorm),
+            type: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+            dataType: "json",
+            success: function (data) {
+              resolve(data?.id ?? data?.usuarioId ?? data?.userId ?? null);
+            },
+            error: function (xhr, status, error) {
+              reject(error);
+            },
+          });
+        });
+      }
+
+      function anadirJugadorClase(claseId, usuarioId) {
+        return new Promise((resolve, reject) => {
+          $.ajax({
+            url: api_url + "/clases/" + claseId + "/jugadores/" + usuarioId,
+            type: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+            success: function (data) {
+              resolve(data);
+            },
+            error: function (xhr, status, error) {
+              const msg =
+                xhr?.responseJSON?.message ||
+                xhr?.responseText ||
+                "No se pudo reservar la clase";
+              reject(new Error(msg));
+            },
+          });
+        });
+      }
+
+      function configurarAccionesReservaClase(
+        claseId,
+        jugadoresClase,
+        rolActual,
+        usernameSesion,
+      ) {
+        const modalReserva = document.getElementById("modal-clase-reserva");
+        const botonReservar = document.getElementById("reservar-clase-button");
+        const labelSelect = document.getElementById("clase-usuario-label");
+        const inputSelect = document.getElementById("clase-usuario-select");
+
+        modalReserva.style.display = "none";
+        botonReservar.style.display = "none";
+        labelSelect.style.display = "none";
+        inputSelect.style.display = "none";
+        botonReservar.disabled = false;
+        botonReservar.textContent = "Reservar clase";
+
+        if (!claseId) {
+          return;
+        }
+
+        const totalJugadores = Array.isArray(jugadoresClase)
+          ? jugadoresClase.length
+          : 0;
+        const claseCompleta = totalJugadores >= 4;
+        const rolNormalizado = String(rolActual || "")
+          .trim()
+          .toLowerCase();
+        const esAdminOEntrenador =
+          rolNormalizado === "administrador" || rolNormalizado === "entrenador";
+        const yaApuntado = (jugadoresClase || []).some(
+          (j) =>
+            String(j?.username || "")
+              .trim()
+              .toLowerCase() ===
+            String(usernameSesion || "")
+              .trim()
+              .toLowerCase(),
+        );
+
+        if (esAdminOEntrenador) {
+          const asegurarUsuarios =
+            (usuariosDisponibles || []).length > 0
+              ? Promise.resolve(usuariosDisponibles)
+              : cargarUsuariosCombo();
+          asegurarUsuarios.finally(() => {
+            renderUsuariosClaseModal(jugadoresClase);
+            if (inputSelect.disabled && !claseCompleta) {
+              botonReservar.disabled = true;
+              botonReservar.textContent = "Sin usuarios";
+            }
+          });
+          modalReserva.style.display = "block";
+          labelSelect.style.display = "inline";
+          inputSelect.style.display = "inline-block";
+          botonReservar.style.display = "inline-block";
+          botonReservar.textContent = "Anadir jugador";
+          if (claseCompleta) {
+            botonReservar.disabled = true;
+            botonReservar.textContent = "Clase completa";
+          }
+          return;
+        }
+
+        if (!usernameSesion) {
+          return;
+        }
+
+        modalReserva.style.display = "block";
+        botonReservar.style.display = "inline-block";
+        if (claseCompleta) {
+          botonReservar.disabled = true;
+          botonReservar.textContent = "Clase completa";
+        } else if (yaApuntado) {
+          botonReservar.disabled = true;
+          botonReservar.textContent = "Ya apuntado";
+        }
       }
 
       function mostrarModalClase(reserva, mostrarBotonCancelarClase) {
@@ -834,7 +1058,15 @@
         );
         cancelarClaseBtn.style.display =
           mostrarBotonCancelarClase && reservaId ? "inline-block" : "none";
-        claseModalContext = { claseId, reservaId };
+        const rolActual = document.getElementById("role-info").value || "";
+        const usernameSesion = document.getElementById("user-info").value || "";
+        claseModalContext = { claseId, reservaId, jugadores };
+        configurarAccionesReservaClase(
+          claseId,
+          jugadores,
+          rolActual,
+          usernameSesion,
+        );
         document.getElementById("modal-clase-info").style.display = "flex";
       }
 
@@ -906,15 +1138,17 @@
               return;
             }
 
-            const esEntrenador =
-              String(rolename).trim().toLowerCase() === "entrenador";
+            const rolNormalizado = String(rolename).trim().toLowerCase();
+            const esEntrenador = rolNormalizado === "entrenador";
+            const esAdministrador = rolNormalizado === "administrador";
             const usernameReserva =
               reservaSeleccionada?.userName ||
               reservaSeleccionada?.username ||
               reservaSeleccionada?.usuario?.username ||
               timeSlot.dataset.username;
             const esUsuarioReserva = usernameReserva === username;
-            const mostrarBotonCancelarClase = esEntrenador && esUsuarioReserva;
+            const mostrarBotonCancelarClase =
+              esAdministrador || (esEntrenador && esUsuarioReserva);
 
             mostrarModalClase(reservaSeleccionada, mostrarBotonCancelarClase);
           })
@@ -924,8 +1158,9 @@
               error,
             );
             if (reservaEnCache && esReservaConClase(reservaEnCache)) {
-              const esEntrenador =
-                String(rolename).trim().toLowerCase() === "entrenador";
+              const rolNormalizado = String(rolename).trim().toLowerCase();
+              const esEntrenador = rolNormalizado === "entrenador";
+              const esAdministrador = rolNormalizado === "administrador";
               const usernameReserva =
                 reservaEnCache?.userName ||
                 reservaEnCache?.username ||
@@ -933,7 +1168,7 @@
                 timeSlot.dataset.username;
               const esUsuarioReserva = usernameReserva === username;
               const mostrarBotonCancelarClase =
-                esEntrenador && esUsuarioReserva;
+                esAdministrador || (esEntrenador && esUsuarioReserva);
               mostrarModalClase(reservaEnCache, mostrarBotonCancelarClase);
               return;
             }
@@ -1758,6 +1993,84 @@
             .catch((error) => {
               alert(error.message || "No se pudo cancelar la clase.");
               console.error("Error al cancelar la clase:", error);
+            });
+        });
+
+      document
+        .getElementById("reservar-clase-button")
+        .addEventListener("click", () => {
+          const claseId = claseModalContext.claseId;
+          const jugadoresClase = Array.isArray(claseModalContext.jugadores)
+            ? claseModalContext.jugadores
+            : [];
+          const rolActual = String(
+            document.getElementById("role-info").value || "",
+          )
+            .trim()
+            .toLowerCase();
+          const usernameSesion = document.getElementById("user-info").value || "";
+
+          if (!claseId) {
+            alert("No se ha encontrado la clase.");
+            return;
+          }
+
+          if (jugadoresClase.length >= 4) {
+            alert("La clase ya esta completa.");
+            return;
+          }
+
+          if (rolActual === "administrador" || rolActual === "entrenador") {
+            const usernameSeleccionado = document
+              .getElementById("clase-usuario-select")
+              .value.trim();
+            if (!usernameSeleccionado) {
+              alert("Selecciona un usuario.");
+              return;
+            }
+            const usuarioSeleccionado = (usuariosDisponibles || []).find(
+              (u) => u.username === usernameSeleccionado,
+            );
+            if (!usuarioSeleccionado || !usuarioSeleccionado.id) {
+              alert("Usuario no valido para reservar la clase.");
+              return;
+            }
+
+            anadirJugadorClase(claseId, usuarioSeleccionado.id)
+              .then(() => {
+                cerrarModalClase();
+                document
+                  .getElementById("reservation-date")
+                  .dispatchEvent(new Event("change"));
+              })
+              .catch((error) => {
+                alert(error.message || "No se pudo reservar la clase.");
+                console.error("Error al anadir jugador a clase:", error);
+              });
+            return;
+          }
+
+          if (!usernameSesion) {
+            alert("Debes iniciar sesion para reservar la clase.");
+            return;
+          }
+
+          obtenerIdUsuarioPorUsername(usernameSesion)
+            .then((usuarioId) => {
+              if (!usuarioId) {
+                throw new Error("No se pudo obtener el usuario de la sesion.");
+              }
+              return anadirJugadorClase(claseId, usuarioId);
+            })
+            .then(() => {
+              cerrarModalClase();
+              document
+                .getElementById("reservation-date")
+                .dispatchEvent(new Event("change"));
+            })
+            .catch((error) => {
+              alert(error.message || "No se pudo reservar la clase.");
+              console.error("Error al reservar clase:", error);
             });
         });
 
