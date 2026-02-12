@@ -243,6 +243,28 @@
         display: flex;
         gap: 10px;
         justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+
+      .modal-content .class-actions button {
+        margin: 0;
+        width: auto;
+        min-width: 0;
+        padding: 10px 14px;
+        text-transform: none;
+        letter-spacing: normal;
+        line-height: 1.2;
+      }
+
+      #modal-clase-reserva input {
+        box-sizing: border-box;
+        font-size: 16px;
+      }
+
+      @media (min-width: 1024px) {
+        .modal-content {
+          max-width: 620px;
+        }
       }
     </style>
   </head>
@@ -1102,6 +1124,61 @@
               reject(new Error(msg));
             },
           });
+        });
+      }
+
+      function calcularPermisoCancelarClase(reserva, rolename, usernameSesion) {
+        const rolNormalizado = String(rolename || "")
+          .trim()
+          .toLowerCase();
+        const esAdministrador = rolNormalizado === "administrador";
+        const esEntrenador = rolNormalizado === "entrenador";
+        const usernameReserva =
+          reserva?.userName ||
+          reserva?.username ||
+          reserva?.usuario?.username ||
+          "";
+        return esAdministrador || (esEntrenador && usernameReserva === usernameSesion);
+      }
+
+      function refrescarModalClase() {
+        const reservaId = claseModalContext.reservaId;
+        if (!reservaId) {
+          return Promise.reject(new Error("No se encontro la reserva de la clase."));
+        }
+
+        const rolename = document.getElementById("role-info").value || "";
+        const usernameSesion = document.getElementById("user-info").value || "";
+
+        return obtenerDetalleReserva(reservaId).then((reservaActualizada) => {
+          if (!reservaActualizada) {
+            throw new Error("No se pudo refrescar la informacion de la clase.");
+          }
+          const reservaIdActualizada =
+            reservaActualizada?.reservaId ?? reservaActualizada?.id ?? null;
+          if (reservaIdActualizada && Array.isArray(datosReservas)) {
+            const idx = datosReservas.findIndex(
+              (r) => String(r?.reservaId ?? r?.id ?? "") === String(reservaIdActualizada),
+            );
+            if (idx >= 0) {
+              datosReservas[idx] = { ...datosReservas[idx], ...reservaActualizada };
+            }
+          }
+          const slotReserva = Array.from(
+            document.querySelectorAll("#schedule-container [data-reserva]"),
+          ).find(
+            (el) => String(el?.dataset?.reserva || "") === String(reservaIdActualizada),
+          );
+          if (slotReserva) {
+            configurarTimeSlot(slotReserva, reservaActualizada, usernameSesion, rolename);
+          }
+          const mostrarBotonCancelarClase = calcularPermisoCancelarClase(
+            reservaActualizada,
+            rolename,
+            usernameSesion,
+          );
+          mostrarModalClase(reservaActualizada, mostrarBotonCancelarClase);
+          return reservaActualizada;
         });
       }
 
@@ -1999,6 +2076,9 @@
       document
         .getElementById("reservar-clase-button")
         .addEventListener("click", () => {
+          const botonReservarClase = document.getElementById(
+            "reservar-clase-button",
+          );
           const claseId = claseModalContext.claseId;
           const jugadoresClase = Array.isArray(claseModalContext.jugadores)
             ? claseModalContext.jugadores
@@ -2036,16 +2116,17 @@
               return;
             }
 
+            botonReservarClase.disabled = true;
             anadirJugadorClase(claseId, usuarioSeleccionado.id)
               .then(() => {
-                cerrarModalClase();
-                document
-                  .getElementById("reservation-date")
-                  .dispatchEvent(new Event("change"));
+                return refrescarModalClase();
               })
               .catch((error) => {
                 alert(error.message || "No se pudo reservar la clase.");
                 console.error("Error al anadir jugador a clase:", error);
+              })
+              .finally(() => {
+                botonReservarClase.disabled = false;
               });
             return;
           }
@@ -2055,6 +2136,7 @@
             return;
           }
 
+          botonReservarClase.disabled = true;
           obtenerIdUsuarioPorUsername(usernameSesion)
             .then((usuarioId) => {
               if (!usuarioId) {
@@ -2063,14 +2145,14 @@
               return anadirJugadorClase(claseId, usuarioId);
             })
             .then(() => {
-              cerrarModalClase();
-              document
-                .getElementById("reservation-date")
-                .dispatchEvent(new Event("change"));
+              return refrescarModalClase();
             })
             .catch((error) => {
               alert(error.message || "No se pudo reservar la clase.");
               console.error("Error al reservar clase:", error);
+            })
+            .finally(() => {
+              botonReservarClase.disabled = false;
             });
         });
 
