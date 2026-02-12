@@ -124,8 +124,6 @@
                 <th>Hora Inicio</th>
                 <th>Entrenador</th>
                 <th>Pista</th>
-                <th>Jugadores</th>
-                <th>Franja</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -147,8 +145,6 @@
                 <th>Hora Inicio</th>
                 <th>Entrenador</th>
                 <th>Pista</th>
-                <th>Jugadores</th>
-                <th>Franja</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -254,7 +250,15 @@
         mm = parseInt(m[2], 10);
         dd = parseInt(m[3], 10);
       } else {
-        return NaN;
+        const parsed = Date.parse(f);
+        if (!Number.isNaN(parsed)) {
+          const d = new Date(parsed);
+          yyyy = d.getFullYear();
+          mm = d.getMonth() + 1;
+          dd = d.getDate();
+        } else {
+          return NaN;
+        }
       }
 
       let HH = 0;
@@ -269,35 +273,87 @@
       return new Date(yyyy, mm - 1, dd, HH, MM, 0, 0).getTime();
     }
 
+    function formatFechaDDMMYYYY(fecha) {
+      const f = String(fecha || "").trim();
+      if (!f) return "-";
+      const ddmmyyyy = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+      const yyyymmdd = /^(\d{4})-(\d{2})-(\d{2})$/;
+      const yyyymmddIso = /^(\d{4})-(\d{2})-(\d{2})T/;
+      if (ddmmyyyy.test(f)) return f;
+      if (yyyymmdd.test(f)) {
+        const m = f.match(yyyymmdd);
+        return `${m[3]}/${m[2]}/${m[1]}`;
+      }
+      if (yyyymmddIso.test(f)) {
+        const m = f.match(yyyymmddIso);
+        return `${m[3]}/${m[2]}/${m[1]}`;
+      }
+      const parsed = Date.parse(f);
+      if (!Number.isNaN(parsed)) {
+        const d = new Date(parsed);
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      }
+      return f;
+    }
+
+    function formatHoraHHMM(hora) {
+      const h = String(hora || "").trim();
+      if (!h) return "-";
+      const hhmm = /^(\d{1,2}):(\d{2})(?::\d{2})?$/;
+      if (hhmm.test(h)) {
+        const m = h.match(hhmm);
+        const HH = String(parseInt(m[1], 10)).padStart(2, "0");
+        return `${HH}:${m[2]}`;
+      }
+      return h;
+    }
+
+    function extraerEntrenador(item) {
+      return item?.entrenadorUsername || "-";
+    }
+
+    function extraerNombreJugador(jugador) {
+      return (
+        jugador?.username ??
+        jugador?.userName ??
+        jugador?.usuario?.username ??
+        jugador?.jugadorUsername ??
+        "-"
+      );
+    }
+
+    function extraerIdJugador(jugador) {
+      return (
+        jugador?.id ??
+        jugador?.usuarioId ??
+        jugador?.userId ??
+        jugador?.jugadorId ??
+        jugador?.usuario?.id ??
+        ""
+      );
+    }
+
     function extraerHora(slotTime) {
       if (typeof slotTime !== "string") return "";
       return slotTime.split("-")[0].trim();
     }
     function normalizarFilaClase(item) {
-      const reservaObj = item && item.reserva && typeof item.reserva === "object" ? item.reserva : null;
-      const claseObj = item && item.clase && typeof item.clase === "object" ? item.clase : item;
+      const claseObj = item && typeof item === "object" ? item : {};
 
-      const claseId = claseObj?.id ?? item?.claseId ?? item?.id ?? null;
-      const fecha = claseObj?.fecha ?? item?.fecha ?? item?.fechaReserva ?? reservaObj?.fechaReserva ?? "-";
-      const horaInicio =
-        claseObj?.horaInicio ?? item?.horaInicio ?? reservaObj?.horaInicio ?? extraerHora(item?.slotTime || reservaObj?.slotTime) ?? "-";
-      const entrenador =
-        claseObj?.entrenador?.username ??
-        item?.userName ?? item?.username ??
-        reservaObj?.userName ?? reservaObj?.username ??
-        "-";
+      const claseId = claseObj?.id ?? claseObj?.claseId ?? null;
+      const fechaRaw = claseObj?.fecha ?? "-";
+      const horaRaw = claseObj?.horaInicio ?? "-";
+      const fecha = formatFechaDDMMYYYY(fechaRaw);
+      const horaInicio = formatHoraHHMM(horaRaw);
+      const entrenador = extraerEntrenador(claseObj);
       const jugadores = Array.isArray(claseObj?.jugadores) ? claseObj.jugadores : [];
-      const pista =
-        item?.pistaNombre ?? reservaObj?.pistaNombre ??
-        item?.pista?.nombre ?? reservaObj?.pista?.nombre ??
-        "-";
-      const slot = item?.slotTime ?? reservaObj?.slotTime ?? (horaInicio && horaInicio !== "-" ? horaInicio : "-");
-      const reservaId =
-        item?.reservaId ?? reservaObj?.reservaId ?? reservaObj?.id ?? claseObj?.reservaId ?? null;
-      const reservaUsername =
-        item?.userName ?? item?.username ?? item?.usuario?.username ??
-        reservaObj?.userName ?? reservaObj?.username ?? reservaObj?.usuario?.username ??
-        entrenador ?? "";
+      const pista = claseObj?.pistaNombre ?? claseObj?.pista?.nombre ?? "-";
+      const slot = horaInicio && horaInicio !== "-" ? horaInicio : "-";
+      const reservaId = null;
+      const reservaUsername = "";
 
       const startMs = parseDateAndTime(fecha, horaInicio);
       const totalJugadores = jugadores.length;
@@ -306,11 +362,12 @@
       const reservaLike = {
         reservaId,
         claseId,
+        entrenadorUsername: claseObj?.entrenadorUsername || entrenador,
         clase: {
           id: claseId,
           fecha,
           horaInicio,
-          entrenador: claseObj?.entrenador || { username: entrenador },
+          entrenador: { username: entrenador },
           jugadores,
         },
         pistaNombre: pista,
@@ -323,12 +380,10 @@
 
       return {
         claseId,
-        fechaFmt: fecha || "-",
-        horaInicioFmt: horaInicio || "-",
+        fechaFmt: formatFechaDDMMYYYY(fecha) || "-",
+        horaInicioFmt: formatHoraHHMM(horaInicio) || "-",
         entrenadorFmt: entrenador || "-",
         pistaFmt: pista || "-",
-        jugadoresFmt: `${totalJugadores}/${MAX_JUGADORES_CLASE}`,
-        slotTimeFmt: slot || "-",
         claseCompleta,
         startMs,
         reservaLike,
@@ -370,16 +425,12 @@
           { data: "horaInicioFmt" },
           { data: "entrenadorFmt" },
           { data: "pistaFmt" },
-          { data: "jugadoresFmt" },
-          { data: "slotTimeFmt" },
         ],
         columnDefs: [
           { responsivePriority: 1, targets: 0 },
           { responsivePriority: 2, targets: 1 },
           { responsivePriority: 3, targets: 2 },
-          { responsivePriority: 4, targets: 4 },
-          { responsivePriority: 5, targets: 3 },
-          { responsivePriority: 6, targets: 5 },
+          { responsivePriority: 4, targets: 3 },
         ],
         createdRow: function (row, data) {
           if (data?.claseCompleta) {
@@ -684,12 +735,17 @@
       const usernameSesion = String(document.getElementById("user-info").value || "").trim().toLowerCase();
       const esAdministrador = rolActual === "administrador";
       const esEntrenador = rolActual === "entrenador";
-      const fechaClase = clase?.fecha || reserva?.fechaReserva || "-";
-      const horaInicioClase =
+      const fechaClase = formatFechaDDMMYYYY(clase?.fecha || reserva?.fechaReserva || "-");
+      const horaInicioClase = formatHoraHHMM(
         clase?.horaInicio ||
         reserva?.horaInicio ||
-        (typeof reserva?.slotTime === "string" ? reserva.slotTime.split("-")[0].trim() : "-");
-      const entrenadorClase = clase?.entrenador?.username || reserva?.userName || reserva?.username || "-";
+        (typeof reserva?.slotTime === "string" ? reserva.slotTime.split("-")[0].trim() : "-"),
+      );
+      const entrenadorClase =
+        reserva?.entrenadorUsername ||
+        clase?.entrenadorUsername ||
+        clase?.entrenador?.username ||
+        "-";
       const reservaUsername = reserva?.userName || reserva?.username || reserva?.usuario?.username || "";
       const jugadores = Array.isArray(clase?.jugadores) ? clase.jugadores : [];
 
@@ -697,12 +753,12 @@
         jugadores.length > 0
           ? `<ul class="class-players">${jugadores
               .map((j) => {
-                const jugadorId = j?.id ?? j?.usuarioId ?? j?.userId ?? "";
-                const jugadorNombre = j?.username || "-";
+                const jugadorId = extraerIdJugador(j);
+                const jugadorNombre = extraerNombreJugador(j);
                 const jugadorNombreNorm = String(jugadorNombre).trim().toLowerCase();
                 const puedeEliminar = esAdministrador || esEntrenador || jugadorNombreNorm === usernameSesion;
                 const botonEliminar =
-                  puedeEliminar && jugadorId
+                  puedeEliminar
                     ? `<button type="button" class="class-player-remove" data-jugador-id="${escapeHtml(jugadorId)}" data-jugador-nombre="${escapeHtml(jugadorNombre)}">Eliminar</button>`
                     : "";
                 return `<li class="class-player-item"><span>${escapeHtml(jugadorNombre)}</span>${botonEliminar}</li>`;
@@ -812,15 +868,16 @@
           .finally(() => { boton.disabled = false; });
       });
 
-      document.getElementById("modal-clase-body").addEventListener("click", (event) => {
+      document.getElementById("modal-clase-body").addEventListener("click", async (event) => {
         const botonEliminar = event.target.closest(".class-player-remove");
         if (!botonEliminar) return;
 
         const claseId = claseModalContext.claseId;
-        const jugadorId = botonEliminar.dataset.jugadorId;
+        let jugadorId = botonEliminar.dataset.jugadorId;
         const jugadorNombre = botonEliminar.dataset.jugadorNombre || "";
         const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
-        const usernameSesion = String(document.getElementById("user-info").value || "").trim().toLowerCase();
+        const usernameSesionRaw = String(document.getElementById("user-info").value || "").trim();
+        const usernameSesion = usernameSesionRaw.toLowerCase();
         const jugadorNombreNorm = String(jugadorNombre).trim().toLowerCase();
         const esAdminOEntrenador = rolActual === "administrador" || rolActual === "entrenador";
 
@@ -828,7 +885,20 @@
           alert("Solo puedes eliminar tu propio usuario.");
           return;
         }
-        if (!claseId || !jugadorId) {
+        if (!claseId) {
+          alert("No se pudo identificar el jugador de la clase.");
+          return;
+        }
+
+        if (!jugadorId) {
+          if (!esAdminOEntrenador && jugadorNombreNorm === usernameSesion) {
+            jugadorId = await obtenerIdUsuarioPorUsername(usernameSesionRaw);
+          } else if (esAdminOEntrenador && jugadorNombre) {
+            jugadorId = await obtenerIdUsuarioPorUsername(jugadorNombre);
+          }
+        }
+
+        if (!jugadorId) {
           alert("No se pudo identificar el jugador de la clase.");
           return;
         }
