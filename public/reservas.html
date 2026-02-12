@@ -238,6 +238,25 @@
         overflow-y: auto;
       }
 
+      .class-player-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 6px 0;
+      }
+
+      .class-player-remove {
+        margin: 0;
+        width: auto !important;
+        min-width: 0;
+        padding: 4px 8px;
+        font-size: 13px;
+        text-transform: none;
+        letter-spacing: normal;
+        line-height: 1.2;
+      }
+
       .class-actions {
         margin-top: 16px;
         display: flex;
@@ -348,6 +367,13 @@
             style="display: none"
           >
             Reservar clase
+          </button>
+          <button
+            id="borrar-reserva-clase-button"
+            type="button"
+            style="display: none"
+          >
+            Borrar reserva
           </button>
           <button
             id="cancelar-clase-button"
@@ -574,7 +600,12 @@
       let usuariosDisponibles = [];
       let usuarioSesionId = null;
       let diasExtraordinarios = []; // Almacena las fechas extraordinarias
-      let claseModalContext = { claseId: null, reservaId: null, jugadores: [] };
+      let claseModalContext = {
+        claseId: null,
+        reservaId: null,
+        jugadores: [],
+        reservaUsername: "",
+      };
 
       // Función para verificar si una fecha es fin de semana o día extraordinario
       function esDiaEspecial(fecha, diaSemana) {
@@ -859,12 +890,19 @@
         document.getElementById("modal-clase-body").innerHTML = "";
         document.getElementById("cancelar-clase-button").style.display = "none";
         document.getElementById("reservar-clase-button").style.display = "none";
+        document.getElementById("borrar-reserva-clase-button").style.display =
+          "none";
         document.getElementById("modal-clase-reserva").style.display = "none";
         document.getElementById("clase-usuario-label").style.display = "none";
         document.getElementById("clase-usuario-select").style.display = "none";
         document.getElementById("clase-usuario-select").value = "";
         document.getElementById("clase-usuario-options").innerHTML = "";
-        claseModalContext = { claseId: null, reservaId: null, jugadores: [] };
+        claseModalContext = {
+          claseId: null,
+          reservaId: null,
+          jugadores: [],
+          reservaUsername: "",
+        };
       }
 
       function renderUsuariosClaseModal(jugadoresClase) {
@@ -966,23 +1004,53 @@
         });
       }
 
+      function eliminarJugadorClase(claseId, usuarioId) {
+        return new Promise((resolve, reject) => {
+          $.ajax({
+            url: api_url + "/clases/" + claseId + "/jugadores/" + usuarioId,
+            type: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
+            },
+            success: function (data) {
+              resolve(data);
+            },
+            error: function (xhr, status, error) {
+              const msg =
+                xhr?.responseJSON?.message ||
+                xhr?.responseText ||
+                "No se pudo eliminar el jugador de la clase";
+              reject(new Error(msg));
+            },
+          });
+        });
+      }
+
       function configurarAccionesReservaClase(
         claseId,
         jugadoresClase,
         rolActual,
         usernameSesion,
+        reservaUsername,
+        reservaId,
       ) {
         const modalReserva = document.getElementById("modal-clase-reserva");
         const botonReservar = document.getElementById("reservar-clase-button");
+        const botonBorrarReserva = document.getElementById(
+          "borrar-reserva-clase-button",
+        );
         const labelSelect = document.getElementById("clase-usuario-label");
         const inputSelect = document.getElementById("clase-usuario-select");
 
         modalReserva.style.display = "none";
         botonReservar.style.display = "none";
+        botonBorrarReserva.style.display = "none";
         labelSelect.style.display = "none";
         inputSelect.style.display = "none";
         botonReservar.disabled = false;
         botonReservar.textContent = "Reservar clase";
+        botonBorrarReserva.disabled = false;
 
         if (!claseId) {
           return;
@@ -1037,6 +1105,17 @@
 
         modalReserva.style.display = "block";
         botonReservar.style.display = "inline-block";
+        if (
+          reservaId &&
+          String(usernameSesion || "")
+            .trim()
+            .toLowerCase() ===
+            String(reservaUsername || "")
+              .trim()
+              .toLowerCase()
+        ) {
+          botonBorrarReserva.style.display = "inline-block";
+        }
         if (claseCompleta) {
           botonReservar.disabled = true;
           botonReservar.textContent = "Clase completa";
@@ -1050,12 +1129,21 @@
         const clase = reserva?.clase || null;
         const claseId = clase?.id ?? reserva?.claseId ?? null;
         const reservaId = reserva?.reservaId ?? reserva?.id ?? null;
+        const rolActual = String(
+          document.getElementById("role-info").value || "",
+        )
+          .trim()
+          .toLowerCase();
+        const esAdminOEntrenadorActual =
+          rolActual === "administrador" || rolActual === "entrenador";
         const fechaClase = clase?.fecha || reserva?.fechaReserva || "-";
         const entrenadorClase =
           clase?.entrenador?.username ||
           reserva?.userName ||
           reserva?.username ||
           "-";
+        const reservaUsername =
+          reserva?.userName || reserva?.username || reserva?.usuario?.username || "";
         const jugadores = Array.isArray(clase?.jugadores)
           ? clase.jugadores
           : [];
@@ -1063,7 +1151,22 @@
         const jugadoresHtml =
           jugadores.length > 0
             ? `<ul class="class-players">${jugadores
-                .map((j) => `<li>${escapeHtml(j?.username || "-")}</li>`)
+                .map((j) => {
+                  const jugadorId =
+                    j?.id ?? j?.usuarioId ?? j?.userId ?? "";
+                  const jugadorNombre = j?.username || "-";
+                  const botonEliminarJugador =
+                    esAdminOEntrenadorActual && jugadorId
+                      ? `<button type="button" class="class-player-remove" data-jugador-id="${escapeHtml(
+                          jugadorId,
+                        )}" data-jugador-nombre="${escapeHtml(
+                          jugadorNombre,
+                        )}">Eliminar</button>`
+                      : "";
+                  return `<li class="class-player-item"><span>${escapeHtml(
+                    jugadorNombre,
+                  )}</span>${botonEliminarJugador}</li>`;
+                })
                 .join("")}</ul>`
             : "<p>No hay jugadores apuntados.</p>";
 
@@ -1080,14 +1183,15 @@
         );
         cancelarClaseBtn.style.display =
           mostrarBotonCancelarClase && reservaId ? "inline-block" : "none";
-        const rolActual = document.getElementById("role-info").value || "";
         const usernameSesion = document.getElementById("user-info").value || "";
-        claseModalContext = { claseId, reservaId, jugadores };
+        claseModalContext = { claseId, reservaId, jugadores, reservaUsername };
         configurarAccionesReservaClase(
           claseId,
           jugadores,
           rolActual,
           usernameSesion,
+          reservaUsername,
+          reservaId,
         );
         document.getElementById("modal-clase-info").style.display = "flex";
       }
@@ -2153,6 +2257,97 @@
             })
             .finally(() => {
               botonReservarClase.disabled = false;
+            });
+        });
+
+      document
+        .getElementById("modal-clase-body")
+        .addEventListener("click", (event) => {
+          const botonEliminar = event.target.closest(".class-player-remove");
+          if (!botonEliminar) {
+            return;
+          }
+          const claseId = claseModalContext.claseId;
+          const jugadorId = botonEliminar.dataset.jugadorId;
+          const jugadorNombre = botonEliminar.dataset.jugadorNombre || "";
+
+          if (!claseId || !jugadorId) {
+            alert("No se pudo identificar el jugador de la clase.");
+            return;
+          }
+
+          if (
+            !confirm(
+              "¿Desea eliminar a " +
+                jugadorNombre +
+                " de esta clase?",
+            )
+          ) {
+            return;
+          }
+
+          botonEliminar.disabled = true;
+          eliminarJugadorClase(claseId, jugadorId)
+            .then(() => {
+              return refrescarModalClase();
+            })
+            .catch((error) => {
+              alert(error.message || "No se pudo eliminar el jugador.");
+              console.error("Error al eliminar jugador de clase:", error);
+            })
+            .finally(() => {
+              botonEliminar.disabled = false;
+            });
+        });
+
+      document
+        .getElementById("borrar-reserva-clase-button")
+        .addEventListener("click", () => {
+          const reservaId = claseModalContext.reservaId;
+          const reservaUsername = String(claseModalContext.reservaUsername || "");
+          const usernameSesion = String(
+            document.getElementById("user-info").value || "",
+          );
+          const rolActual = String(
+            document.getElementById("role-info").value || "",
+          )
+            .trim()
+            .toLowerCase();
+          const esAdminOEntrenador =
+            rolActual === "administrador" || rolActual === "entrenador";
+
+          if (!reservaId) {
+            alert("No se ha encontrado la reserva.");
+            return;
+          }
+
+          if (
+            !esAdminOEntrenador &&
+            String(usernameSesion || "")
+              .trim()
+              .toLowerCase() !==
+              String(reservaUsername || "")
+                .trim()
+                .toLowerCase()
+          ) {
+            alert("Solo puedes borrar una reserva hecha por ti.");
+            return;
+          }
+
+          if (!confirm("¿Desea realmente borrar la reserva?")) {
+            return;
+          }
+
+          cancelarClase(reservaId)
+            .then(() => {
+              cerrarModalClase();
+              document
+                .getElementById("reservation-date")
+                .dispatchEvent(new Event("change"));
+            })
+            .catch((error) => {
+              alert(error.message || "No se pudo borrar la reserva.");
+              console.error("Error al borrar reserva:", error);
             });
         });
 
