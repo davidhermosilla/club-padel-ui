@@ -111,24 +111,6 @@
         cursor: pointer;
       }
 
-      .time-slot-past {
-        background-color: #d3d3d3; /* gris claro para disponibles pasados */
-        color: #888;
-        cursor: default;
-      }
-
-      .time-slot-booked-past {
-        background-color: #a9a9a9; /* gris más oscuro para reservadas pasadas */
-        color: #fff;
-        cursor: default;
-      }
-
-      .time-slot-booked-class-past {
-        background-color: #4e9c52;
-        color: #fff;
-        cursor: default;
-      }
-
       .time-slot-disabled {
         background-color: #cccccc;
         color: #666666;
@@ -322,7 +304,11 @@
         <h3>Informacion de la clase</h3>
         <div id="modal-clase-body" class="class-summary"></div>
         <div class="class-actions">
-          <button id="cancelar-clase-button" type="button" style="display: none">
+          <button
+            id="cancelar-clase-button"
+            type="button"
+            style="display: none"
+          >
             Cancelar clase
           </button>
           <button id="cerrar-clase-button" type="button">Cerrar</button>
@@ -739,7 +725,8 @@
             if (!reservaDetalle) {
               return;
             }
-            const usernameSesion = document.getElementById("user-info").value || "";
+            const usernameSesion =
+              document.getElementById("user-info").value || "";
             const rolenameSesion = (
               document.getElementById("role-info").value || ""
             )
@@ -796,7 +783,9 @@
       }
 
       function esReservaConClase(reserva) {
-        const rolReserva = String(obtenerRolReserva(reserva)).trim().toLowerCase();
+        const rolReserva = String(obtenerRolReserva(reserva))
+          .trim()
+          .toLowerCase();
         return (
           (reserva?.clase !== null && reserva?.clase !== undefined) ||
           (reserva?.claseId !== null && reserva?.claseId !== undefined) ||
@@ -817,8 +806,13 @@
         const reservaId = reserva?.reservaId ?? reserva?.id ?? null;
         const fechaClase = clase?.fecha || reserva?.fechaReserva || "-";
         const entrenadorClase =
-          clase?.entrenador?.username || reserva?.userName || reserva?.username || "-";
-        const jugadores = Array.isArray(clase?.jugadores) ? clase.jugadores : [];
+          clase?.entrenador?.username ||
+          reserva?.userName ||
+          reserva?.username ||
+          "-";
+        const jugadores = Array.isArray(clase?.jugadores)
+          ? clase.jugadores
+          : [];
 
         const jugadoresHtml =
           jugadores.length > 0
@@ -835,7 +829,9 @@
           ${jugadoresHtml}
         `;
 
-        const cancelarClaseBtn = document.getElementById("cancelar-clase-button");
+        const cancelarClaseBtn = document.getElementById(
+          "cancelar-clase-button",
+        );
         cancelarClaseBtn.style.display =
           mostrarBotonCancelarClase && reservaId ? "inline-block" : "none";
         claseModalContext = { claseId, reservaId };
@@ -843,10 +839,13 @@
       }
 
       function cancelarClase(reservaId) {
-        const rolActual = String(document.getElementById("role-info").value || "")
+        const rolActual = String(
+          document.getElementById("role-info").value || "",
+        )
           .trim()
           .toLowerCase();
-        const skipValidation = rolActual === "administrador" || rolActual === "entrenador";
+        const skipValidation =
+          rolActual === "administrador" || rolActual === "entrenador";
         return new Promise((resolve, reject) => {
           $.ajax({
             url:
@@ -899,12 +898,16 @@
         obtenerDetalleReserva(timeSlot.dataset.reserva)
           .then((reservaDetalle) => {
             const reservaSeleccionada = reservaDetalle || reservaEnCache;
-            if (!reservaSeleccionada || !esReservaConClase(reservaSeleccionada)) {
+            if (
+              !reservaSeleccionada ||
+              !esReservaConClase(reservaSeleccionada)
+            ) {
               fallback();
               return;
             }
 
-            const esEntrenador = String(rolename).trim().toLowerCase() === "entrenador";
+            const esEntrenador =
+              String(rolename).trim().toLowerCase() === "entrenador";
             const usernameReserva =
               reservaSeleccionada?.userName ||
               reservaSeleccionada?.username ||
@@ -916,16 +919,21 @@
             mostrarModalClase(reservaSeleccionada, mostrarBotonCancelarClase);
           })
           .catch((error) => {
-            console.error("No se pudo obtener el detalle de la reserva:", error);
+            console.error(
+              "No se pudo obtener el detalle de la reserva:",
+              error,
+            );
             if (reservaEnCache && esReservaConClase(reservaEnCache)) {
-              const esEntrenador = String(rolename).trim().toLowerCase() === "entrenador";
+              const esEntrenador =
+                String(rolename).trim().toLowerCase() === "entrenador";
               const usernameReserva =
                 reservaEnCache?.userName ||
                 reservaEnCache?.username ||
                 reservaEnCache?.usuario?.username ||
                 timeSlot.dataset.username;
               const esUsuarioReserva = usernameReserva === username;
-              const mostrarBotonCancelarClase = esEntrenador && esUsuarioReserva;
+              const mostrarBotonCancelarClase =
+                esEntrenador && esUsuarioReserva;
               mostrarModalClase(reservaEnCache, mostrarBotonCancelarClase);
               return;
             }
@@ -1357,7 +1365,8 @@
           success: function (dataResponse) {
             // 🔄 Actualizar UI como antes
             const reservaIdCreada = dataResponse?.id ?? dataResponse?.reservaId;
-            const usernameSesion = document.getElementById("user-info").value || "";
+            const usernameSesion =
+              document.getElementById("user-info").value || "";
             const rolenameSesion = (
               document.getElementById("role-info").value || ""
             )
@@ -1370,7 +1379,9 @@
               reservaId: reservaIdCreada,
               userName: username,
               concepto: concepto,
-              rolName: esReservaEntrenadorProvisional ? "entrenador" : undefined,
+              rolName: esReservaEntrenadorProvisional
+                ? "entrenador"
+                : undefined,
             };
 
             configurarTimeSlot(
@@ -1564,9 +1575,6 @@
           Number(startMinute),
         );
 
-        const ahora = new Date();
-        const esPasado = slotDate.getTime() < ahora.getTime();
-
         if (reserva) {
           const tieneClaseAsociada = esReservaConClase(reserva);
           const userNameReserva =
@@ -1596,7 +1604,8 @@
           timeSlot.dataset.concepto = conceptoReserva;
           timeSlot.dataset.telefono = "";
           timeSlot.dataset.tieneClase = tieneClaseAsociada ? "true" : "false";
-          timeSlot.dataset.claseId = reserva?.clase?.id ?? reserva?.claseId ?? "";
+          timeSlot.dataset.claseId =
+            reserva?.clase?.id ?? reserva?.claseId ?? "";
           // 1. Obtener el telefono del usuario
           fetch(club_ajaxurl, {
             method: "POST",
@@ -1618,17 +1627,13 @@
             });
 
           if (tieneClaseAsociada && !claseCompleta) {
-            timeSlot.className = esPasado
-              ? "time-slot-booked-class-past"
-              : username !== ""
+            timeSlot.className =
+              username !== ""
                 ? "time-slot-booked-class"
                 : "time-slot-booked-class-no-user";
           } else {
-            timeSlot.className = esPasado
-              ? "time-slot-booked-past"
-              : username !== ""
-                ? "time-slot-booked"
-                : "time-slot-booked-no-user";
+            timeSlot.className =
+              username !== "" ? "time-slot-booked" : "time-slot-booked-no-user";
           }
         } else {
           timeSlot.innerHTML = "<span>Disponible</span><br><span></span>";
@@ -1636,11 +1641,8 @@
           timeSlot.dataset.concepto = "";
           timeSlot.dataset.tieneClase = "false";
           timeSlot.dataset.claseId = "";
-          timeSlot.className = esPasado
-            ? "time-slot-past"
-            : username !== ""
-              ? "time-slot"
-              : "time-slot-no-user";
+          timeSlot.className =
+            username !== "" ? "time-slot" : "time-slot-no-user";
         }
 
         // Solo bloqueamos clics si es pasado Y no es administrador
