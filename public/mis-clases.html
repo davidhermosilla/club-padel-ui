@@ -24,10 +24,37 @@
     .club-scope .empty{padding:16px; color:var(--muted)}
     .club-scope .hint{padding:0 0 10px; color:var(--muted); font-size:13px}
     .club-scope table.dataTable thead th{background:#f2f5f8;}
-    .club-scope table.dataTable tbody tr.clase-disponible td{background:#2e7d32 !important; color:#fff !important;}
-    .club-scope table.dataTable tbody tr.clase-completa td{background:#d32f2f !important; color:#fff !important;}
+    .club-scope table.dataTable tbody tr.clase-apuntado td{background:#2e7d32 !important; color:#fff !important;}
     .club-scope table.dataTable tbody tr.clase-futura{cursor:pointer}
     .club-scope .table-wrap{width:100%}
+    .club-scope .form-row{display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end}
+    .club-scope .form-field{display:flex; flex-direction:column; gap:6px; min-width:180px}
+    .club-scope .form-field label{font-size:13px; color:var(--muted)}
+    .club-scope .form-field input,
+    .club-scope .form-field select{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px 12px;
+      font-size:14px;
+      outline:none;
+      background:#fff;
+    }
+    .club-scope .form-field input:focus,
+    .club-scope .form-field select:focus{
+      border-color:var(--brand);
+      box-shadow:0 0 0 3px rgba(30,115,190,.15);
+    }
+    .club-scope .form-actions{display:flex; gap:10px}
+    .club-scope .primary-btn{
+      background:var(--brand);
+      color:#fff;
+      border:none;
+      border-radius:10px;
+      padding:10px 16px;
+      cursor:pointer;
+    }
+    .club-scope .primary-btn:disabled{opacity:.6; cursor:not-allowed}
+    .club-scope .form-note{font-size:12px; color:var(--muted)}
 
     .modal-overlay {
       display: none;
@@ -110,6 +137,26 @@
 
       <h1>Mis Clases</h1>
 
+      <section id="sec-crear" style="display:none">
+        <div class="section-head">
+          <h2>Crear Clase</h2>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="crear-clase-fecha">Fecha</label>
+            <input id="crear-clase-fecha" type="date" />
+          </div>
+          <div class="form-field">
+            <label for="crear-clase-hora">Hora inicio</label>
+            <select id="crear-clase-hora"></select>
+          </div>
+          <div class="form-actions">
+            <button id="crear-clase-btn" class="primary-btn" type="button">Crear clase</button>
+          </div>
+        </div>
+        <div class="form-note">Bloques de 30 minutos.</div>
+      </section>
+
       <section id="sec-futuras">
         <div class="section-head">
           <h2>Clases Futuras <span id="count-futuras" class="badge">0</span></h2>
@@ -172,7 +219,7 @@
       </div>
       <div class="class-actions">
         <button id="reservar-clase-button" type="button" style="display:none">Reservar clase</button>
-        <button id="borrar-reserva-clase-button" type="button" style="display:none">Borrar reserva</button>
+        <button id="borrar-reserva-clase-button" type="button" style="display:none">Borrar clase</button>
         <button id="cancelar-clase-button" type="button" style="display:none">Cancelar clase</button>
         <button id="cerrar-clase-button" type="button">Cerrar</button>
       </div>
@@ -190,6 +237,8 @@
     let dtPasadas = null;
     let filasFuturas = [];
     let filasPasadas = [];
+    let rolSesionActual = "";
+    let usernameSesionActual = "";
 
     let claseModalContext = {
       claseId: null,
@@ -439,12 +488,17 @@
           { responsivePriority: 4, targets: 3 },
         ],
         createdRow: function (row, data) {
-          if (data?.claseCompleta) {
-            row.classList.add("clase-completa");
-            row.classList.remove("clase-disponible");
-          } else {
-            row.classList.add("clase-disponible");
-            row.classList.remove("clase-completa");
+          row.classList.remove("clase-apuntado");
+          const rol = String(rolSesionActual || "").trim().toLowerCase();
+          const username = String(usernameSesionActual || "").trim().toLowerCase();
+          const jugadores = Array.isArray(data?.reservaLike?.clase?.jugadores)
+            ? data.reservaLike.clase.jugadores
+            : [];
+          const estaApuntado = username
+            ? jugadores.some((j) => String(j?.username || "").trim().toLowerCase() === username)
+            : false;
+          if (rol !== "entrenador" && estaApuntado) {
+            row.classList.add("clase-apuntado");
           }
           if (esFutura) {
             row.classList.add("clase-futura");
@@ -551,21 +605,9 @@
       } catch {}
     }
 
-    async function obtenerClasesSesion({ jugadorId, usernameSesion, rolSesion }) {
-      const rolNormalizado = String(rolSesion || "").trim().toLowerCase();
-      const username = String(usernameSesion || "").trim();
-      let query = "";
-
-      if (rolNormalizado === "entrenador") {
-        if (!username) return [];
-        query = "entrenador=" + encodeURIComponent(username);
-      } else {
-        if (!jugadorId) return [];
-        query = "jugadorId=" + encodeURIComponent(jugadorId);
-      }
-
+    async function obtenerTodasLasClases() {
       try {
-        const res = await fetch(API_URL + "/clases?" + query, {
+        const res = await fetch(API_URL + "/clases", {
           headers: { Authorization: AUTH_HEADER, "Content-Type": "application/json" },
         });
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -576,6 +618,13 @@
       }
     }
 
+    function esUsuarioApuntado(jugadoresClase, usernameSesion) {
+      const username = String(usernameSesion || "").trim().toLowerCase();
+      if (!username) return false;
+      const jugadores = Array.isArray(jugadoresClase) ? jugadoresClase : [];
+      return jugadores.some((j) => String(j?.username || "").trim().toLowerCase() === username);
+    }
+
     function buscarFilaFuturaPorClaseId(claseId) {
       return (filasFuturas || []).find((f) => String(f?.claseId ?? "") === String(claseId ?? ""));
     }
@@ -584,14 +633,16 @@
       const usernameSesion = String(document.getElementById("user-info").value || "").trim();
       const rolSesion = String(document.getElementById("role-info").value || "").trim().toLowerCase();
 
-      if (rolSesion !== "entrenador" && !usuarioSesionId && usernameSesion) {
+      if (!usuarioSesionId && usernameSesion) {
         usuarioSesionId = await obtenerIdUsuarioPorUsername(usernameSesion);
       }
 
-      const raw = await obtenerClasesSesion({ jugadorId: usuarioSesionId, usernameSesion, rolSesion });
+      const raw = await obtenerTodasLasClases();
       const { futuras, pasadas } = normalizarClases(raw);
       filasFuturas = futuras;
-      filasPasadas = pasadas;
+      filasPasadas = pasadas.filter((fila) =>
+        esUsuarioApuntado(fila?.reservaLike?.clase?.jugadores, usernameSesion),
+      );
 
       pintarTabla(dtFuturas, filasFuturas);
       pintarTabla(dtPasadas, filasPasadas);
@@ -644,17 +695,18 @@
         });
       });
     }
-    function cancelarClase(reservaId) {
-      const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
-      const skipValidation = rolActual === "administrador" || rolActual === "entrenador";
+    function cancelarClase(claseId) {
+      if (!claseId) {
+        return Promise.reject(new Error("No se ha encontrado la clase."));
+      }
       return new Promise((resolve, reject) => {
         $.ajax({
-          url: API_URL + "/reservas/" + reservaId + "?skipValidation=" + skipValidation,
+          url: API_URL + "/clases/" + claseId,
           type: "DELETE",
           headers: { "Content-Type": "application/json", Authorization: AUTH_HEADER },
           success: function (data) { resolve(data); },
           error: function (xhr) {
-            const msg = xhr?.responseJSON?.message || xhr?.responseText || "No se pudo cancelar la reserva";
+            const msg = xhr?.responseJSON?.message || xhr?.responseText || "No se pudo cancelar la clase";
             reject(new Error(msg));
           },
         });
@@ -817,14 +869,14 @@
       });
 
       document.getElementById("cancelar-clase-button").addEventListener("click", () => {
-        const reservaId = claseModalContext.reservaId;
-        if (!reservaId) {
-          alert("No se ha encontrado la reserva a cancelar.");
+        const claseId = claseModalContext.claseId;
+        if (!claseId) {
+          alert("No se ha encontrado la clase a cancelar.");
           return;
         }
         if (!confirm("Desea realmente cancelar la clase?")) return;
 
-        cancelarClase(reservaId)
+        cancelarClase(claseId)
           .then(() => {
             cerrarModalClase();
             return recargarTablas();
@@ -936,28 +988,108 @@
       });
 
       document.getElementById("borrar-reserva-clase-button").addEventListener("click", () => {
-        const reservaId = claseModalContext.reservaId;
+        const claseId = claseModalContext.claseId;
         const reservaUsername = String(claseModalContext.reservaUsername || "");
         const usernameSesion = String(document.getElementById("user-info").value || "");
         const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
         const esAdminOEntrenador = rolActual === "administrador" || rolActual === "entrenador";
 
-        if (!reservaId) {
-          alert("No se ha encontrado la reserva.");
+        if (!claseId) {
+          alert("No se ha encontrado la clase.");
           return;
         }
         if (!esAdminOEntrenador && String(usernameSesion).trim().toLowerCase() !== String(reservaUsername).trim().toLowerCase()) {
           alert("Solo puedes borrar una reserva hecha por ti.");
           return;
         }
-        if (!confirm("Desea realmente borrar la reserva?")) return;
+        if (!confirm("Desea realmente borrar la clase?")) return;
 
-        cancelarClase(reservaId)
+        cancelarClase(claseId)
           .then(() => {
             cerrarModalClase();
             return recargarTablas();
           })
-          .catch((error) => alert(error.message || "No se pudo borrar la reserva."));
+          .catch((error) => alert(error.message || "No se pudo borrar la clase."));
+      });
+    }
+
+    function buildHalfHourOptions(selectEl, { startHour = 9, endHour = 21, defaultTime = "16:00" } = {}) {
+      if (!selectEl) return;
+      selectEl.innerHTML = "";
+      for (let h = startHour; h <= endHour; h++) {
+        for (let m = 0; m < 60; m += 30) {
+          if (h === endHour && m > 0) break;
+          const hh = String(h).padStart(2, "0");
+          const mm = String(m).padStart(2, "0");
+          const opt = document.createElement("option");
+          opt.value = `${hh}:${mm}`;
+          opt.textContent = `${hh}:${mm}`;
+          if (`${hh}:${mm}` === defaultTime) {
+            opt.selected = true;
+          }
+          selectEl.appendChild(opt);
+        }
+      }
+    }
+
+    function toggleCrearClase(rol) {
+      const sec = document.getElementById("sec-crear");
+      if (!sec) return;
+      sec.style.display = rol === "entrenador" ? "block" : "none";
+    }
+
+    function crearClase({ fecha, horaInicio, entrenadorId }) {
+      return new Promise((resolve, reject) => {
+        $.ajax({
+          url: API_URL + "/clases",
+          type: "POST",
+          headers: { "Content-Type": "application/json", Authorization: AUTH_HEADER },
+          data: JSON.stringify({ fecha, horaInicio, entrenadorId }),
+          success: function (data) { resolve(data); },
+          error: function (xhr) {
+            const msg = xhr?.responseJSON?.message || xhr?.responseText || "No se pudo crear la clase";
+            reject(new Error(msg));
+          },
+        });
+      });
+    }
+
+    function bindCrearClase() {
+      const btn = document.getElementById("crear-clase-btn");
+      const inputFecha = document.getElementById("crear-clase-fecha");
+      const selectHora = document.getElementById("crear-clase-hora");
+      if (!btn || !inputFecha || !selectHora) return;
+
+      buildHalfHourOptions(selectHora);
+
+      btn.addEventListener("click", async () => {
+        const rol = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+        if (rol !== "entrenador") return;
+
+        const fecha = inputFecha.value;
+        const horaInicio = selectHora.value;
+        if (!fecha) {
+          alert("Selecciona una fecha.");
+          return;
+        }
+        if (!horaInicio) {
+          alert("Selecciona una hora de inicio.");
+          return;
+        }
+        if (!usuarioSesionId) {
+          alert("No se pudo identificar el entrenador.");
+          return;
+        }
+
+        btn.disabled = true;
+        crearClase({ fecha, horaInicio, entrenadorId: usuarioSesionId })
+          .then(() => {
+            inputFecha.value = "";
+            selectHora.selectedIndex = 0;
+            return recargarTablas();
+          })
+          .catch((error) => alert(error.message || "No se pudo crear la clase."))
+          .finally(() => { btn.disabled = false; });
       });
     }
 
@@ -994,6 +1126,11 @@
 
       const username = await waitForUserInfo();
       await cargarContextoUsuario(username);
+      rolSesionActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+      usernameSesionActual = String(document.getElementById("user-info").value || "").trim();
+      const rolActual = String(document.getElementById("role-info").value || "").trim().toLowerCase();
+      toggleCrearClase(rolActual);
+      bindCrearClase();
       await recargarTablas();
     })();
   </script>
