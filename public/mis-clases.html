@@ -845,7 +845,7 @@
       `;
 
       const cancelarBtn = document.getElementById("cancelar-clase-button");
-      cancelarBtn.style.display = mostrarBotonCancelarClase && reservaId ? "inline-block" : "none";
+      cancelarBtn.style.display = mostrarBotonCancelarClase && claseId ? "inline-block" : "none";
 
       const usernameSesionOriginal = document.getElementById("user-info").value || "";
       claseModalContext = { claseId, reservaId, jugadores, reservaUsername };
