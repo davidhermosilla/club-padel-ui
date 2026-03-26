@@ -75,8 +75,8 @@
 
       async function loadAndShowTable() {
         try {
-          // Obtener parejas con puntos
-          const response = await fetch(API_URL + "/parejas", {
+          // Obtener jugadores con puntos
+          const response = await fetch(API_URL + "/jugadores", {
             headers: {
               "Content-Type": "application/json",
               Authorization: "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz",
@@ -87,49 +87,15 @@
             throw new Error("Error al cargar los datos");
           }
 
-          const parejas = await response.json();
+          const jugadores = await response.json();
 
-          // Crear un mapa de jugadores con sus puntos totales y división mínima
-          const jugadoresMap = {};
-
-          parejas.forEach((pareja) => {
-            // Extraer nombres de los objetos jugador
-            const nombreJugador1 = pareja.jugador1?.nombre;
-            const nombreJugador2 = pareja.jugador2?.nombre;
-            const puntos1 = parseFloat(pareja.puntosJugador1) || 0;
-            const puntos2 = parseFloat(pareja.puntosJugador2) || 0;
-            const divisionId = parseInt(pareja.divisionId) || 999;
-
-            // Acumular puntos para cada jugador y guardar la división más baja (mejor)
-            if (nombreJugador1) {
-              if (!jugadoresMap[nombreJugador1]) {
-                jugadoresMap[nombreJugador1] = { puntos: 0, division: 999 };
-              }
-              jugadoresMap[nombreJugador1].puntos += puntos1;
-              // La división más baja (menor número) es la mejor
-              if (divisionId < jugadoresMap[nombreJugador1].division) {
-                jugadoresMap[nombreJugador1].division = divisionId;
-              }
-            }
-
-            if (nombreJugador2) {
-              if (!jugadoresMap[nombreJugador2]) {
-                jugadoresMap[nombreJugador2] = { puntos: 0, division: 999 };
-              }
-              jugadoresMap[nombreJugador2].puntos += puntos2;
-              // La división más baja (menor número) es la mejor
-              if (divisionId < jugadoresMap[nombreJugador2].division) {
-                jugadoresMap[nombreJugador2].division = divisionId;
-              }
-            }
-          });
-
-          // Convertir a array y ordenar por puntos (descendente), y en caso de empate por división (ascendente)
-          const jugadoresArray = Object.keys(jugadoresMap).map((nombre) => ({
-            jugador: nombre,
-            puntos: jugadoresMap[nombre].puntos,
-            division: jugadoresMap[nombre].division,
-          }));
+          const jugadoresArray = (jugadores || [])
+            .map((jugador) => ({
+              jugador: jugador?.nombre || "",
+              puntos: parseFloat(jugador?.puntos) || 0,
+              division: parseInt(jugador?.divisionId) || 999,
+            }))
+            .filter((jugador) => jugador.jugador);
 
           jugadoresArray.sort((a, b) => {
             // Primero por puntos (descendente)

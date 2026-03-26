@@ -101,6 +101,15 @@ ax.pie(
     colors=colors,
     wedgeprops={"width": 0.45, "edgecolor": "white"},
 )
+ax.text(
+    0,
+    0,
+    f"Jugados\n{total_jugados}",
+    ha="center",
+    va="center",
+    fontsize=14,
+    fontweight="bold",
+)
 ax.set_title("Estado general de partidos")
 general_chart = charts_dir / "grafico_general.png"
 fig.savefig(general_chart, dpi=150, bbox_inches="tight")
@@ -118,6 +127,16 @@ ax.set_xlabel("División")
 ax.set_ylabel("Partidos")
 ax.legend()
 ax.tick_params(axis="x", rotation=30)
+for idx, jugados_div in enumerate(jugados_vals):
+    ax.text(
+        idx,
+        jugados_div,
+        f"{jugados_div}",
+        ha="center",
+        va="bottom",
+        fontsize=9,
+        fontweight="bold",
+    )
 fig.tight_layout()
 division_chart = charts_dir / "grafico_por_division.png"
 fig.savefig(division_chart, dpi=150)
