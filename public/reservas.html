@@ -494,6 +494,8 @@
         });
       }
 
+      const DEFAULT_ADMIN_USER = "clubpadelandujar";
+
       function renderUsuariosCombo() {
         const input = document.getElementById("user-select-modal");
         const dataList = document.getElementById("user-select-modal-options");
@@ -512,7 +514,15 @@
           dataList.appendChild(option);
         });
 
-        if (
+        const defaultUser = usuariosDisponibles.find(
+          (usuario) =>
+            String(usuario.username).trim().toLowerCase() ===
+            DEFAULT_ADMIN_USER.toLowerCase(),
+        );
+
+        if (defaultUser) {
+          input.value = defaultUser.username;
+        } else if (
           seleccionAnterior &&
           usuariosDisponibles.some(
             (usuario) => usuario.username === seleccionAnterior,
