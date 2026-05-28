@@ -1013,7 +1013,7 @@
       });
     }
 
-    function buildHalfHourOptions(selectEl, { startHour = 9, endHour = 21, defaultTime = "16:00" } = {}) {
+    function buildHalfHourOptions(selectEl, { startHour = 9, endHour = 22, defaultTime = "16:00" } = {}) {
       if (!selectEl) return;
       selectEl.innerHTML = "";
       for (let h = startHour; h <= endHour; h++) {
