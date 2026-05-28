@@ -20,9 +20,10 @@ def division_sort_key(name):
 base_dir = Path(__file__).resolve().parent
 data_file = base_dir / "clasificacion.json"
 api_base = "https://club-padel-api-12f28391bbbd.herokuapp.com"
-liga_id = os.getenv("LIGA_ID", "4952")
+liga_id = os.getenv("LIGA_ID", "6553")
 charts_dir = base_dir / "graficos_liga"
 division_charts_dir = charts_dir / "divisiones"
+excluded_divisions = {"Retirados"}
 
 data = None
 try:
@@ -43,6 +44,12 @@ except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as 
 if data is None:
     with data_file.open("r", encoding="utf-8") as f:
         data = json.load(f)
+
+data = [
+    x
+    for x in data
+    if (x.get("division") or {}).get("nombre", "Sin división") not in excluded_divisions
+]
 
 total_jugados = sum(x.get("partidosJugados", 0) for x in data)
 total_no_jugados = sum(x.get("noJugados", 0) for x in data)
