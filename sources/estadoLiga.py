@@ -17,6 +17,18 @@ def division_sort_key(name):
     return int(match.group()) if match else 999
 
 
+def unique_match_count(pair_match_count):
+    return pair_match_count / 2
+
+
+def expected_match_count(pair_count):
+    return pair_count * (pair_count - 1) // 2
+
+
+def format_match_count(value):
+    return int(value) if value == int(value) else value
+
+
 base_dir = Path(__file__).resolve().parent
 data_file = base_dir / "clasificacion.json"
 api_base = "https://club-padel-api-12f28391bbbd.herokuapp.com"
@@ -51,27 +63,31 @@ data = [
     if (x.get("division") or {}).get("nombre", "Sin división") not in excluded_divisions
 ]
 
-total_jugados = sum(x.get("partidosJugados", 0) for x in data)
-total_no_jugados = sum(x.get("noJugados", 0) for x in data)
-total = total_jugados + total_no_jugados
+by_div = defaultdict(lambda: {"jugados": 0, "no": 0, "parejas": 0})
+for x in data:
+    div = (x.get("division") or {}).get("nombre", "Sin división")
+    by_div[div]["jugados"] += x.get("partidosJugados", 0)
+    by_div[div]["parejas"] += 1
+
+for values in by_div.values():
+    values["jugados"] = unique_match_count(values["jugados"])
+    values["total"] = expected_match_count(values["parejas"])
+    values["no"] = max(values["total"] - values["jugados"], 0)
+
+total_jugados = sum(x["jugados"] for x in by_div.values())
+total = sum(x["total"] for x in by_div.values())
+total_no_jugados = max(total - total_jugados, 0)
 
 pct_j = (total_jugados / total * 100) if total else 0
 pct_nj = (total_no_jugados / total * 100) if total else 0
 
 print("=== RESUMEN GENERAL ===")
 print(f"Parejas: {len(data)}")
-print(f"Jugados: {total_jugados}")
-print(f"No jugados: {total_no_jugados}")
-print(f"Total: {total}")
+print(f"Jugados: {format_match_count(total_jugados)}")
+print(f"No jugados: {format_match_count(total_no_jugados)}")
+print(f"Total: {format_match_count(total)}")
 print(f"% Jugados: {pct_j:.2f}%")
 print(f"% No jugados: {pct_nj:.2f}%")
-
-by_div = defaultdict(lambda: {"jugados": 0, "no": 0, "parejas": 0})
-for x in data:
-    div = (x.get("division") or {}).get("nombre", "Sin división")
-    by_div[div]["jugados"] += x.get("partidosJugados", 0)
-    by_div[div]["no"] += x.get("noJugados", 0)
-    by_div[div]["parejas"] += 1
 
 divisiones = sorted(by_div.keys(), key=division_sort_key)
 
@@ -82,8 +98,8 @@ for div in divisiones:
     pj = (v["jugados"] * 100 / t) if t else 0
     pnj = (v["no"] * 100 / t) if t else 0
     print(
-        f"{div}: parejas={v['parejas']}, jugados={v['jugados']} ({pj:.2f}%), "
-        f"no jugados={v['no']} ({pnj:.2f}%)"
+        f"{div}: parejas={v['parejas']}, jugados={format_match_count(v['jugados'])} ({pj:.2f}%), "
+        f"no jugados={format_match_count(v['no'])} ({pnj:.2f}%)"
     )
 
 if not plt:
@@ -111,7 +127,7 @@ ax.pie(
 ax.text(
     0,
     0,
-    f"Jugados\n{total_jugados}",
+    f"Jugados\n{format_match_count(total_jugados)}",
     ha="center",
     va="center",
     fontsize=14,
@@ -138,7 +154,7 @@ for idx, jugados_div in enumerate(jugados_vals):
     ax.text(
         idx,
         jugados_div,
-        f"{jugados_div}",
+        f"{format_match_count(jugados_div)}",
         ha="center",
         va="bottom",
         fontsize=9,
