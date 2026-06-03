@@ -80,6 +80,11 @@ var divisiones = [];
 var jugadores = [];
 var mapaDivisiones = {};
 var parejasCache = [];
+const DIVISIONES_EXCLUIDAS_COMBO = ['retirados', 'nuevasparejas'];
+
+function mostrarDivisionEnCombo(nombre) {
+  return !DIVISIONES_EXCLUIDAS_COMBO.includes((nombre || '').toLowerCase().trim());
+}
 
 $(document).ready(function(){
   // Tabla con botón de exportación a Excel
@@ -145,7 +150,7 @@ $(document).ready(function(){
         divisiones = data || [];
         mapaDivisiones = {};
         divisiones.forEach(d => mapaDivisiones[d.id] = d.nombre);
-        rellenarSelect($('#divisionPareja'), divisiones, false);
+        rellenarSelect($('#divisionPareja'), divisiones.filter(d => mostrarDivisionEnCombo(d.nombre)), false);
         if (++completado === 2 && callback) callback();
       },
       error: function(xhr){ alert('Error cargando divisiones: ' + (xhr.responseText || xhr.statusText)); }

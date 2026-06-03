@@ -47,6 +47,11 @@
     let divisionMap = {};
     let dataTable;
     let resultadosTotales = [];
+    const DIVISIONES_EXCLUIDAS_COMBO = ['retirados', 'nuevasparejas'];
+
+    function mostrarDivisionEnCombo(nombre) {
+      return !DIVISIONES_EXCLUIDAS_COMBO.includes((nombre || '').toLowerCase().trim());
+    }
 
     function cargarLigas() {
       $.ajax({
@@ -75,6 +80,7 @@
           select.empty().append('<option value="">Todas</option>');
           divisiones.forEach(d => {
             divisionMap[d.id] = d.nombre;
+            if (!mostrarDivisionEnCombo(d.nombre)) return;
             select.append(`<option value="${d.id}">${d.nombre}</option>`);
           });
         }

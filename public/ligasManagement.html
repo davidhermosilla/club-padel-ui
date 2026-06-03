@@ -75,6 +75,11 @@ var headers = {
   'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz'
 };
 var ultimaDivisionSeleccionada = localStorage.getItem('ultimaDivisionSeleccionada') || "";
+const DIVISIONES_EXCLUIDAS_COMBO = ['retirados', 'nuevasparejas'];
+
+function mostrarDivisionEnCombo(nombre) {
+  return !DIVISIONES_EXCLUIDAS_COMBO.includes((nombre || '').toLowerCase().trim());
+}
 
 $(document).ready(function(){
   var tablaLigas = $('#tabla-ligas').DataTable({
@@ -94,6 +99,7 @@ $(document).ready(function(){
         const filtro = $('#filtroDivision');
         filtro.empty().append('<option value="">Todas</option>');
         data.forEach(d => {
+          if (!mostrarDivisionEnCombo(d.nombre)) return;
           const selected = d.nombre === ultimaDivisionSeleccionada ? 'selected' : '';
           filtro.append(`<option value="${d.nombre}" ${selected}>${d.nombre}</option>`);
         });

@@ -48,6 +48,11 @@ const AUTH_HEADER = { 'Authorization': 'Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYX
 let divisionMap = {};
 let clasificacionData = [];
 let dataTable;
+const DIVISIONES_EXCLUIDAS_COMBO = ['retirados', 'nuevasparejas'];
+
+function mostrarDivisionEnCombo(nombre) {
+  return !DIVISIONES_EXCLUIDAS_COMBO.includes((nombre || '').toLowerCase().trim());
+}
 
 function cargarDivisiones(callback) {
   $.ajax({
@@ -58,6 +63,7 @@ function cargarDivisiones(callback) {
       select.empty();
       divisiones.forEach(d => {
         divisionMap[d.id] = d.nombre;
+        if (!mostrarDivisionEnCombo(d.nombre)) return;
         select.append(`<option value="${d.nombre}">${d.nombre}</option>`);
       });
       if (callback) callback();

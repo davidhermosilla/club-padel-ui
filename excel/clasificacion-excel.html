@@ -79,7 +79,12 @@
             const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSsSc_sZQSKWGvTChV2O-_-kgNL3i-7oz6AzMX7oXVu4eghSgFlScUQ-JrgYTJa1CyhMZUsDAaYVCE4/pub?gid=1390658928&single=true&output=csv&t=' + Date.now();
             const divisionSelect = document.getElementById('divisionSelect');
             const positionsTableBody = document.getElementById('positionsTable').querySelector('tbody');
+            const excludedDivisions = ['retirados', 'nuevasparejas'];
             let allData = [];
+
+            function shouldShowDivision(division) {
+                return !excludedDivisions.includes((division || '').toLowerCase().trim());
+            }
 
             async function loadCSV() {
                 try {
@@ -100,7 +105,8 @@
                         ptsLiga: row[10]
                     }));
 
-                    const uniqueDivisions = [...new Set(allData.map(item => item.division))];
+                    const uniqueDivisions = [...new Set(allData.map(item => item.division))]
+                        .filter(shouldShowDivision);
                     populateDivisionSelect(uniqueDivisions);
 
                     if (uniqueDivisions.length > 0) {
