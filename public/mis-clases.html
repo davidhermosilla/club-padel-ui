@@ -230,6 +230,7 @@
     const API_URL = "https://club-padel-api-12f28391bbbd.herokuapp.com";
     const AUTH_HEADER = "Basic Y2x1YnBhZGVsdXNlcjpjbHVicGFkZWxwYXNz";
     const MAX_JUGADORES_CLASE = 4;
+    const MIN_HORAS_BAJA_CLASE = 18;
 
     let usuariosDisponibles = [];
     let usuarioSesionId = null;
@@ -245,6 +246,7 @@
       reservaId: null,
       jugadores: [],
       reservaUsername: "",
+      startMs: NaN,
     };
 
     function escapeHtml(value) {
@@ -320,6 +322,11 @@
       }
 
       return new Date(yyyy, mm - 1, dd, HH, MM, 0, 0).getTime();
+    }
+
+    function puedeJugadorDarseDeBajaClase(startMs) {
+      if (!Number.isFinite(startMs)) return false;
+      return startMs - Date.now() >= MIN_HORAS_BAJA_CLASE * 60 * 60 * 1000;
     }
 
     function formatFechaDDMMYYYY(fecha) {
@@ -748,7 +755,7 @@
       document.getElementById("clase-usuario-select").style.display = "none";
       document.getElementById("clase-usuario-select").value = "";
       document.getElementById("clase-usuario-options").innerHTML = "";
-      claseModalContext = { claseId: null, reservaId: null, jugadores: [], reservaUsername: "" };
+      claseModalContext = { claseId: null, reservaId: null, jugadores: [], reservaUsername: "", startMs: NaN };
     }
 
     function configurarAccionesReservaClase(claseId, jugadoresClase, rolActual, usernameSesion, reservaUsername, reservaId) {
@@ -835,6 +842,8 @@
         "-";
       const reservaUsername = reserva?.userName || reserva?.username || reserva?.usuario?.username || "";
       const jugadores = Array.isArray(clase?.jugadores) ? clase.jugadores : [];
+      const startMsClase = parseDateAndTime(fechaClase, horaInicioClase);
+      const puedeJugadorEliminarPorTiempo = puedeJugadorDarseDeBajaClase(startMsClase);
 
       const jugadoresHtml =
         jugadores.length > 0
@@ -843,7 +852,10 @@
                 const jugadorId = extraerIdJugador(j);
                 const jugadorNombre = extraerNombreJugador(j);
                 const jugadorNombreNorm = String(jugadorNombre).trim().toLowerCase();
-                const puedeEliminar = esAdministrador || esEntrenador || jugadorNombreNorm === usernameSesion;
+                const puedeEliminar =
+                  esAdministrador ||
+                  esEntrenador ||
+                  (jugadorNombreNorm === usernameSesion && puedeJugadorEliminarPorTiempo);
                 const botonEliminar =
                   puedeEliminar
                     ? `<button type="button" class="class-player-remove" data-jugador-id="${escapeHtml(jugadorId)}" data-jugador-nombre="${escapeHtml(jugadorNombre)}">Eliminar</button>`
@@ -865,7 +877,7 @@
       cancelarBtn.style.display = mostrarBotonCancelarClase && claseId ? "inline-block" : "none";
 
       const usernameSesionOriginal = document.getElementById("user-info").value || "";
-      claseModalContext = { claseId, reservaId, jugadores, reservaUsername };
+      claseModalContext = { claseId, reservaId, jugadores, reservaUsername, startMs: startMsClase };
       configurarAccionesReservaClase(claseId, jugadores, rolActual, usernameSesionOriginal, reservaUsername, reservaId);
       document.getElementById("modal-clase-info").style.display = "flex";
     }
@@ -972,6 +984,10 @@
           alert("Solo puedes eliminar tu propio usuario.");
           return;
         }
+        if (!esAdminOEntrenador && !puedeJugadorDarseDeBajaClase(claseModalContext.startMs)) {
+          alert("No puedes eliminarte de una clase si quedan menos de 18 horas para que empiece.");
+          return;
+        }
         if (!claseId) {
           alert("No se pudo identificar el jugador de la clase.");
           return;
@@ -1017,6 +1033,10 @@
         }
         if (!esAdminOEntrenador && String(usernameSesion).trim().toLowerCase() !== String(reservaUsername).trim().toLowerCase()) {
           alert("Solo puedes borrar una reserva hecha por ti.");
+          return;
+        }
+        if (!esAdminOEntrenador && !puedeJugadorDarseDeBajaClase(claseModalContext.startMs)) {
+          alert("No puedes eliminarte de una clase si quedan menos de 18 horas para que empiece.");
           return;
         }
         if (!confirm("Desea realmente borrar la clase?")) return;
