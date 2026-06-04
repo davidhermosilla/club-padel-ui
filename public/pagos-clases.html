@@ -76,6 +76,14 @@
             <input id="jugador-filter" list="jugadores-options" type="search" placeholder="Todos los jugadores" />
             <datalist id="jugadores-options"></datalist>
           </div>
+          <div class="field">
+            <label for="estado-filter">Estado del Pago</label>
+            <select id="estado-filter">
+              <option value="">Todos</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="PAGADO">Pagado</option>
+            </select>
+          </div>
           <div class="status-text" id="resumen"></div>
         </div>
 
@@ -95,6 +103,7 @@
       role: "",
       groups: [],
       filter: "",
+      paymentFilter: "",
       pageByPlayer: new Map(),
     };
 
@@ -234,8 +243,20 @@
 
     function filteredGroups() {
       const filter = state.filter.trim().toLowerCase();
-      if (!filter) return state.groups;
-      return state.groups.filter((group) => String(group.username).toLowerCase().includes(filter));
+      const paymentFilter = state.paymentFilter.trim().toUpperCase();
+      return state.groups
+        .filter((group) => !filter || String(group.username).toLowerCase().includes(filter))
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => {
+            const estado = String(item.estado || "").toUpperCase();
+            if (!paymentFilter) return true;
+            if (paymentFilter === "PENDIENTE") return estado === "PENDIENTE";
+            if (paymentFilter === "PAGADO") return estado !== "PENDIENTE";
+            return true;
+          }),
+        }))
+        .filter((group) => group.items.length > 0);
     }
 
     function estadoClass(estado) {
@@ -246,8 +267,8 @@
       const estado = String(item.estado || "").toUpperCase();
       if (estado === "PENDIENTE") {
         return `
-          <button type="button" class="btn-cash" data-action="pagado" data-metodo="CONTADO" data-clase-id="${escapeHtml(item.claseId)}" data-jugador-id="${escapeHtml(item.jugadorId)}">Pagar Efectivo</button>
-          <button type="button" class="btn-card" data-action="pagado" data-metodo="TARJETA" data-clase-id="${escapeHtml(item.claseId)}" data-jugador-id="${escapeHtml(item.jugadorId)}">Pagar Tarjeta</button>
+          <button type="button" class="btn-cash" data-action="pagado" data-metodo="CONTADO" data-clase-id="${escapeHtml(item.claseId)}" data-jugador-id="${escapeHtml(item.jugadorId)}">Pago Contado</button>
+          <button type="button" class="btn-card" data-action="pagado" data-metodo="TARJETA" data-clase-id="${escapeHtml(item.claseId)}" data-jugador-id="${escapeHtml(item.jugadorId)}">Pago Tarjeta</button>
         `;
       }
       return `<button type="button" class="btn-pending" data-action="pendiente" data-clase-id="${escapeHtml(item.claseId)}" data-jugador-id="${escapeHtml(item.jugadorId)}">Pasar a Pendiente</button>`;
@@ -333,6 +354,12 @@
     function bindEvents() {
       document.getElementById("jugador-filter").addEventListener("input", (event) => {
         state.filter = event.target.value;
+        state.pageByPlayer.clear();
+        render();
+      });
+
+      document.getElementById("estado-filter").addEventListener("change", (event) => {
+        state.paymentFilter = event.target.value;
         state.pageByPlayer.clear();
         render();
       });
