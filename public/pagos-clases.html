@@ -319,7 +319,7 @@
 
     async function cambiarPago({ action, metodo, claseId, jugadorId }) {
       const suffix = action === "pagado"
-        ? `/pagado?metodo=${encodeURIComponent(metodo)}`
+        ? `/pagado?modalidad=${encodeURIComponent(metodo)}`
         : "/pendiente";
       const res = await fetch(`${API_URL}/clases/${encodeURIComponent(claseId)}/jugadores/${encodeURIComponent(jugadorId)}${suffix}`, {
         method: "PUT",
