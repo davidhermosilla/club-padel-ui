@@ -361,7 +361,13 @@
     }
 
     function extraerEntrenador(item) {
-      return item?.entrenadorUsername || "-";
+      return (
+        item?.entrenadorUsername ??
+        item?.entrenador?.username ??
+        item?.clase?.entrenadorUsername ??
+        item?.clase?.entrenador?.username ??
+        "-"
+      );
     }
 
     function extraerNombreJugador(jugador) {
@@ -625,6 +631,19 @@
       return jugadores.some((j) => String(j?.username || "").trim().toLowerCase() === username);
     }
 
+    function esClasePasadaVisibleParaUsuario(fila, rolSesion, usernameSesion) {
+      const rol = String(rolSesion || "").trim().toLowerCase();
+      const username = String(usernameSesion || "").trim().toLowerCase();
+      if (!username) return false;
+
+      if (rol === "entrenador") {
+        const entrenador = String(fila?.entrenadorFmt || "").trim().toLowerCase();
+        return entrenador === username;
+      }
+
+      return esUsuarioApuntado(fila?.reservaLike?.clase?.jugadores, usernameSesion);
+    }
+
     function buscarFilaFuturaPorClaseId(claseId) {
       return (filasFuturas || []).find((f) => String(f?.claseId ?? "") === String(claseId ?? ""));
     }
@@ -640,9 +659,7 @@
       const raw = await obtenerTodasLasClases();
       const { futuras, pasadas } = normalizarClases(raw);
       filasFuturas = futuras;
-      filasPasadas = pasadas.filter((fila) =>
-        esUsuarioApuntado(fila?.reservaLike?.clase?.jugadores, usernameSesion),
-      );
+      filasPasadas = pasadas.filter((fila) => esClasePasadaVisibleParaUsuario(fila, rolSesion, usernameSesion));
 
       pintarTabla(dtFuturas, filasFuturas);
       pintarTabla(dtPasadas, filasPasadas);
@@ -1136,4 +1153,3 @@
   </script>
 </body>
 </html>
-
