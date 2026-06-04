@@ -744,15 +744,19 @@
       return esAdministrador || esEntrenador;
     }
 
-    function cerrarModalClase() {
-      document.getElementById("modal-clase-info").style.display = "none";
-      document.getElementById("modal-clase-body").innerHTML = "";
+    function ocultarAccionesModalClase() {
       document.getElementById("cancelar-clase-button").style.display = "none";
       document.getElementById("reservar-clase-button").style.display = "none";
       document.getElementById("borrar-reserva-clase-button").style.display = "none";
       document.getElementById("modal-clase-reserva").style.display = "none";
       document.getElementById("clase-usuario-label").style.display = "none";
       document.getElementById("clase-usuario-select").style.display = "none";
+    }
+
+    function cerrarModalClase() {
+      document.getElementById("modal-clase-info").style.display = "none";
+      document.getElementById("modal-clase-body").innerHTML = "";
+      ocultarAccionesModalClase();
       document.getElementById("clase-usuario-select").value = "";
       document.getElementById("clase-usuario-options").innerHTML = "";
       claseModalContext = { claseId: null, reservaId: null, jugadores: [], reservaUsername: "", startMs: NaN };
@@ -821,7 +825,8 @@
       }
     }
 
-    function mostrarModalClase(reserva, mostrarBotonCancelarClase) {
+    function mostrarModalClase(reserva, mostrarBotonCancelarClase, opciones = {}) {
+      const soloLectura = Boolean(opciones?.soloLectura);
       const clase = reserva?.clase || null;
       const claseId = clase?.id ?? reserva?.claseId ?? null;
       const reservaId = reserva?.reservaId ?? reserva?.id ?? null;
@@ -853,9 +858,10 @@
                 const jugadorNombre = extraerNombreJugador(j);
                 const jugadorNombreNorm = String(jugadorNombre).trim().toLowerCase();
                 const puedeEliminar =
-                  esAdministrador ||
-                  esEntrenador ||
-                  (jugadorNombreNorm === usernameSesion && puedeJugadorEliminarPorTiempo);
+                  !soloLectura &&
+                  (esAdministrador ||
+                    esEntrenador ||
+                    (jugadorNombreNorm === usernameSesion && puedeJugadorEliminarPorTiempo));
                 const botonEliminar =
                   puedeEliminar
                     ? `<button type="button" class="class-player-remove" data-jugador-id="${escapeHtml(jugadorId)}" data-jugador-nombre="${escapeHtml(jugadorNombre)}">Eliminar</button>`
@@ -873,12 +879,15 @@
         ${jugadoresHtml}
       `;
 
-      const cancelarBtn = document.getElementById("cancelar-clase-button");
-      cancelarBtn.style.display = mostrarBotonCancelarClase && claseId ? "inline-block" : "none";
-
       const usernameSesionOriginal = document.getElementById("user-info").value || "";
       claseModalContext = { claseId, reservaId, jugadores, reservaUsername, startMs: startMsClase };
-      configurarAccionesReservaClase(claseId, jugadores, rolActual, usernameSesionOriginal, reservaUsername, reservaId);
+      if (soloLectura) {
+        ocultarAccionesModalClase();
+      } else {
+        const cancelarBtn = document.getElementById("cancelar-clase-button");
+        cancelarBtn.style.display = mostrarBotonCancelarClase && claseId ? "inline-block" : "none";
+        configurarAccionesReservaClase(claseId, jugadores, rolActual, usernameSesionOriginal, reservaUsername, reservaId);
+      }
       document.getElementById("modal-clase-info").style.display = "flex";
     }
 
@@ -1147,12 +1156,27 @@
       });
     }
 
+    function bindClickTablaPasadas() {
+      $("#tabla-pasadas tbody").on("click", "tr", function () {
+        let tr = $(this);
+        if (tr.hasClass("child")) tr = tr.prev();
+        const row = dtPasadas.row(tr);
+        if (!row || !row.data()) return;
+
+        const data = row.data();
+        if (!data?.reservaLike) return;
+
+        mostrarModalClase(data.reservaLike, false, { soloLectura: true });
+      });
+    }
+
     (async function init() {
       registerDateParsers();
       dtFuturas = initDataTable("#tabla-futuras", [[0, "asc"], [1, "asc"]], true);
       dtPasadas = initDataTable("#tabla-pasadas", [[0, "desc"], [1, "desc"]], false);
       bindEventosModal();
       bindClickTablaFuturas();
+      bindClickTablaPasadas();
 
       document.getElementById("q-futuras").addEventListener("input", (e) => {
         dtFuturas.search(e.target.value).draw();
