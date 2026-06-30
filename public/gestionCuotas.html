@@ -87,11 +87,6 @@
         width: 100% !important;
       }
 
-      /* Altura del área scroll vertical del DataTable */
-      div.dataTables_scrollBody {
-        max-height: 75vh !important;
-      }
-
       /* Asegurar fondo y z-index de la columna fija para que se lea bien */
       .dtfc-fixed-left {
         background: #fff;
@@ -391,8 +386,6 @@
 
         state.dt = $("#cuotas-table").DataTable({
           scrollX: false,
-          scrollY: "75vh",
-          scrollCollapse: true,
           paging: false,
           ordering: false,
           searching: true,
