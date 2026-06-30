@@ -19,6 +19,10 @@
       rel="stylesheet"
       href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.min.css"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css"
+    />
 
     <style>
       *,
@@ -194,6 +198,23 @@
         width: 300px;
       }
 
+      .dt-buttons {
+        margin-bottom: 12px;
+      }
+
+      button.dt-button {
+        background: #1e73be !important;
+        border: 1px solid #155a8a !important;
+        border-radius: 4px !important;
+        color: #fff !important;
+        font-weight: 600;
+        padding: 7px 12px !important;
+      }
+
+      button.dt-button:hover {
+        background: #155a8a !important;
+      }
+
       /* Loading spinner */
       .loading-overlay {
         position: fixed;
@@ -316,6 +337,9 @@
 
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
     <script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
 
@@ -380,6 +404,22 @@
         return `${dd}/${mm}/${yyyy}`;
       }
 
+      function formatExportCell(data, row, column, node) {
+        const $node = $(node);
+
+        if (column < 2) {
+          return $node.text().trim();
+        }
+
+        if ($node.hasClass("paid")) {
+          const metodoPago = $node.find(".payment-method").text().trim();
+          const fechaPago = $node.find(".payment-info").eq(0).text().trim();
+          return [metodoPago, fechaPago].filter(Boolean).join(" - ");
+        }
+
+        return "Pendiente";
+      }
+
       // Inicialización DataTable (solo una vez)
       function initDataTable() {
         if (state.isInitialized) return;
@@ -391,6 +431,21 @@
           searching: true,
           fixedHeader: false,
           autoWidth: true,
+          dom: "Bfrtip",
+          buttons: [
+            {
+              extend: "excelHtml5",
+              text: "Exportar a Excel",
+              title: () => `gestion_cuotas_${state.currentYear}`,
+              filename: () => `gestion_cuotas_${state.currentYear}`,
+              exportOptions: {
+                columns: ":visible",
+                format: {
+                  body: formatExportCell,
+                },
+              },
+            },
+          ],
           language: {
             url: "https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json",
           },
