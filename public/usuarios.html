@@ -6,7 +6,11 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <!-- DataTables CSS y JS para paginado y filtrado -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <title>Gestión de Usuarios</title>
 </head>
 <body>
@@ -68,6 +72,18 @@ var api_url = "https://club-padel-api-12f28391bbbd.herokuapp.com";
 $(document).ready(function(){
     // Inicializar DataTable con paginado y buscador en español
     var tablaUsuarios = $('#tabla-usuarios').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: 'Exportar a Excel',
+                title: 'usuarios',
+                filename: 'usuarios',
+                exportOptions: {
+                    columns: [1, 2]
+                }
+            }
+        ],
         language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' }
     });
     // Función para manejar el envío del formulario de nuevo usuario
