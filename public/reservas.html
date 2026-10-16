@@ -94,6 +94,15 @@
         cursor: pointer;
       }
 
+      .time-slot-booked-entrenador,
+      .time-slot-booked-entrenador:hover {
+        background-color: #2e7d32;
+      }
+
+      .time-slot-booked.time-slot-booked-entrenador:hover {
+        background-color: #1b5e20;
+      }
+
 
       .time-slot-disabled {
         background-color: #cccccc;
@@ -1399,6 +1408,12 @@
 
           timeSlot.className =
             username !== "" ? "time-slot-booked" : "time-slot-booked-no-user";
+          if (
+            String(reserva.creadaPorRol || "").trim().toLowerCase() ===
+            "entrenador"
+          ) {
+            timeSlot.classList.add("time-slot-booked-entrenador");
+          }
         } else {
           timeSlot.innerHTML = "<span>Disponible</span><br><span></span>";
           timeSlot.dataset.estado = "Disponible";
