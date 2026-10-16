@@ -73,7 +73,7 @@
     <input id="role-info" type="hidden"/>
 
     <h1>Reservar / Liberar pistas</h1>
-    <p class="muted">Elige fecha y combina <strong>pistas</strong> y <strong>slots</strong> para crear reservas o liberar (cancelar) las existentes. Solo disponible para administradores.</p>
+    <p class="muted">Elige fecha y combina <strong>pistas</strong> y <strong>slots</strong> para crear reservas o liberar (cancelar) las existentes. Solo disponible para administradores y entrenadores.</p>
 
     <section id="guard">
       <div id="guard-msg" class="alert warn">Comprobando permisos…</div>
@@ -221,7 +221,7 @@
       });
       if(!res.ok) throw new Error('HTTP '+res.status);
       const data = await res.json();
-      return (data.rolName || data.rol?.nombre || '').toLowerCase();
+      return (data.rolName || data.rol?.nombre || '').trim().toLowerCase();
     }catch(e){
       console.error('Error rol:', e);
       return '';
@@ -466,11 +466,11 @@
       return;
     }
     const role = await getUserRole(USER);
-    if ((role || '') !== 'administrador'){
-      setGuardMessage('error','Acceso restringido. Solo los usuarios con rol administrador pueden realizar esta acción.');
+    if (!['administrador', 'entrenador'].includes(role)){
+      setGuardMessage('error','Acceso restringido. Solo los usuarios con rol administrador o entrenador pueden realizar esta acción.');
       return;
     }
-    setGuardMessage('ok',`Acceso concedido. Usuario "${USER}" con rol administrador.`);
+    setGuardMessage('ok',`Acceso concedido. Usuario "${USER}" con rol ${role}.`);
     document.getElementById('form-sec').style.display = 'block';
 
     try{
