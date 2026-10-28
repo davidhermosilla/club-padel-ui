@@ -17,6 +17,13 @@
     />
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 
     <style>
       body {
@@ -132,6 +139,19 @@
           document.getElementById("table-container").innerHTML = html;
 
           $("#dynamic-table").DataTable({
+            dom: "Bfrtip",
+            buttons: [
+              {
+                extend: "excelHtml5",
+                text: "Exportar a Excel",
+                title: "Clasificación Master - Jugadores",
+                filename: "puntos-jugadores",
+                exportOptions: {
+                  columns: [0, 1, 2, 3],
+                  modifier: { search: "applied", order: "applied", page: "all" },
+                },
+              },
+            ],
             pageLength: 100,
             order: [[0, "asc"]], // Ordenar por posición
             language: {
